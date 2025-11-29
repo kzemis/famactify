@@ -95,22 +95,13 @@ const Landing = () => {
               <p className="text-xl text-muted-foreground max-w-2xl">
                 Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
               <Button 
-                  size="lg" 
-                  onClick={() => navigate("/home")}
-                  className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                >
-                  Get Started Free
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  className="text-lg px-8 py-6 rounded-2xl"
-                >
-                  See How It Works
-                </Button>
-              </div>
+                size="lg" 
+                onClick={() => navigate("/home")}
+                className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+              >
+                Get Started Free
+              </Button>
             </div>
             <div className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 rounded-3xl blur-3xl" />
@@ -296,7 +287,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-b from-background via-primary/10 to-accent/20">
+      <section className="hidden py-24 bg-gradient-to-b from-background via-primary/10 to-accent/20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Transform Family Time?</h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

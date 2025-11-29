@@ -1,44 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, MapPin, Users, DollarSign, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Clock, Heart, Sun, Utensils, Baby, Home } from "lucide-react";
 
-const questions = [
+// Icon mapping for dynamic icon rendering
+const iconMap: Record<string, React.ReactNode> = {
+  Calendar: <Calendar className="h-6 w-6" />,
+  MapPin: <MapPin className="h-6 w-6" />,
+  Users: <Users className="h-6 w-6" />,
+  DollarSign: <DollarSign className="h-6 w-6" />,
+  Clock: <Clock className="h-6 w-6" />,
+  Heart: <Heart className="h-6 w-6" />,
+  Sun: <Sun className="h-6 w-6" />,
+  Utensils: <Utensils className="h-6 w-6" />,
+  Baby: <Baby className="h-6 w-6" />,
+  Home: <Home className="h-6 w-6" />,
+};
+
+interface Question {
+  id: string;
+  title: string;
+  placeholder: string;
+  type: string;
+  icon: string;
+}
+
+const defaultQuestions: Question[] = [
   {
     id: "location",
-    icon: <MapPin className="h-6 w-6" />,
+    icon: "MapPin",
     title: "Where are you planning activities?",
     placeholder: "e.g., San Francisco, CA",
     type: "text"
   },
   {
     id: "dates",
-    icon: <Calendar className="h-6 w-6" />,
+    icon: "Calendar",
     title: "What dates are you looking at?",
     placeholder: "e.g., March 15-17, 2024",
     type: "text"
   },
   {
     id: "familySize",
-    icon: <Users className="h-6 w-6" />,
+    icon: "Users",
     title: "How many people in your group?",
     placeholder: "e.g., 4 (2 adults, 2 kids)",
     type: "text"
   },
   {
     id: "budget",
-    icon: <DollarSign className="h-6 w-6" />,
+    icon: "DollarSign",
     title: "What's your budget per person?",
     placeholder: "e.g., $50-100",
     type: "text"
   },
   {
     id: "duration",
-    icon: <Clock className="h-6 w-6" />,
+    icon: "Clock",
     title: "Preferred activity duration?",
     placeholder: "e.g., 2-3 hours",
     type: "text"
@@ -48,7 +70,24 @@ const questions = [
 const OnboardingQuestions = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [questions, setQuestions] = useState<Question[]>(defaultQuestions);
   const navigate = useNavigate();
+
+  // Load AI-generated questions if available
+  useEffect(() => {
+    const aiQuestionsStr = sessionStorage.getItem("aiQuestions");
+    if (aiQuestionsStr) {
+      try {
+        const aiQuestions = JSON.parse(aiQuestionsStr);
+        if (Array.isArray(aiQuestions) && aiQuestions.length > 0) {
+          setQuestions(aiQuestions);
+        }
+      } catch (error) {
+        console.error('Error parsing AI questions:', error);
+        // Fall back to default questions
+      }
+    }
+  }, []);
 
   const handleAnswer = (value: string) => {
     setAnswers({ ...answers, [questions[currentQuestion].id]: value });
@@ -73,6 +112,7 @@ const OnboardingQuestions = () => {
   const progress = ((currentQuestion + 1) / questions.length) * 100;
   const question = questions[currentQuestion];
   const currentAnswer = answers[question.id] || "";
+  const questionIcon = iconMap[question.icon] || <Heart className="h-6 w-6" />;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
@@ -90,7 +130,7 @@ const OnboardingQuestions = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                {question.icon}
+                {questionIcon}
               </div>
               <CardTitle className="text-2xl">{question.title}</CardTitle>
             </div>

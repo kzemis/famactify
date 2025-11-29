@@ -79,8 +79,8 @@ const Landing = () => {
             >
               <Presentation className="h-5 w-5" />
             </Button>
-            <Button variant="outline" onClick={() => navigate("/onboarding/interests")}>
-              Get Started
+            <Button variant="outline" onClick={() => navigate("/contribute")}>
+              Contribute
             </Button>
           </div>
         </div>

@@ -72,7 +72,7 @@ const Landing = () => {
             >
               <Presentation className="h-5 w-5" />
             </Button>
-            <Button variant="outline" onClick={() => navigate("/home")}>
+            <Button variant="outline" onClick={() => navigate("/onboarding/interests")}>
               Get Started
             </Button>
           </div>
@@ -97,7 +97,7 @@ const Landing = () => {
               </p>
               <Button 
                 size="lg" 
-                onClick={() => navigate("/home")}
+                onClick={() => navigate("/onboarding/interests")}
                 className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
               >
                 Get Started Free
@@ -276,7 +276,7 @@ const Landing = () => {
                 <Button 
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
-                  onClick={() => navigate("/home")}
+                  onClick={() => navigate("/onboarding/interests")}
                 >
                   {plan.price === "€0" ? "Start Free" : "Get Started"}
                 </Button>
@@ -295,7 +295,7 @@ const Landing = () => {
           </p>
           <Button 
             size="lg"
-            onClick={() => navigate("/home")}
+            onClick={() => navigate("/onboarding/interests")}
             className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
           >
             Start Planning Now

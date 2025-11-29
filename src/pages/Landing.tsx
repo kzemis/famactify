@@ -85,7 +85,9 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-background to-primary/30" />
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="container relative mx-auto px-4 py-20">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
             <div className="space-y-8">
@@ -117,7 +119,7 @@ const Landing = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 rounded-3xl blur-3xl" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/40 to-primary/40 rounded-3xl blur-3xl" />
               <img 
                 src={heroImage} 
                 alt="Happy family enjoying activities together"
@@ -300,8 +302,11 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-primary/20 via-background to-accent/20">
-        <div className="container mx-auto px-4 text-center">
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-background to-primary/20" />
+        <div className="absolute top-10 left-1/4 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl" />
+        <div className="container relative mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Transform Family Time?</h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Join thousands of families who've discovered stress-free planning

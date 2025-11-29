@@ -14,6 +14,11 @@ import Itinerary from "./pages/Itinerary";
 import Calendar from "./pages/Calendar";
 import SavedTrips from "./pages/SavedTrips";
 import PitchDeck from "./pages/PitchDeck";
+import AboutUs from "./pages/AboutUs";
+import Careers from "./pages/Careers";
+import FAQ from "./pages/FAQ";
+import ContactUs from "./pages/ContactUs";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +41,11 @@ const App = () => (
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/saved-trips" element={<SavedTrips />} />
           <Route path="/pitch-deck" element={<PitchDeck />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/terms" element={<TermsOfService />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -75,15 +75,13 @@ const PitchDeck = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex-col hidden md:flex">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Slide Container */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-5xl">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground text-center">The Problem</h1>
-
               <div className="space-y-4">
                 <h2 className="text-4xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
                 <p className="text-xl text-muted-foreground leading-relaxed">
@@ -104,14 +102,14 @@ const PitchDeck = () => {
                 <h3 className="text-3xl font-semibold text-foreground">The Founders</h3>
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
+                    <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
+                    <p className="text-muted-foreground">8+ years in ticketing service development</p>
+                  </div>
+                  <div className="space-y-2">
                     <h4 className="text-xl font-bold text-primary">Dainis Dulbinskis</h4>
                     <p className="text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)
                     </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-xl font-bold text-primary">Kirill Luschin</h4>
@@ -353,13 +351,6 @@ const PitchDeck = () => {
         </Button>
       </div>
 
-      {/* Mobile Message */}
-      <div className="min-h-screen bg-background flex md:hidden items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <p className="text-xl text-muted-foreground">Please view the pitch deck on a larger screen.</p>
-          <Button onClick={() => navigate("/")}>Go Back</Button>
-        </div>
-      </div>
     </div>
   );
 };

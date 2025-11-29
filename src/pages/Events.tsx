@@ -149,7 +149,7 @@ const Events = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Discover Events</h1>
+          <h1 className="text-3xl font-bold">Discover Activities</h1>
           <p className="text-muted-foreground">
             Swipe right to add, left to skip
           </p>
@@ -220,9 +220,9 @@ const Events = () => {
         </Card>
 
         <div className="bg-card rounded-lg p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            {likedEvents.length} event{likedEvents.length !== 1 ? 's' : ''} added
-          </p>
+            <p className="text-sm text-muted-foreground">
+              {likedEvents.length} activity{likedEvents.length !== 1 ? 'ies' : 'y'} added
+            </p>
           {likedEvents.length > 0 && (
             <Button
               variant="link"

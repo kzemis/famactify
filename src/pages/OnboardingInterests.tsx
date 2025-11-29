@@ -3,17 +3,49 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const OnboardingInterests = () => {
   const [interests, setInterests] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleContinue = () => {
-    if (interests.trim()) {
-      // Store interests in session storage for now
+  const handleContinue = async () => {
+    if (!interests.trim()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Store interests in session storage
       sessionStorage.setItem("userInterests", interests);
+
+      // Call the edge function to generate personalized questions
+      const { data, error } = await supabase.functions.invoke('generate-questions', {
+        body: { interests }
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      // Store the AI-generated questions
+      sessionStorage.setItem("aiQuestions", JSON.stringify(data.questions));
+      
       navigate("/onboarding/questions");
+    } catch (error: any) {
+      console.error('Error generating questions:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate personalized questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,11 +75,18 @@ const OnboardingInterests = () => {
           </div>
           <Button
             onClick={handleContinue}
-            disabled={!interests.trim()}
+            disabled={!interests.trim() || isLoading}
             className="w-full text-lg py-6"
             size="lg"
           >
-            Continue to Questions
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Generating Your Questions...
+              </>
+            ) : (
+              "Continue to Questions"
+            )}
           </Button>
         </CardContent>
       </Card>

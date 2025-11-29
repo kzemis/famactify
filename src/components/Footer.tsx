@@ -1,4 +1,3 @@
-import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -7,21 +6,19 @@ const Footer = () => {
   const footerLinks = {
     product: [
       { label: "Home", href: "/home" },
-      { label: "Pricing", href: "/#pricing" },
       { label: "How It Works", href: "/#features" },
     ],
     company: [
-      { label: "About Us", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Press", href: "#" },
+      { label: "About Us", href: "/about" },
+      { label: "Careers", href: "/careers" },
     ],
     support: [
-      { label: "Contact Us", href: "#" },
-      { label: "FAQs", href: "#" },
+      { label: "Contact Us", href: "/contact" },
+      { label: "FAQs", href: "/faq" },
     ],
     legal: [
       { label: "Privacy Policy", href: "#" },
-      { label: "Terms of Service", href: "#" },
+      { label: "Terms of Service", href: "/terms" },
     ],
   };
 
@@ -49,12 +46,12 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -64,12 +61,12 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -79,12 +76,21 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.href.startsWith("#") ? (
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.href}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -95,8 +101,8 @@ const Footer = () => {
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-primary">Famactify</span>
           </div>
-          <p className="text-sm text-muted-foreground flex items-center gap-1">
-            Made with <Heart className="h-4 w-4 text-primary fill-primary" /> for families everywhere
+          <p className="text-sm text-muted-foreground">
+            Made for happy families 😊
           </p>
           <p className="text-sm text-muted-foreground">
             © {currentYear} Famactify. All rights reserved.

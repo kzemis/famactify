@@ -1,0 +1,1708 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "id": "latvijas-dabas-muzejs",
+    "name": "Latvijas Dabas muzejs",
+    "domain": "Venue",
+    "category": "STEM",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Large natural history museum with interactive exhibits, games, sounds, and realistic dioramas.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "educational",
+      "science",
+      "academic",
+      "stroller-friendly",
+      "restrooms"
+    ],
+    "highlights": [
+      "Interactive games and videos",
+      "Meteorite fragments",
+      "Birds & mammals galleries"
+    ],
+    "schedule": {
+      "hoursNote": "II–VII 11:00–18:00; family ticket available; preschoolers free ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "science",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Krišjāņa Barona iela 4, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "latvijas-etnografiskais-brivdabas-muzejs",
+    "name": "Latvijas Etnogrāfiskais Brīvdabas muzejs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Open‑air museum in pine forest by Jugla Lake with 100+ heritage buildings and historic crafts.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "history",
+      "heritage",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent"
+    ],
+    "highlights": [
+      "87 ha forest site",
+      "Historic crafts",
+      "Lake‑side picnic spots"
+    ],
+    "schedule": {
+      "hoursNote": "Seasonal hours; typically 10:00–20:00 in summer, 10:00–17:00 in winter ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "social",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Brīvdabas iela 21, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "laimas-sokolades-muzejs",
+    "name": "Laimas Šokolādes muzejs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Interactive chocolate museum with personalized bar-making and kid‑friendly activities.",
+    "ageRange": {
+      "min": 3,
+      "max": 15
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": true,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "creative",
+      "food",
+      "restrooms"
+    ],
+    "highlights": [
+      "Make your own chocolate",
+      "Photo/video corner",
+      "Kid activities"
+    ],
+    "schedule": {
+      "hoursNote": "II–VII 11:00–18:00 (); preschoolers free."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "creative",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Miera iela 22, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "melngalvju-nams",
+    "name": "Melngalvju nams",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "HeritageSite",
+    "legacyType": "Museum",
+    "description": "Historic House of the Blackheads with medieval cellars, coin minting, and grand halls.",
+    "ageRange": {
+      "min": 5,
+      "max": 15
+    },
+    "ageBuckets": [
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": null,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "history",
+      "heritage",
+      "restrooms"
+    ],
+    "highlights": [
+      "Medieval cellars",
+      "Try on armor",
+      "Mint a coin"
+    ],
+    "schedule": {
+      "hoursNote": "II–VII 10:00–18:00; family tickets available ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Rātslaukums 7, Rīga"
+    }
+  },
+   {
+    "schemaVersion": "1.0.0",
+    "id": "motormuseum",
+    "name": "Riga Motormuseum (Family)",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Typically 10:00–18:00; check site.",
+    "ageRange": {
+      "min": 3,
+      "max": 12
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.970676,
+      "lon": 24.227557,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "changing-table",
+      "together",
+      "tech",
+      "science",
+      "academic",
+      "culture"
+    ],
+    "highlights": [
+      "Classic cars",
+      "Hands-on simulators",
+      "Kids play corner"
+    ],
+    "schedule": {
+      "hoursNote": "Typically 10:00–18:00; check site."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "tech",
+      "science",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "museum": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "latvijas-dzelzcela-vestures-muzejs",
+    "name": "Latvijas Dzelzceļa vēstures muzejs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Railway history museum; in summer try a hand‑powered draisine.",
+    "ageRange": {
+      "min": 3,
+      "max": 15
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "outdoor",
+      "educational",
+      "restrooms"
+    ],
+    "highlights": [
+      "Draisine rides (summer)",
+      "Platsliežu stock collection",
+      "Control systems demos"
+    ],
+    "schedule": {
+      "hoursNote": "II, III, V, VI 10:00–17:00; IV 10:00–20:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "science",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Uzvaras bulvāris 2a, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lnb",
+    "name": "Latvijas Nacionālā bibliotēka",
+    "domain": "Venue",
+    "category": "Community",
+    "activityType": "Library",
+    "legacyType": "Museum",
+    "description": "National library with many themed reading rooms, exhibitions, concerts, and events.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "free",
+      "indoor",
+      "literacy",
+      "educational",
+      "restrooms"
+    ],
+    "highlights": [
+      "Award‑winning library (2018)",
+      "Events and exhibits",
+      "Family‑friendly spaces"
+    ],
+    "schedule": {
+      "hoursNote": "I–V 9:00–20:00; VI 10:00–17:00 (note: varies by department; )."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "literacy",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Mūkusalas iela 3, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lnmm",
+    "name": "Latvijas Nacionālais mākslas muzejs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Largest professional art collection in Latvia with exhibitions and education programs.",
+    "ageRange": {
+      "min": 4,
+      "max": 15
+    },
+    "ageBuckets": [
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": null,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "art",
+      "restrooms"
+    ],
+    "highlights": [
+      "Permanent collection",
+      "Education programs",
+      "Rotating exhibits"
+    ],
+    "schedule": {
+      "hoursNote": "II–VII 10:00–18:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "creative",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Jaņa Rozentāla laukums 1, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "dmdm",
+    "name": "Dekoratīvās mākslas un dizaina muzejs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Decorative art and design museum with collections from textiles to glass and digital exhibits.",
+    "ageRange": {
+      "min": 4,
+      "max": 15
+    },
+    "ageBuckets": [
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": null,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "art",
+      "design",
+      "restrooms"
+    ],
+    "highlights": [
+      "Seven collections",
+      "Hands‑on workshops"
+    ],
+    "schedule": {
+      "hoursNote": "II, III, IV 10:00–18:00; V 10:00–20:00; VI–VII 10:00–17:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "creative",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Skārņu iela 10, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "latvijas-kara-muzejs",
+    "name": "Latvijas Kara muzejs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Military history museum focusing on Latvia’s 20th‑century story; activity center for kids.",
+    "ageRange": {
+      "min": 7,
+      "max": 15
+    },
+    "ageBuckets": [
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": null,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "free",
+      "indoor",
+      "history",
+      "restrooms"
+    ],
+    "highlights": [
+      "20th‑century Latvia focus",
+      "Adaptable activity center"
+    ],
+    "schedule": {
+      "hoursNote": "I–VII 10:00–18:00 in summer; 10:00–17:00 in winter ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Smilšu iela 20, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lu-botaniskais-darzs",
+    "name": "LU Botāniskais dārzs",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "BotanicalGarden",
+    "legacyType": "Museum",
+    "description": "15 ha garden with greenhouses and Tropical Butterfly House; ~6000 plant species.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor",
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "indoor",
+      "nature",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent"
+    ],
+    "highlights": [
+      "Butterfly house (seasonal)",
+      "Greenhouses",
+      "Cultural events"
+    ],
+    "schedule": {
+      "hoursNote": "Open daily 10:00–16:00/19:00/21:00 depending on month ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "science",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Kandavas iela 2, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lido-atputas-centrs",
+    "name": "LIDO Atpūtas centrs",
+    "domain": "Venue",
+    "category": "Food",
+    "activityType": "FamilyRestaurant",
+    "legacyType": "FamilyRestaurant",
+    "description": "Large family‑friendly restaurant complex with play zones and seasonal attractions.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": true,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "food",
+      "indoor",
+      "outdoor",
+      "restrooms",
+      "changing-table",
+      "stroller-friendly"
+    ],
+    "highlights": [
+      "Huge log building",
+      "Play areas",
+      "Seasonal events"
+    ],
+    "schedule": {
+      "hoursNote": "I–VII 11:00–23:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Krasta iela 76, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "jump-space",
+    "name": "Batutuparks “Jump Space”",
+    "domain": "Venue",
+    "category": "Adventure",
+    "activityType": "TrampolinePark",
+    "legacyType": "TrampolinePark",
+    "description": "1600 m² indoor trampoline park with foam pits, climbing wall, balance log, and simulators.",
+    "ageRange": {
+      "min": 5,
+      "max": 15
+    },
+    "ageBuckets": [
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": null,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "physical",
+      "sports",
+      "restrooms"
+    ],
+    "highlights": [
+      "Wall‑to‑wall trampolines",
+      "Foam pits",
+      "Birthday rooms"
+    ],
+    "schedule": {
+      "hoursNote": "I–V 12:00–22:00; VI–VII 10:00–22:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Krasta iela 52, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "kalnciema-kvartals",
+    "name": "Kalnciema kvartāls",
+    "domain": "Venue",
+    "category": "Community",
+    "activityType": "CommunityCenter",
+    "legacyType": "CommunityCenter",
+    "description": "Bustling cultural hub with weekly markets, free family concerts, street food events, and workshops.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor",
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": true,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "free",
+      "market",
+      "music",
+      "workshops",
+      "stroller-friendly"
+    ],
+    "highlights": [
+      "Farmers’ markets",
+      "Concerts",
+      "Audioguide tours"
+    ],
+    "schedule": {
+      "hoursNote": "Check event schedule; open‑air market days ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "social",
+      "creative"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Kalnciema iela 35, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "mezaparks",
+    "name": "Kultūras un atpūtas parks “Mežaparks”",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Park",
+    "legacyType": "Playground",
+    "description": "Riga’s largest green park with seven functional zones, 40+ play/fitness elements, BMX track, and adventure course.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "weather-dependent",
+      "stroller-friendly",
+      "play"
+    ],
+    "highlights": [
+      "Seven play zones",
+      "BMX track",
+      "‘Mežakaķis’ ropes course nearby"
+    ],
+    "schedule": {
+      "hoursNote": "Park open 24h; attractions vary by season ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Ostas prospekts 11, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "centra-sporta-kvartala-rotalu-laukums",
+    "name": "Centra sporta kvartāla rotaļu laukums",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "OutdoorPlayground",
+    "legacyType": "Playground",
+    "description": "7,000 m² themed playground with Rīga symbols and history; for preschoolers and older kids.",
+    "ageRange": {
+      "min": 0,
+      "max": 12
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "play",
+      "weather-dependent"
+    ],
+    "highlights": [
+      "Largest playground in Rīga",
+      "Themed elements"
+    ],
+    "schedule": {
+      "hoursNote": "I–VII 9:00–21:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Krišjāņa Barona iela 116A, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lucavsala",
+    "name": "Lucavsala",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Park",
+    "legacyType": "Park",
+    "description": "Island park with swimming area, volleyball courts, wake cable, kids’ play zone, and picnic spots.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "beach",
+      "play",
+      "weather-dependent",
+      "stroller-friendly"
+    ],
+    "highlights": [
+      "Swimming area",
+      "Wake park (230 m)",
+      "Kids’ zone"
+    ],
+    "schedule": {
+      "hoursNote": "Park open 24h; facilities seasonal ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social",
+      "nature"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Lucavsalas atpūtas parks, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rigas-zoo",
+    "name": "Rīgas Nacionālais zooloģiskais dārzs",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Zoo",
+    "legacyType": "Zoo",
+    "description": "Historic zoo with ~3000 animals, large playground, and picnic spot by Ķīšezers.",
+    "ageRange": {
+      "min": 0,
+      "max": 12
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor",
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "stroller-friendly",
+      "restrooms",
+      "changing-table",
+      "weather-dependent"
+    ],
+    "highlights": [
+      "Tropu māja (indoor)",
+      "Playground",
+      "Picnic by lake"
+    ],
+    "schedule": {
+      "hoursNote": "01.04.–01.10. 10:00–18:00; 01.10.–01.04. 10:00–16:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "science",
+      "academic",
+      "nature"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Meža prospekts 1, Rīga"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "nacionalais-botaniskais-darzs",
+    "name": "Nacionālais botāniskais dārzs",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "BotanicalGarden",
+    "legacyType": "Museum",
+    "description": "129 ha garden in Salaspils with ~14,000 plant varieties and a large orangery.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor",
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "indoor",
+      "nature",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent"
+    ],
+    "highlights": [
+      "14,000 plant varieties",
+      "Orangery with 2000 species",
+      "Cycling/roller paths"
+    ],
+    "schedule": {
+      "hoursNote": "Outdoor 9:00–18:00/20:00 seasonally; Orangery III–VII 9:00–18:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "science",
+      "nature"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Miera iela 1, Salaspils"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "tarzans-sigulda",
+    "name": "Piedzīvojumu parks “Tarzāns” (Sigulda)",
+    "domain": "Venue",
+    "category": "Adventure",
+    "activityType": "RopesCourse",
+    "legacyType": "RopesCourse",
+    "description": "Adventure park with obstacle/rodel tracks, kids’ autoschool, e‑karting, trampolines and more.",
+    "ageRange": {
+      "min": 5,
+      "max": 15
+    },
+    "ageBuckets": [
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": true,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": null,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "physical",
+      "play",
+      "weather-dependent"
+    ],
+    "highlights": [
+      "Ropes & rodel tracks",
+      "Kids autoschool",
+      "Karting"
+    ],
+    "schedule": {
+      "hoursNote": "I–VII 10:00–22:00 ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "Peldu iela 1, Sigulda"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lvm-dabas-parks-tervete",
+    "name": "LVM Dabas parks Tērvetē",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Park",
+    "legacyType": "Park",
+    "description": "Sprawling forest park with themed trails and family‑friendly attractions in Tērvete.",
+    "ageRange": {
+      "min": 0,
+      "max": 15
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": null,
+      "lon": null,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "nature",
+      "weather-dependent",
+      "stroller-friendly",
+      "restrooms"
+    ],
+    "highlights": [
+      "Themed walking trails",
+      "Nature play"
+    ],
+    "schedule": {
+      "hoursNote": "09:00–17:00/19:00 depending on month ()."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "LiveRiga BABYroom brochure (2019)",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {
+      "address": "“Tērvetes sils”, Tērvete"
+    }
+  }
+]

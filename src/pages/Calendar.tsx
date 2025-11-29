@@ -12,7 +12,6 @@ const Calendar = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [familyMembers, setFamilyMembers] = useState<string[]>([""]);
   const [isSending, setIsSending] = useState(false);
-  const [invitesSent, setInvitesSent] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -85,7 +84,6 @@ const Calendar = () => {
     setIsSending(false);
 
     if (successCount > 0) {
-      setInvitesSent(true);
       toast({
         title: "Calendar invites sent!",
         description: `Successfully sent ${successCount} invite${successCount > 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
@@ -105,48 +103,6 @@ const Calendar = () => {
       description: "Your calendar file is being downloaded",
     });
   };
-
-  if (invitesSent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4 py-8">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <Card className="shadow-xl">
-            <CardContent className="pt-6 text-center space-y-6">
-              <div className="flex justify-center">
-                <div className="rounded-full bg-primary/10 p-4">
-                  <CheckCircle2 className="h-12 w-12 text-primary" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold">Invites Sent Successfully!</h2>
-                <p className="text-muted-foreground text-lg">
-                  Your family members will receive calendar invites with all event details.
-                </p>
-              </div>
-              <div className="pt-4 space-y-3">
-                <Button
-                  onClick={() => navigate("/onboarding/interests")}
-                  className="w-full"
-                  size="lg"
-                >
-                  <CalendarIcon className="h-5 w-5 mr-2" />
-                  Plan New Itinerary
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/saved-trips")}
-                  className="w-full"
-                  size="lg"
-                >
-                  View Saved Trips
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4 py-8">
@@ -239,6 +195,25 @@ const Calendar = () => {
             </div>
           </CardContent>
         </Card>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/saved-trips")}
+            className="w-full"
+            size="lg"
+          >
+            View Saved Trips
+          </Button>
+          <Button
+            onClick={() => navigate("/onboarding/interests")}
+            className="w-full"
+            size="lg"
+          >
+            <CalendarIcon className="h-5 w-5 mr-2" />
+            Plan New Itinerary
+          </Button>
+        </div>
 
         <div className="bg-card rounded-lg p-6 space-y-4">
           <h3 className="text-xl font-semibold">Events to be added:</h3>

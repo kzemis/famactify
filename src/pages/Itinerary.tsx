@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, MapPin, Clock, DollarSign, Share2 } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 
 const Itinerary = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -34,8 +35,9 @@ const Itinerary = () => {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <AppHeader />
+      <div className="max-w-4xl mx-auto space-y-6 p-4 py-8">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">Your Perfect Itinerary</h1>
           <p className="text-muted-foreground text-lg">

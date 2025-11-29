@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Play, Target, Rocket, X, Maximize, Minimize } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Target, Rocket, X, Maximize, Minimize, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 
 const PitchDeck = () => {
@@ -140,27 +141,72 @@ const PitchDeck = () => {
           {/* Slide 3: Pricing */}
           {currentSlide === 2 && (
             <div className="space-y-10 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground text-center">Pricing</h1>
+              <div className="text-center mb-16">
+                <h1 className="text-5xl font-bold text-foreground mb-4">Choose Your Plan</h1>
+                <p className="text-2xl text-muted-foreground">Start free, upgrade when you're ready</p>
+              </div>
 
-              <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-                <div className="bg-primary/10 border-2 border-primary rounded-lg p-8 space-y-4">
-                  <h3 className="text-3xl font-bold text-primary">Free Plan</h3>
-                  <p className="text-5xl font-bold text-foreground">1 Trip</p>
-                  <p className="text-xl text-muted-foreground">Basic planning features</p>
-                  <p className="text-muted-foreground">Perfect to try before you buy</p>
-                </div>
-
-                <div className="bg-muted/50 rounded-lg p-8 space-y-4">
-                  <h3 className="text-3xl font-bold text-foreground">Family Plan</h3>
-                  <p className="text-5xl font-bold text-primary">
-                    €3.99<span className="text-xl text-muted-foreground">/month</span>
-                  </p>
-                  <ul className="text-lg text-muted-foreground space-y-2">
-                    <li>• 4 trips per month</li>
-                    <li>• Calendar integration</li>
-                    <li>• Family wishlist</li>
+              <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-center">
+                <Card className="p-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold mb-2">Free</h3>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold">€0</span>
+                      <span className="text-muted-foreground">/forever</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Plan 1 trip for free</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Basic planning features</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Try before you buy</span>
+                    </li>
                   </ul>
-                </div>
+                  <Button className="w-full" variant="outline">
+                    Start Free
+                  </Button>
+                </Card>
+
+                <Card className="p-8 relative border-primary border-2 shadow-2xl scale-105 md:scale-110 py-12 z-10">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                    Most Popular
+                  </div>
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold mb-2">Family</h3>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold">€3.99</span>
+                      <span className="text-muted-foreground">/per month</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Plan up to 4 trips per month</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Create wishlists with relatives</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Calendar integration</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">Customer support</span>
+                    </li>
+                  </ul>
+                  <Button className="w-full">
+                    Get Started
+                  </Button>
+                </Card>
               </div>
             </div>
           )}

@@ -259,7 +259,30 @@ const PitchDeck = () => {
               </p>
 
               <div className="grid md:grid-cols-2 gap-8">
-                {/* Left Column: 3-Month Roadmap */}
+                {/* Left Column: GTM Section */}
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-4">
+                    <Rocket className="h-6 w-6" />
+                    Go-To-Market Strategy
+                  </h2>
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground">
+                      Target micro-influencers (busy moms/parents) via{" "}
+                      <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
+                      Offer free trial in exchange for authentic reviews.
+                    </p>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• Busy parents and moms</li>
+                        <li>• Family content creators</li>
+                        <li>• Parenting community voices</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: 3-Month Roadmap */}
                 <div className="bg-muted/50 rounded-lg p-6 space-y-4">
                   {/* First Month */}
                   <div className="space-y-2">
@@ -298,29 +321,6 @@ const PitchDeck = () => {
                         <span className="text-sm text-foreground">{milestone}</span>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                {/* Right Column: GTM Section */}
-                <div className="bg-muted/50 rounded-lg p-6">
-                  <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-4">
-                    <Rocket className="h-6 w-6" />
-                    Go-To-Market Strategy
-                  </h2>
-                  <div className="space-y-4">
-                    <p className="text-muted-foreground">
-                      Target micro-influencers (busy moms/parents) via{" "}
-                      <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
-                      Offer free trial in exchange for authentic reviews.
-                    </p>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Busy parents and moms</li>
-                        <li>• Family content creators</li>
-                        <li>• Parenting community voices</li>
-                      </ul>
-                    </div>
                   </div>
                 </div>
               </div>

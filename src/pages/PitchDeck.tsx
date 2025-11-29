@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Play, Target, Rocket } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Target, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -19,7 +19,9 @@ const PitchDeck = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && currentSlide < totalSlides - 1) {
+      if (e.key === "Escape") {
+        navigate("/");
+      } else if (e.key === "ArrowRight" && currentSlide < totalSlides - 1) {
         setCurrentSlide(currentSlide + 1);
       } else if (e.key === "ArrowLeft" && currentSlide > 0) {
         setCurrentSlide(currentSlide - 1);
@@ -28,7 +30,7 @@ const PitchDeck = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentSlide]);
+  }, [currentSlide, navigate]);
 
   const nextSlide = () => {
     if (currentSlide < totalSlides - 1) {
@@ -55,10 +57,14 @@ const PitchDeck = () => {
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
             <div className="space-y-10 animate-in fade-in duration-500">
-              <div className="space-y-6">
+              <div className="space-y-6 text-center">
                 <h1 className="text-5xl font-bold text-foreground">
                   The Problem
                 </h1>
+                <p className="text-3xl text-foreground leading-relaxed">
+                  According to data, <span className="text-primary font-semibold">Planning a Family Trip</span>{" "}
+                  usually takes up to <span className="text-primary font-semibold">8 Hours!</span>
+                </p>
                 <p className="text-2xl text-muted-foreground leading-relaxed">
                   Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span> etc. 
                   to collect information, verify details, and manually plan trips.
@@ -278,9 +284,20 @@ const PitchDeck = () => {
         </div>
       </div>
 
-      {/* Slide Counter */}
-      <div className="absolute top-8 right-8 text-muted-foreground text-lg">
-        {currentSlide + 1} / {totalSlides}
+      {/* Close Button & Slide Counter */}
+      <div className="absolute top-8 right-8 flex items-center gap-4">
+        <span className="text-muted-foreground text-lg">
+          {currentSlide + 1} / {totalSlides}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/")}
+          className="text-muted-foreground hover:text-foreground"
+          aria-label="Close presentation"
+        >
+          <X className="h-6 w-6" />
+        </Button>
       </div>
     </div>
   );

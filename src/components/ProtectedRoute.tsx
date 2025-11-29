@@ -8,38 +8,41 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // TEMPORARILY DISABLED - Authentication bypassed for testing
+  // TODO: Re-enable when auth is fully working
+  
+  // const [session, setSession] = useState<Session | null>(null);
+  // const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setLoading(false);
-      }
-    );
+  // useEffect(() => {
+  //   // Set up auth state listener FIRST
+  //   const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  //     (event, session) => {
+  //       setSession(session);
+  //       setLoading(false);
+  //     }
+  //   );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
+  //   // THEN check for existing session
+  //   supabase.auth.getSession().then(({ data: { session } }) => {
+  //     setSession(session);
+  //     setLoading(false);
+  //   });
 
-    return () => subscription.unsubscribe();
-  }, []);
+  //   return () => subscription.unsubscribe();
+  // }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  //     </div>
+  //   );
+  // }
 
-  if (!session) {
-    return <Navigate to="/auth" replace />;
-  }
+  // if (!session) {
+  //   return <Navigate to="/auth" replace />;
+  // }
 
   return <>{children}</>;
 };

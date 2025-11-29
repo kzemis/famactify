@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Locate } from 'lucide-react';
+import { ArrowLeft, MapPin, Locate, Upload, X } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
@@ -23,6 +23,9 @@ export default function Contribute() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,6 +52,70 @@ export default function Contribute() {
         ? prev[field].filter(v => v !== value)
         : [...prev[field], value]
     }));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+
+    try {
+      setUploading(true);
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('activity-images')
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error('Failed to upload image');
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('activity-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +146,15 @@ export default function Contribute() {
 
     try {
       setSubmitting(true);
+
+      // Upload image if selected
+      let imageUrl = formData.imageurlthumb;
+      if (imageFile) {
+        const uploadedUrl = await uploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
 
       const id = slugify(formData.name);
       
@@ -119,7 +195,7 @@ export default function Contribute() {
           startTime: null,
           endTime: null
         },
-        imageurlthumb: formData.imageurlthumb || null,
+        imageurlthumb: imageUrl || null,
         urlmoreinfo: formData.urlmoreinfo || null,
         schemaVersion: '1.0.0'
       };
@@ -142,7 +218,7 @@ export default function Contribute() {
         facilities_changingtable: formData.changingTable || null,
         schedule_openinghours: null,
         duration_minutes: null,
-        imageurlthumb: formData.imageurlthumb || null,
+        imageurlthumb: imageUrl || null,
         urlmoreinfo: formData.urlmoreinfo || null,
         trail_lengthkm: null,
         trail_durationminutes: null,
@@ -184,6 +260,8 @@ export default function Contribute() {
         imageurlthumb: '',
         urlmoreinfo: '',
       });
+      setImageFile(null);
+      setImagePreview(null);
 
     } catch (error: any) {
       console.error('Submit error:', error);
@@ -424,7 +502,7 @@ export default function Contribute() {
             </div>
 
             <div>
-              <Label htmlFor="imageurlthumb">Image URL</Label>
+              <Label htmlFor="imageurlthumb">Image URL (optional)</Label>
               <Input
                 id="imageurlthumb"
                 type="url"
@@ -432,6 +510,56 @@ export default function Contribute() {
                 onChange={(e) => setFormData(prev => ({ ...prev, imageurlthumb: e.target.value }))}
                 placeholder="https://example.com/image.jpg"
               />
+            </div>
+
+            <div>
+              <Label>Or Upload Image</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    disabled={uploading}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {imageFile ? 'Change Image' : 'Upload Image'}
+                  </Button>
+                  {imageFile && (
+                    <span className="text-sm text-muted-foreground">
+                      {imageFile.name}
+                    </span>
+                  )}
+                </div>
+                {imagePreview && (
+                  <div className="relative inline-block">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-32 h-32 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 w-6 h-6"
+                      onClick={removeImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Upload a photo of the activity spot (max 5MB)
+                </p>
+              </div>
             </div>
 
             <div>
@@ -448,11 +576,11 @@ export default function Contribute() {
 
           <Button 
             type="submit" 
-            disabled={submitting}
+            disabled={submitting || uploading}
             className="w-full"
             size="lg"
           >
-            {submitting ? 'Submitting...' : 'Submit Activity'}
+            {submitting ? 'Submitting...' : uploading ? 'Uploading image...' : 'Submit Activity'}
           </Button>
         </form>
       </main>

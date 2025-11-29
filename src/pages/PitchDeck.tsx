@@ -284,11 +284,8 @@ const PitchDeck = () => {
         </div>
       </div>
 
-      {/* Close Button & Slide Counter */}
-      <div className="absolute top-8 right-8 flex items-center gap-4">
-        <span className="text-muted-foreground text-lg">
-          {currentSlide + 1} / {totalSlides}
-        </span>
+      {/* Close Button */}
+      <div className="absolute top-8 right-8">
         <Button
           variant="ghost"
           size="icon"

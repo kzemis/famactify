@@ -1,24 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Users, Target } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Heart, Users, Target } from "lucide-react";
 import Footer from "@/components/Footer";
+import AppHeader from "@/components/AppHeader";
 
 const AboutUs = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            FamActify
-          </span>
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-3xl mx-auto space-y-12">

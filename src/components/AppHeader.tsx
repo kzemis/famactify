@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User, Settings, Map, Users, LogOut, Heart } from "lucide-react";
+import { User, Settings, Map, Users, LogOut, Heart, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,8 +31,6 @@ const AppHeader = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-        <div className="w-10" />
-        
         <span 
           className="text-2xl font-bold text-primary cursor-pointer"
           onClick={() => navigate("/")}
@@ -40,41 +38,56 @@ const AppHeader = () => {
           FamActify
         </span>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-50">
-            <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/community")} className="cursor-pointer">
-              <Heart className="mr-2 h-4 w-4" />
-              Community Activities
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/saved-trips")} className="cursor-pointer">
-              <Map className="mr-2 h-4 w-4" />
-              View Saved Trips
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/itinerary")} className="cursor-pointer">
-              <Users className="mr-2 h-4 w-4" />
-              View Shared Trips
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate("/pitch-deck")}
+            className="hover:text-primary"
+            aria-label="View Pitch Deck"
+          >
+            <Presentation className="h-5 w-5" />
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/community")}>
+            Contribute
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-50">
+              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/community")} className="cursor-pointer">
+                <Heart className="mr-2 h-4 w-4" />
+                Community Activities
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/saved-trips")} className="cursor-pointer">
+                <Map className="mr-2 h-4 w-4" />
+                View Saved Trips
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/itinerary")} className="cursor-pointer">
+                <Users className="mr-2 h-4 w-4" />
+                View Shared Trips
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

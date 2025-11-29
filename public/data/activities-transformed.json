@@ -1,0 +1,1512 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "id": "centra-a-kvartals",
+    "name": "Centra a kvartāls (Barona)",
+    "domain": "Venue",
+    "category": "Wellness",
+    "activityType": "Sports",
+    "legacyType": "sports",
+    "description": "Open area; daylight hours recommended.",
+    "ageRange": {
+      "min": 5,
+      "max": 16
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.96129,
+      "lon": 24.143555,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent",
+      "together",
+      "sports",
+      "social",
+      "wellness"
+    ],
+    "highlights": [
+      "Skatepark",
+      "Streetball courts",
+      "Pump/ride areas"
+    ],
+    "schedule": {
+      "hoursNote": "Open area; daylight hours recommended."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "dzeguzkalns-park",
+    "name": "Dzegužkalns Park",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Park",
+    "legacyType": "Park",
+    "description": "Open 24/7.",
+    "ageRange": {
+      "min": 2,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.9625,
+      "lon": 24.06944,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent",
+      "together",
+      "sports",
+      "social",
+      "science",
+      "play"
+    ],
+    "highlights": [
+      "Hill views",
+      "Playground",
+      "Open-air stage area"
+    ],
+    "schedule": {
+      "hoursNote": "Open 24/7."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social",
+      "science"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lucavsala-park",
+    "name": "Lucavsala Recreation Park & Beach",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Park",
+    "legacyType": "Park",
+    "description": "Open 24/7; lifeguards & facilities in season.",
+    "ageRange": {
+      "min": 1,
+      "max": 16
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.92417,
+      "lon": 24.11833,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "changing-table",
+      "weather-dependent",
+      "together",
+      "sports",
+      "social",
+      "science",
+      "play"
+    ],
+    "highlights": [
+      "Playgrounds",
+      "Beach & volleyball",
+      "Picnic lawns"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "social",
+      "science"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "ziemelblazma-park-tower",
+    "name": "Ziemeļblāzma Park & View Tower",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Park",
+    "legacyType": "Park",
+    "description": "Park open; tower hours vary (check venue).",
+    "ageRange": {
+      "min": 3,
+      "max": 16
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 57.04418,
+      "lon": 24.13642,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent",
+      "together",
+      "social",
+      "science",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Play areas",
+      "Rose garden",
+      "View tower"
+    ],
+    "schedule": {
+      "hoursNote": "Park open; tower hours vary (check venue)."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "social",
+      "science",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "porcelain-museum",
+    "name": "Rīgas Porcelāna muzejs (Family)",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Tue–Sun 11:00–18:00; Mon closed.",
+    "ageRange": {
+      "min": 4,
+      "max": 14
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.94835972,
+      "lon": 24.11018861,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "arts",
+      "hobbies",
+      "culture"
+    ],
+    "highlights": [
+      "Paint-your-own workshops",
+      "Local porcelain history"
+    ],
+    "schedule": {
+      "hoursNote": "Tue–Sun 11:00–18:00; Mon closed."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "arts",
+      "hobbies"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "museum": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "art-nouveau-center",
+    "name": "Rīgas Jūgendstila centrs",
+    "domain": "Venue",
+    "category": "Culture",
+    "activityType": "Museum",
+    "legacyType": "Museum",
+    "description": "Tue–Sun 10:00–18:00; Mon closed.",
+    "ageRange": {
+      "min": 5,
+      "max": 14
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.95904,
+      "lon": 24.10971,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "arts",
+      "academic",
+      "culture"
+    ],
+    "highlights": [
+      "Period apartment",
+      "Hands-on details for kids"
+    ],
+    "schedule": {
+      "hoursNote": "Tue–Sun 10:00–18:00; Mon closed."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "arts",
+      "academic"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "museum": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rcb-pardaugava",
+    "name": "RCB Pārdaugava Branch – Kids Corner",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Library",
+    "legacyType": "Library",
+    "description": "",
+    "ageRange": {
+      "min": 1,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.933617,
+      "lon": 24.068028,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "academic",
+      "social",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Storytime (varies)",
+      "Children’s books zone"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rcb-imanta",
+    "name": "RCB Imanta Branch – Kids Corner",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Library",
+    "legacyType": "Library",
+    "description": "",
+    "ageRange": {
+      "min": 1,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.948181,
+      "lon": 24.050703,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "academic",
+      "social",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Children’s area",
+      "Quiet time"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rjtc-makers",
+    "name": "Rīgas Jauno tehniķu centrs (RJTC)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "ScienceCenter",
+    "legacyType": "Youth Center",
+    "description": "",
+    "ageRange": {
+      "min": 7,
+      "max": 17
+    },
+    "ageBuckets": [
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.923611,
+      "lon": 24.103,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": false,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "restrooms",
+      "together",
+      "tech",
+      "hobbies",
+      "social",
+      "play"
+    ],
+    "highlights": [
+      "Robotics & model-making",
+      "Workshops & clubs"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "tech",
+      "hobbies",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "daugavgriva-nature",
+    "name": "Daugavgrīva Nature Trail & Beach Access",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Trail",
+    "legacyType": "Nature Trail/Beach",
+    "description": "",
+    "ageRange": {
+      "min": 3,
+      "max": 16
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 57.03688,
+      "lon": 24.01852,
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "weather-dependent",
+      "together",
+      "science",
+      "sports",
+      "social",
+      "play"
+    ],
+    "highlights": [
+      "Boardwalks in dunes",
+      "Beach access",
+      "Birdwatching"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "science",
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "pool-kipsala-rtu",
+    "name": "RTU Ķīpsala Swimming Pool",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Sports",
+    "legacyType": "Pool",
+    "description": "Weekdays ~06:45–21:30; weekends ~07:45–21:30.",
+    "ageRange": {
+      "min": 3,
+      "max": 16
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.952438626500005,
+      "lon": 24.0848229838,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "changing-table",
+      "together",
+      "sports",
+      "science",
+      "play"
+    ],
+    "highlights": [
+      "50 m pool",
+      "Kids lessons",
+      "Sauna"
+    ],
+    "schedule": {
+      "hoursNote": "Weekdays ~06:45–21:30; weekends ~07:45–21:30."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "science"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "urlmoreinfo": "https://baseins.eu/nodarbibu-saraksts/"
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "pool-rimi-olympic",
+    "name": "Rimi Olympic Centre – Pool",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Sports",
+    "legacyType": "Pool",
+    "description": "Varies by lane schedule; see centre site.",
+    "ageRange": {
+      "min": 3,
+      "max": 16
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.967917,
+      "lon": 24.124306,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": true,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "changing-table",
+      "together",
+      "sports",
+      "science",
+      "social",
+      "play"
+    ],
+    "highlights": [
+      "Rebuilt pool & SPA",
+      "Swim schools",
+      "Family-friendly"
+    ],
+    "schedule": {
+      "hoursNote": "Varies by lane schedule; see centre site."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "sports",
+      "science",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "urlmoreinfo": "https://nodarbibas.olimpiskais.lv/"
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rcb-central",
+    "name": "Rīgas Centrālā bibliotēka (Central)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Library",
+    "legacyType": "Library",
+    "description": "Mon–Wed 11:00–19:00; Thu, Fri 10:00–18:00; Sat 10:00–17:00.",
+    "ageRange": {
+      "min": 1,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.956884,
+      "lon": 24.1217,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "academic",
+      "social",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Children’s area",
+      "Storytime (varies)",
+      "Reading programs"
+    ],
+    "schedule": {
+      "hoursNote": "Mon–Wed 11:00–19:00; Thu, Fri 10:00–18:00; Sat 10:00–17:00."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rcb-plavnieki",
+    "name": "RCB Pļavnieku filiālbibliotēka (Kids)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Library",
+    "legacyType": "Library",
+    "description": " 10:00–19:00 (Sat 10:00–17:00).",
+    "ageRange": {
+      "min": 1,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.9420562044,
+      "lon": 24.220286965899998,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "academic",
+      "social",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Children’s section",
+      "Crafts & exhibitions"
+    ],
+    "schedule": {
+      "hoursNote": " typical 10:00–19:00 (Sat 10:00–17:00)."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rcb-sarkandaugava",
+    "name": "RCB Sarkandaugavas filiālbibliotēka (Kids)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Library",
+    "legacyType": "Library",
+    "description": "",
+    "ageRange": {
+      "min": 1,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.998103808,
+      "lon": 24.1195324226,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "academic",
+      "social",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Children’s literature dept.",
+      "Family programs"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "rcb-agenskalns",
+    "name": "RCB Āgenskalna filiālbibliotēka (Kids)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Library",
+    "legacyType": "Library",
+    "description": "",
+    "ageRange": {
+      "min": 1,
+      "max": 14
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.936156999999994,
+      "lon": 24.07704,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "free",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "academic",
+      "social",
+      "arts",
+      "play"
+    ],
+    "highlights": [
+      "Kids corner",
+      "Local events"
+    ],
+    "schedule": {
+      "hoursNote": ""
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "academic",
+      "social",
+      "arts"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "riga-puppet-theatre",
+    "name": "Latvijas Leļļu teātris (Riga Puppet Theatre)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Theatre",
+    "legacyType": "Theatre",
+    "description": "By performance schedule.",
+    "ageRange": {
+      "min": 3,
+      "max": 12
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.950833333333335,
+      "lon": 24.121944444444445,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "arts",
+      "social",
+      "play"
+    ],
+    "highlights": [
+      "Puppet shows",
+      "Bērnu izrādes",
+      "Workshops (varies)"
+    ],
+    "schedule": {
+      "hoursNote": "By performance schedule."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "arts",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "riga-circus",
+    "name": "Rīgas cirks (Family shows)",
+    "domain": "Venue",
+    "category": "Play",
+    "activityType": "Theatre",
+    "legacyType": "Theatre",
+    "description": "By performance schedule.",
+    "ageRange": {
+      "min": 3,
+      "max": 16
+    },
+    "ageBuckets": [
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "€€",
+      "currency": "EUR",
+      "pricingModel": "per_entry"
+    },
+    "location": {
+      "lat": 56.94944,
+      "lon": 24.11917,
+      "indoorOutdoor": [
+        "indoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": false,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "indoor",
+      "stroller-friendly",
+      "restrooms",
+      "together",
+      "arts",
+      "social",
+      "sports",
+      "play"
+    ],
+    "highlights": [
+      "Circus performances",
+      "Kids circus school"
+    ],
+    "schedule": {
+      "hoursNote": "By performance schedule."
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "arts",
+      "social",
+      "sports"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "legacy-import",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {}
+  }
+]

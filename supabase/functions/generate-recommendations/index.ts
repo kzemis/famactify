@@ -27,11 +27,47 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
-    // Fetch activities data from the JSON file
-    const activitiesResponse = await fetch('https://gitlab.com/parent-kid/famactify/-/raw/06789142376ff2d1330b95ec91c3d5986ed11c64/public/data/activities/activities-trails.json');
-    const activitiesData = await activitiesResponse.json();
+    // Fetch activities data from multiple JSON files
+    const baseUrl = Deno.env.get('VITE_SUPABASE_URL')?.replace('//', '//') || '';
+    const projectUrl = baseUrl.split('.supabase.co')[0].replace('https://', 'https://') + '.lovableproject.com';
     
-    console.log('Fetched activities data:', activitiesData.length || 0, 'activities');
+    const dataUrls = [
+      `${projectUrl}/data/activities-trails.json`,
+      `${projectUrl}/data/activities-transformed.json`,
+      `${projectUrl}/data/activities-spots-1.json`,
+      `${projectUrl}/data/activities-bs-transformed.json`
+    ];
+    
+    console.log('Fetching activities from:', dataUrls);
+    
+    // Fetch all JSON files in parallel
+    const responses = await Promise.all(
+      dataUrls.map(url => fetch(url).catch(err => {
+        console.error(`Failed to fetch ${url}:`, err);
+        return null;
+      }))
+    );
+    
+    // Parse all responses and combine the data
+    const allActivitiesData = [];
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i];
+      if (response && response.ok) {
+        try {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            allActivitiesData.push(...data);
+          } else {
+            allActivitiesData.push(data);
+          }
+          console.log(`Fetched data from file ${i + 1}:`, Array.isArray(data) ? data.length : 1, 'activities');
+        } catch (err) {
+          console.error(`Failed to parse JSON from file ${i + 1}:`, err);
+        }
+      }
+    }
+    
+    console.log('Total activities data:', allActivitiesData.length, 'activities');
 
     const systemPrompt = `You are a family activity recommendation assistant. Based on the user's interests and answers to planning questions, analyze the provided activities database and recommend 5-10 activities that best match their preferences.
 
@@ -71,7 +107,7 @@ User Answers to Planning Questions:
 ${answers ? Object.entries(answers).map(([q, a]) => `${q}: ${a}`).join('\n') : 'No specific answers provided'}
 
 Available Activities Database:
-${JSON.stringify(activitiesData, null, 2)}
+${JSON.stringify(allActivitiesData, null, 2)}
 
 Generate personalized activity recommendations based on this information.`;
 

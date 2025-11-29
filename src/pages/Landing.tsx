@@ -260,11 +260,11 @@ const Landing = () => {
               Start free, upgrade when you're ready
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
             {plans.map((plan, idx) => (
               <Card 
                 key={idx} 
-                className={`p-8 relative ${plan.popular ? 'border-primary border-2 shadow-xl' : ''}`}
+                className={`p-8 relative transition-transform ${plan.popular ? 'border-primary border-2 shadow-2xl scale-105 md:scale-110 py-12 z-10' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">

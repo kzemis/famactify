@@ -11,6 +11,7 @@ import OnboardingQuestions from "./pages/OnboardingQuestions";
 import Events from "./pages/Events";
 import Itinerary from "./pages/Itinerary";
 import Calendar from "./pages/Calendar";
+import SavedTrips from "./pages/SavedTrips";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/events" element={<Events />} />
           <Route path="/itinerary" element={<Itinerary />} />
           <Route path="/calendar" element={<Calendar />} />
+          <Route path="/saved-trips" element={<SavedTrips />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

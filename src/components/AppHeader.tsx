@@ -56,7 +56,7 @@ const AppHeader = () => {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/itinerary")} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate("/saved-trips")} className="cursor-pointer">
               <Map className="mr-2 h-4 w-4" />
               View Saved Trips
             </DropdownMenuItem>

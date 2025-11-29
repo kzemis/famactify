@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
-  const totalSlides = 5;
+  const totalSlides = 4;
 
   // Check if returning from demo flow
   useEffect(() => {
@@ -146,108 +146,74 @@ const PitchDeck = () => {
             </div>
           )}
 
-          {/* Slide 4: Milestones & Goal */}
+          {/* Slide 4: Traction, Roadmap & GTM */}
           {currentSlide === 3 && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-6 animate-in fade-in duration-500">
               <h1 className="text-5xl font-bold text-foreground">Traction & Roadmap</h1>
 
-              <p className="text-2xl text-foreground leading-relaxed">
+              <p className="text-xl text-foreground leading-relaxed">
                 Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span>{" "}
                 and starting from January 8 achieve those milestones:
               </p>
 
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 gap-4">
                 {/* First Month */}
-                <div className="space-y-4">
-                  <h3 className="text-2xl font-bold text-primary">First Month</h3>
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-bold text-primary">First Month</h3>
+                  <div className="space-y-2">
                     {["Launch in Latvia and refine product", "Acquire first 100 customers"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-3 bg-muted/50 rounded-lg p-4">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
                           {index + 1}
                         </div>
-                        <span className="text-base text-foreground">{milestone}</span>
+                        <span className="text-sm text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Second Month */}
-                <div className="space-y-4">
-                  <h3 className="text-2xl font-bold text-primary">Second Month</h3>
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-bold text-primary">Second Month</h3>
+                  <div className="space-y-2">
                     {["Raise pre-seed funding", "Raise up the team and modernize the app"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-3 bg-muted/50 rounded-lg p-4">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
                           {index + 3}
                         </div>
-                        <span className="text-base text-foreground">{milestone}</span>
+                        <span className="text-sm text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Third Month */}
-                <div className="space-y-4">
-                  <h3 className="text-2xl font-bold text-primary">Third Month</h3>
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-bold text-primary">Third Month</h3>
+                  <div className="space-y-2">
                     {["Expand to Baltics", "Build GTM strategy for Europe"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-3 bg-muted/50 rounded-lg p-4">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
                           {index + 5}
                         </div>
-                        <span className="text-base text-foreground">{milestone}</span>
+                        <span className="text-sm text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Slide 5: Go-To-Market */}
-          {currentSlide === 4 && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground text-center flex items-center justify-center gap-4">
-                <Rocket className="h-12 w-12 text-primary" />
-                Go-To-Market Strategy
-              </h1>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Strategy */}
-                <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary">Grassroot Strategy</h2>
-                  <p className="text-xl text-muted-foreground leading-relaxed">
-                    Target micro-influencers (busy moms/parents) via{" "}
-                    <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
-                  </p>
-                  <p className="text-xl text-muted-foreground leading-relaxed">
-                    Offer free trial in exchange for authentic reviews and word-of-mouth marketing.
-                  </p>
-                </div>
-
-                {/* Target Audience */}
-                <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary">Target Audience</h2>
-                  <ul className="text-xl text-muted-foreground space-y-4">
-                    <li className="flex items-center gap-3">
-                      <div className="h-3 w-3 rounded-full bg-primary"></div>
-                      Busy parents and moms
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <div className="h-3 w-3 rounded-full bg-primary"></div>
-                      Family content creators
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <div className="h-3 w-3 rounded-full bg-primary"></div>
-                      Parenting community voices
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <div className="h-3 w-3 rounded-full bg-primary"></div>
-                      Family-focused bloggers
-                    </li>
-                  </ul>
-                </div>
+              {/* GTM Section */}
+              <div className="bg-muted/50 rounded-lg p-6 mt-4">
+                <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-3">
+                  <Rocket className="h-6 w-6" />
+                  Go-To-Market Strategy
+                </h2>
+                <p className="text-muted-foreground">
+                  Target micro-influencers (busy moms/parents) via{" "}
+                  <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
+                  Offer free trial in exchange for authentic reviews. Target: busy parents, family content creators, parenting community voices.
+                </p>
               </div>
             </div>
           )}

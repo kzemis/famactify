@@ -85,7 +85,12 @@ const Careers = () => {
             <p className="text-muted-foreground">
               We're always looking for talented people. Send us your resume and tell us how you'd like to contribute.
             </p>
-            <Button variant="outline">Send General Application</Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button variant="outline">Send General Application</Button>
+              <Button onClick={() => navigate("/benefits")}>
+                View Our Benefits
+              </Button>
+            </div>
           </div>
         </div>
       </main>

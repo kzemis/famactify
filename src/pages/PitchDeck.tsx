@@ -156,11 +156,12 @@ const PitchDeck = () => {
                 and starting from January 8 achieve those milestones:
               </p>
 
-              <div className="grid md:grid-cols-3 gap-4">
-                {/* First Month */}
-                <div className="space-y-3">
-                  <h3 className="text-xl font-bold text-primary">First Month</h3>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Left Column: 3-Month Roadmap */}
+                <div className="space-y-4">
+                  {/* First Month */}
                   <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-primary">First Month</h3>
                     {["Launch in Latvia and refine product", "Acquire first 100 customers"].map((milestone, index) => (
                       <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
                         <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
@@ -170,12 +171,10 @@ const PitchDeck = () => {
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {/* Second Month */}
-                <div className="space-y-3">
-                  <h3 className="text-xl font-bold text-primary">Second Month</h3>
+                  {/* Second Month */}
                   <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-primary">Second Month</h3>
                     {["Raise pre-seed funding", "Raise up the team and modernize the app"].map((milestone, index) => (
                       <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
                         <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
@@ -185,12 +184,10 @@ const PitchDeck = () => {
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {/* Third Month */}
-                <div className="space-y-3">
-                  <h3 className="text-xl font-bold text-primary">Third Month</h3>
+                  {/* Third Month */}
                   <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-primary">Third Month</h3>
                     {["Expand to Baltics", "Build GTM strategy for Europe"].map((milestone, index) => (
                       <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
                         <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
@@ -201,19 +198,29 @@ const PitchDeck = () => {
                     ))}
                   </div>
                 </div>
-              </div>
 
-              {/* GTM Section */}
-              <div className="bg-muted/50 rounded-lg p-6 mt-4">
-                <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-3">
-                  <Rocket className="h-6 w-6" />
-                  Go-To-Market Strategy
-                </h2>
-                <p className="text-muted-foreground">
-                  Target micro-influencers (busy moms/parents) via{" "}
-                  <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
-                  Offer free trial in exchange for authentic reviews. Target: busy parents, family content creators, parenting community voices.
-                </p>
+                {/* Right Column: GTM Section */}
+                <div className="bg-muted/50 rounded-lg p-6 h-fit">
+                  <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-4">
+                    <Rocket className="h-6 w-6" />
+                    Go-To-Market Strategy
+                  </h2>
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground">
+                      Target micro-influencers (busy moms/parents) via{" "}
+                      <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
+                      Offer free trial in exchange for authentic reviews.
+                    </p>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• Busy parents and moms</li>
+                        <li>• Family content creators</li>
+                        <li>• Parenting community voices</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -38,20 +38,67 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Fetch activities from Supabase activityspots table
-    console.log('Fetching activities from Supabase activityspots table');
+    // Fetch activities from BOTH JSON files and Supabase database
+    console.log('Fetching activities from JSON files and Supabase database');
     
-    const { data: activitiesData, error: fetchError } = await supabase
+    // 1. Fetch from JSON files
+    const projectId = supabaseUrl.split('//')[1]?.split('.')[0];
+    const projectUrl = `https://${projectId}.lovableproject.com`;
+    
+    const dataUrls = [
+      `${projectUrl}/data/activities-trails.json`,
+      `${projectUrl}/data/activities-transformed.json`,
+      `${projectUrl}/data/activities-spots-1.json`,
+      `${projectUrl}/data/activities-bs-transformed.json`
+    ];
+    
+    console.log('Fetching activities from JSON files:', dataUrls);
+    
+    // Fetch all JSON files in parallel
+    const responses = await Promise.all(
+      dataUrls.map(url => fetch(url).catch(err => {
+        console.error(`Failed to fetch ${url}:`, err);
+        return null;
+      }))
+    );
+    
+    // Parse all responses and combine the data
+    const jsonActivitiesData = [];
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i];
+      if (response && response.ok) {
+        try {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            jsonActivitiesData.push(...data);
+          } else {
+            jsonActivitiesData.push(data);
+          }
+          console.log(`Fetched data from JSON file ${i + 1}:`, Array.isArray(data) ? data.length : 1, 'activities');
+        } catch (err) {
+          console.error(`Failed to parse JSON from file ${i + 1}:`, err);
+        }
+      }
+    }
+    
+    console.log('Total activities from JSON files:', jsonActivitiesData.length);
+    
+    // 2. Fetch from Supabase activityspots table
+    const { data: dbActivitiesData, error: fetchError } = await supabase
       .from('activityspots')
       .select('*');
     
     if (fetchError) {
       console.error('Error fetching activities from Supabase:', fetchError);
-      throw new Error(`Failed to fetch activities: ${fetchError.message}`);
+      // Don't throw error, just log it and continue with JSON data
     }
     
-    const allActivitiesData = activitiesData || [];
-    console.log('Total activities data from Supabase:', allActivitiesData.length, 'activities');
+    const dbActivities = dbActivitiesData || [];
+    console.log('Total activities from Supabase database:', dbActivities.length);
+    
+    // 3. Combine both data sources
+    const allActivitiesData = [...jsonActivitiesData, ...dbActivities];
+    console.log('Total combined activities data:', allActivitiesData.length, 'activities');
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];

@@ -156,7 +156,7 @@ const Landing = () => {
               See how we compare to other ways of planning family activities
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-start">
             {/* Manual Search */}
             <Card className="p-6 border-muted">
               <div className="text-center mb-6">
@@ -185,6 +185,37 @@ const Landing = () => {
               </ul>
             </Card>
 
+            {/* FamActify - Best Choice */}
+            <Card className="p-8 border-primary border-2 shadow-2xl relative scale-105 -my-4">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                Best Choice
+              </div>
+              <div className="text-center mb-6">
+                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-semibold text-primary">FamActify</h3>
+              </div>
+              <ul className="space-y-4 text-base">
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Real local events updated in real-time</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Personalized to your family's interests</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Auto-generated conflict-free itineraries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Save, share, and export to calendar</span>
+                </li>
+              </ul>
+            </Card>
+
             {/* ChatGPT */}
             <Card className="p-6 border-muted">
               <div className="text-center mb-6">
@@ -209,37 +240,6 @@ const Landing = () => {
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
                   <span className="text-muted-foreground">No calendar integration</span>
-                </li>
-              </ul>
-            </Card>
-
-            {/* FamActify */}
-            <Card className="p-6 border-primary border-2 shadow-xl relative">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-                Best Choice
-              </div>
-              <div className="text-center mb-6">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-primary">FamActify</h3>
-              </div>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span>Real local events updated in real-time</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span>Personalized to your family's interests</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span>Auto-generated conflict-free itineraries</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span>Save, share, and export to calendar</span>
                 </li>
               </ul>
             </Card>

@@ -13,6 +13,7 @@ import Events from "./pages/Events";
 import Itinerary from "./pages/Itinerary";
 import Calendar from "./pages/Calendar";
 import SavedTrips from "./pages/SavedTrips";
+import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/itinerary" element={<Itinerary />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/saved-trips" element={<SavedTrips />} />
+          <Route path="/pitch-deck" element={<PitchDeck />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -39,29 +39,25 @@ const Itinerary = () => {
       <AppHeader />
       <div className="max-w-4xl mx-auto space-y-6 p-4 py-8">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Your Perfect Itinerary</h1>
+          <h1 className="text-4xl font-bold">Your One-Day Itinerary</h1>
           <p className="text-muted-foreground text-lg">
-            All events organized for the best experience
+            All activities organized for the perfect day
           </p>
         </div>
 
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle className="text-2xl">Trip Summary</CardTitle>
+            <CardTitle className="text-2xl">Day Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Events</p>
+                <p className="text-sm text-muted-foreground">Total Activities</p>
                 <p className="text-2xl font-bold">{events.length}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Estimated Cost</p>
                 <p className="text-2xl font-bold">${totalCost}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Days</p>
-                <p className="text-2xl font-bold">{Object.keys(groupedEvents).length}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Duration</p>
@@ -122,7 +118,7 @@ const Itinerary = () => {
             className="flex-1"
             onClick={() => navigate("/events")}
           >
-            Add More Events
+            Add More Activities
           </Button>
           <Button
             size="lg"

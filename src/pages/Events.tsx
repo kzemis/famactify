@@ -98,7 +98,15 @@ const Events = () => {
     } else {
       // Store liked events and navigate to summary
       sessionStorage.setItem("likedEvents", JSON.stringify(likedEvents));
-      navigate("/itinerary");
+      
+      // Check if in presentation mode - redirect back to pitch deck
+      const presentationMode = sessionStorage.getItem("presentationMode");
+      if (presentationMode === "active") {
+        sessionStorage.setItem("presentationMode", "returning");
+        navigate("/pitch-deck");
+      } else {
+        navigate("/itinerary");
+      }
     }
   };
 

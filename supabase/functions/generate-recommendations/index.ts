@@ -28,8 +28,15 @@ serve(async (req) => {
     }
 
     // Fetch activities data from multiple JSON files
-    const baseUrl = Deno.env.get('VITE_SUPABASE_URL')?.replace('//', '//') || '';
-    const projectUrl = baseUrl.split('.supabase.co')[0].replace('https://', 'https://') + '.lovableproject.com';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    if (!supabaseUrl) {
+      throw new Error('SUPABASE_URL is not configured');
+    }
+    
+    // Extract project ID from supabase URL and construct lovableproject URL
+    // Example: https://ybzyhhhfykvbxakbrspf.supabase.co -> https://ybzyhhhfykvbxakbrspf.lovableproject.com
+    const projectId = supabaseUrl.split('//')[1]?.split('.')[0];
+    const projectUrl = `https://${projectId}.lovableproject.com`;
     
     const dataUrls = [
       `${projectUrl}/data/activities-trails.json`,

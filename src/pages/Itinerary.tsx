@@ -62,9 +62,12 @@ const SortableActivity = ({ event, eventIndex, date, onDelete }: SortableActivit
           <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
         <img
-          src={event.image || event.imageUrl || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=300"}
+          src={event.image || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=300"}
           alt={event.title}
           className="w-24 h-24 rounded-lg object-cover"
+          onError={(e) => {
+            e.currentTarget.src = "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=300";
+          }}
         />
         <div className="flex-1 space-y-2">
           <h3 className="text-xl font-semibold">{event.title}</h3>
@@ -212,28 +215,6 @@ const Itinerary = () => {
             All activities organized for the perfect day
           </p>
         </div>
-
-        <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-2xl">Day Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Activities</p>
-                <p className="text-2xl font-bold">{events.length}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Estimated Cost</p>
-                <p className="text-2xl font-bold">${totalCost}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Duration</p>
-                <p className="text-2xl font-bold">~{events.length * 2}h</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {Object.entries(groupedEvents).map(([date, dayEvents], dayIndex) => (
           <Card key={dayIndex} className="shadow-lg">

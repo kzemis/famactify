@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Target, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 3;
+  const navigate = useNavigate();
+  const totalSlides = 4;
+
+  // Check if returning from demo flow
+  useEffect(() => {
+    const presentationMode = sessionStorage.getItem("presentationMode");
+    if (presentationMode === "returning") {
+      setCurrentSlide(2); // Go to pricing/GTM slide
+      sessionStorage.removeItem("presentationMode");
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -31,154 +42,194 @@ const PitchDeck = () => {
     }
   };
 
+  const startDemo = () => {
+    sessionStorage.setItem("presentationMode", "active");
+    navigate("/onboarding/interests");
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Slide Container */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-5xl">
-          {/* Slide 1: Problem/Solution */}
+          {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
-            <div className="space-y-12 animate-in fade-in duration-500">
+            <div className="space-y-10 animate-in fade-in duration-500">
               <div className="space-y-6">
                 <h1 className="text-5xl font-bold text-foreground">
                   The Problem
                 </h1>
-                <p className="text-3xl text-muted-foreground leading-relaxed">
-                  Planning a family trip for a weekend can take up to{" "}
-                  <span className="text-primary font-semibold">8 hours</span>.
-                </p>
                 <p className="text-2xl text-muted-foreground leading-relaxed">
-                  Parents typically use multiple platforms - Google, Facebook, Instagram, 
-                  TikTok, ChatGPT, etc. to collect all the information, then they must 
-                  verify the information and plan and manage the trip on their own.
+                  Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span> etc. 
+                  to collect information, verify details, and manually plan trips.
                 </p>
               </div>
 
               <div className="border-t-2 border-primary pt-8 space-y-6">
                 <h2 className="text-5xl font-bold text-primary">
-                  The Solution
+                  Our Solution
                 </h2>
-                <p className="text-3xl text-foreground leading-relaxed">
-                  We eliminate this with a simple AI tool which lets busy parents 
-                  plan their family activities in <span className="text-primary font-semibold">seconds</span>.
+                <p className="text-2xl text-foreground leading-relaxed">
+                  A simple AI tool that helps busy parents plan family activities in{" "}
+                  <span className="text-primary font-semibold">seconds</span>, 
+                  eliminating hours of planning.
                 </p>
               </div>
 
               <div className="bg-muted/50 rounded-lg p-8 space-y-6">
                 <h3 className="text-3xl font-semibold text-foreground">
-                  How it works?
+                  The Founders
                 </h3>
-                <ol className="space-y-4 text-xl text-muted-foreground">
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary font-bold text-2xl">1.</span>
-                    <span>We ask a couple of questions about the planned activities</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary font-bold text-2xl">2.</span>
-                    <span>Our AI agent picks the best activities</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary font-bold text-2xl">3.</span>
-                    <span>Client chooses the best activities</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary font-bold text-2xl">4.</span>
-                    <span>We send the calendar invites to the customer and their family's mailbox!</span>
-                  </li>
-                </ol>
-              </div>
-            </div>
-          )}
-
-          {/* Slide 2: Business Model */}
-          {currentSlide === 1 && (
-            <div className="space-y-12 animate-in fade-in duration-500">
-              <h1 className="text-6xl font-bold text-foreground">
-                Business Model
-              </h1>
-
-              <div className="space-y-8">
-                <h2 className="text-4xl font-semibold text-primary">
-                  Subscription Plans
-                </h2>
-                
-                <div className="grid gap-6">
-                  <div className="bg-primary/10 border-2 border-primary rounded-lg p-8">
-                    <div className="space-y-4">
-                      <h3 className="text-3xl font-bold text-primary">
-                        First Trip
-                      </h3>
-                      <p className="text-5xl font-bold text-foreground">
-                        FREE
-                      </p>
-                      <p className="text-xl text-muted-foreground">
-                        Let users experience the value
-                      </p>
-                    </div>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <h4 className="text-xl font-bold text-primary">Dainis Dulbinskis</h4>
+                    <p className="text-muted-foreground">
+                      2nd time founder, successful launch of marketplace ($250K+ revenue)
+                    </p>
                   </div>
-
-                  <div className="bg-muted/50 rounded-lg p-8">
-                    <div className="space-y-4">
-                      <h3 className="text-3xl font-bold text-foreground">
-                        Monthly Subscription
-                      </h3>
-                      <p className="text-5xl font-bold text-primary">
-                        $4.99<span className="text-2xl text-muted-foreground">/month</span>
-                      </p>
-                      <p className="text-xl text-muted-foreground">
-                        Unlimited family trip planning
-                      </p>
-                    </div>
+                  <div className="space-y-2">
+                    <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
+                    <p className="text-muted-foreground">
+                      8+ years in ticketing service development
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-xl font-bold text-primary">Kirill Luschin</h4>
+                    <p className="text-muted-foreground">
+                      AI specialist, the superhero!
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Slide 3: GTM Strategy */}
+          {/* Slide 2: Interactive Demo */}
+          {currentSlide === 1 && (
+            <div className="space-y-12 animate-in fade-in duration-500 text-center">
+              <div className="space-y-6">
+                <Play className="h-24 w-24 mx-auto text-primary" />
+                <h1 className="text-6xl font-bold text-foreground">
+                  See It In Action
+                </h1>
+                <p className="text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                  Experience how FamActify helps you plan family activities in seconds. 
+                  Try our AI-powered questionnaire and see personalized recommendations.
+                </p>
+              </div>
+
+              <Button 
+                size="lg" 
+                onClick={startDemo}
+                className="text-xl px-12 py-8 h-auto"
+              >
+                <Play className="mr-3 h-6 w-6" />
+                Start Live Demo
+              </Button>
+
+              <p className="text-muted-foreground">
+                You'll return to this presentation after the demo
+              </p>
+            </div>
+          )}
+
+          {/* Slide 3: Pricing & GTM */}
           {currentSlide === 2 && (
-            <div className="space-y-12 animate-in fade-in duration-500">
-              <h1 className="text-6xl font-bold text-foreground">
-                Go-To-Market Strategy
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <h1 className="text-5xl font-bold text-foreground">
+                Pricing & Go-To-Market
               </h1>
 
-              <div className="space-y-8">
-                <h2 className="text-4xl font-semibold text-primary">
-                  Grassroot Efforts
-                </h2>
-
-                <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-3xl font-bold text-foreground">
-                      Micro-Influencer Strategy
-                    </h3>
-                    <p className="text-2xl text-muted-foreground leading-relaxed">
-                      Use <span className="text-primary font-semibold">Modash platform</span> to 
-                      target micro influencers, especially busy moms/parents who talk about 
-                      family values and offer them to try the platform for free.
-                    </p>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Pricing */}
+                <div className="space-y-6">
+                  <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">
+                    <Target className="h-8 w-8" />
+                    Pricing
+                  </h2>
+                  
+                  <div className="bg-primary/10 border-2 border-primary rounded-lg p-6">
+                    <h3 className="text-2xl font-bold text-primary">Free Plan</h3>
+                    <p className="text-4xl font-bold text-foreground my-2">1 Trip</p>
+                    <p className="text-muted-foreground">Basic planning features</p>
                   </div>
 
-                  <div className="border-t border-border pt-6 space-y-3">
-                    <h4 className="text-2xl font-semibold text-foreground">
-                      Target Audience:
-                    </h4>
-                    <ul className="space-y-2 text-xl text-muted-foreground">
-                      <li className="flex items-center gap-3">
-                        <span className="w-2 h-2 bg-primary rounded-full"></span>
-                        Busy parents and moms
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <span className="w-2 h-2 bg-primary rounded-full"></span>
-                        Family-focused content creators
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <span className="w-2 h-2 bg-primary rounded-full"></span>
-                        Authentic voices in parenting community
-                      </li>
+                  <div className="bg-muted/50 rounded-lg p-6">
+                    <h3 className="text-2xl font-bold text-foreground">Family Plan</h3>
+                    <p className="text-4xl font-bold text-primary my-2">
+                      €3.99<span className="text-lg text-muted-foreground">/month</span>
+                    </p>
+                    <ul className="text-muted-foreground space-y-1">
+                      <li>• 4 trips per month</li>
+                      <li>• Calendar integration</li>
+                      <li>• Family wishlist</li>
                     </ul>
                   </div>
                 </div>
+
+                {/* GTM */}
+                <div className="space-y-6">
+                  <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">
+                    <Rocket className="h-8 w-8" />
+                    Go-To-Market
+                  </h2>
+                  
+                  <div className="bg-muted/50 rounded-lg p-6 space-y-4">
+                    <h3 className="text-xl font-bold text-foreground">Grassroot Strategy</h3>
+                    <p className="text-muted-foreground">
+                      Target micro-influencers (busy moms/parents) via <span className="text-primary font-semibold">Modash platform</span> who 
+                      talk about family values. Offer free trial in exchange for authentic reviews.
+                    </p>
+                    <div className="pt-3 border-t border-border">
+                      <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• Busy parents and moms</li>
+                        <li>• Family content creators</li>
+                        <li>• Parenting community voices</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Slide 4: Milestones & Goal */}
+          {currentSlide === 3 && (
+            <div className="space-y-12 animate-in fade-in duration-500">
+              <h1 className="text-5xl font-bold text-foreground">
+                3-Month Milestones
+              </h1>
+
+              <div className="grid gap-4">
+                {[
+                  "Launch in Latvia and refine product",
+                  "Acquire first 100 customers",
+                  "Raise pre-seed funding",
+                  "Expand to Baltics",
+                  "Build GTM strategy for Europe"
+                ].map((milestone, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center gap-4 bg-muted/50 rounded-lg p-5"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
+                      {index + 1}
+                    </div>
+                    <span className="text-xl text-foreground">{milestone}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t-2 border-primary pt-8 text-center space-y-4">
+                <h2 className="text-4xl font-bold text-primary">
+                  Our Goal
+                </h2>
+                <p className="text-2xl text-foreground max-w-3xl mx-auto leading-relaxed">
+                  Make a simple and smart platform to help families{" "}
+                  <span className="text-primary font-semibold">focus on the family time</span>, 
+                  not planning it.
+                </p>
               </div>
             </div>
           )}

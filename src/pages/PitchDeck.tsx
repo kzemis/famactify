@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
-  const totalSlides = 4;
+  const totalSlides = 5;
 
   // Check if returning from demo flow
   useEffect(() => {
@@ -118,61 +118,29 @@ const PitchDeck = () => {
             </div>
           )}
 
-          {/* Slide 3: Pricing & GTM */}
+          {/* Slide 3: Pricing */}
           {currentSlide === 2 && (
             <div className="space-y-10 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground">Pricing & Go-To-Market</h1>
+              <h1 className="text-5xl font-bold text-foreground text-center">Pricing</h1>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Pricing */}
-                <div className="space-y-6">
-                  <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">
-                    <Target className="h-8 w-8" />
-                    Pricing
-                  </h2>
-
-                  <div className="bg-primary/10 border-2 border-primary rounded-lg p-6">
-                    <h3 className="text-2xl font-bold text-primary">Free Plan</h3>
-                    <p className="text-4xl font-bold text-foreground my-2">1 Trip</p>
-                    <p className="text-muted-foreground">Basic planning features</p>
-                  </div>
-
-                  <div className="bg-muted/50 rounded-lg p-6">
-                    <h3 className="text-2xl font-bold text-foreground">Family Plan</h3>
-                    <p className="text-4xl font-bold text-primary my-2">
-                      €3.99<span className="text-lg text-muted-foreground">/month</span>
-                    </p>
-                    <ul className="text-muted-foreground space-y-1">
-                      <li>• 4 trips per month</li>
-                      <li>• Calendar integration</li>
-                      <li>• Family wishlist</li>
-                    </ul>
-                  </div>
+              <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                <div className="bg-primary/10 border-2 border-primary rounded-lg p-8 space-y-4">
+                  <h3 className="text-3xl font-bold text-primary">Free Plan</h3>
+                  <p className="text-5xl font-bold text-foreground">1 Trip</p>
+                  <p className="text-xl text-muted-foreground">Basic planning features</p>
+                  <p className="text-muted-foreground">Perfect to try before you buy</p>
                 </div>
 
-                {/* GTM */}
-                <div className="space-y-6">
-                  <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">
-                    <Rocket className="h-8 w-8" />
-                    Go-To-Market
-                  </h2>
-
-                  <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-                    <h3 className="text-xl font-bold text-foreground">Grassroot Strategy</h3>
-                    <p className="text-muted-foreground">
-                      Target micro-influencers (busy moms/parents) via{" "}
-                      <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
-                      Offer free trial in exchange for authentic reviews.
-                    </p>
-                    <div className="pt-3 border-t border-border">
-                      <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Busy parents and moms</li>
-                        <li>• Family content creators</li>
-                        <li>• Parenting community voices</li>
-                      </ul>
-                    </div>
-                  </div>
+                <div className="bg-muted/50 rounded-lg p-8 space-y-4">
+                  <h3 className="text-3xl font-bold text-foreground">Family Plan</h3>
+                  <p className="text-5xl font-bold text-primary">
+                    €3.99<span className="text-xl text-muted-foreground">/month</span>
+                  </p>
+                  <ul className="text-lg text-muted-foreground space-y-2">
+                    <li>• 4 trips per month</li>
+                    <li>• Calendar integration</li>
+                    <li>• Family wishlist</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -232,6 +200,53 @@ const PitchDeck = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Slide 5: Go-To-Market */}
+          {currentSlide === 4 && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <h1 className="text-5xl font-bold text-foreground text-center flex items-center justify-center gap-4">
+                <Rocket className="h-12 w-12 text-primary" />
+                Go-To-Market Strategy
+              </h1>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Strategy */}
+                <div className="bg-muted/50 rounded-lg p-8 space-y-6">
+                  <h2 className="text-3xl font-bold text-primary">Grassroot Strategy</h2>
+                  <p className="text-xl text-muted-foreground leading-relaxed">
+                    Target micro-influencers (busy moms/parents) via{" "}
+                    <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
+                  </p>
+                  <p className="text-xl text-muted-foreground leading-relaxed">
+                    Offer free trial in exchange for authentic reviews and word-of-mouth marketing.
+                  </p>
+                </div>
+
+                {/* Target Audience */}
+                <div className="bg-muted/50 rounded-lg p-8 space-y-6">
+                  <h2 className="text-3xl font-bold text-primary">Target Audience</h2>
+                  <ul className="text-xl text-muted-foreground space-y-4">
+                    <li className="flex items-center gap-3">
+                      <div className="h-3 w-3 rounded-full bg-primary"></div>
+                      Busy parents and moms
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="h-3 w-3 rounded-full bg-primary"></div>
+                      Family content creators
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="h-3 w-3 rounded-full bg-primary"></div>
+                      Parenting community voices
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="h-3 w-3 rounded-full bg-primary"></div>
+                      Family-focused bloggers
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>

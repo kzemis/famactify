@@ -101,7 +101,7 @@ const Landing = () => {
                 </Button>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 rounded-3xl blur-3xl" />
               <img 
                 src={heroImage} 

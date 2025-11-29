@@ -1,36 +1,11 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Sparkles, Map, Users, Heart } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
 
 const Home = () => {
-  const [userName, setUserName] = useState<string>("");
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      setUserName(profile?.full_name || user.email?.split("@")[0] || "there");
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, [navigate]);
 
   const quickActions = [
     {
@@ -63,17 +38,6 @@ const Home = () => {
     },
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <AppHeader />
-        <div className="flex justify-center items-center py-24">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
       <AppHeader />
@@ -81,7 +45,7 @@ const Home = () => {
         {/* Welcome Section */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">
-            Welcome back, <span className="text-primary">{userName}</span>!
+            Welcome to <span className="text-primary">Famactify</span>!
           </h1>
           <p className="text-muted-foreground text-lg">
             Ready to plan your next family adventure?

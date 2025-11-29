@@ -1,0 +1,1583 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "id": "kaleti-forest-park-priediens",
+    "name": "Kalēti Forest Park Priediens",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Historic manor hunting garden turned nature park with four thematic paths (mushroom, plant, animal, stingray) and tactile wooden figures; small adventure area for kids.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.35969,
+      "lon": 21.48914,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "educational",
+      "tactile",
+      "family-friendly"
+    ],
+    "highlights": [
+      "Four thematic nature paths",
+      "Tactile wooden figures",
+      "Small adventure park"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "educational",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 2.6,
+      "durationMinutes": 90,
+      "surfaceType": "forest path; gravel on stingray path (~1.2 m wide)",
+      "waymarking": "Mushroom (yellow poles); Plant (green); Animal (red); Stingray (white)",
+      "routeType": "loop",
+      "amenities": [
+        "information stands"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "gramzda-forest-park-trail",
+    "name": "Gramzda Forest Park Trail",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Easy loop in Gramzda Forest Park featuring the 'Nature Inspires' outdoor cinema by wood sculptor Ģirts Burvis; suitable for families.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.36922,
+      "lon": 21.60391,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "family-friendly"
+    ],
+    "highlights": [
+      "Nature cinema by Ģirts Burvis"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 2.0,
+      "durationMinutes": 40,
+      "surfaceType": "gravel, asphalt, forest path; brick and concrete plates at start (~1.8 m avg width)",
+      "waymarking": "Not marked; easy to follow",
+      "routeType": "loop",
+      "amenities": [
+        "benches",
+        "nearby accessible WC (Parish Administration, workdays)"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "bernati-beach-boardwalk",
+    "name": "Bernāti Beach Boardwalk",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Two-section wooden boardwalk through Bernāti Nature Park’s gray dunes to a seaside viewing platform; seasonal boardwalk to beach in summer.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.36604,
+      "lon": 20.97684,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "weather-dependent",
+      "seaside"
+    ],
+    "highlights": [
+      "Viewing deck with lounge platform",
+      "Seasonal beach access boardwalk"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 0.6,
+      "durationMinutes": 20,
+      "surfaceType": "wooden boardwalks (1.5 m & 1.2 m); seasonal composite boardwalk; asphalt start",
+      "waymarking": "Not marked; easy to follow",
+      "accessibilityNotes": "Steep sections 10–12%; ramp to beach ~16%; recommend assistant for wheelchair users; one section has stairs (use out-and-back).",
+      "slopePercent": 16,
+      "routeType": "loop",
+      "amenities": [
+        "viewing platform",
+        "resting spots"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "liepaja-seaside-park",
+    "name": "Liepāja Seaside Park",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "3 km dendrological park along the sea with attractions like Ghost Tree, Swan Pond, NBA court, and accessible beach facilities.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.50614,
+      "lon": 20.99737,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "wheelchair-accessible",
+      "seaside",
+      "play"
+    ],
+    "highlights": [
+      "Accessible beach & swimming site",
+      "Ghost Tree & biggest drums",
+      "NBA basketball court"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": null,
+      "durationMinutes": 60,
+      "surfaceType": "gravel, brick paving, wooden boardwalk, asphalt",
+      "waymarking": "Direction signs",
+      "routeType": "loop",
+      "amenities": [
+        "accessible swimming site",
+        "beach boardwalk",
+        "attractions"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "zirgu-island-trail",
+    "name": "Lake Liepāja – Zirgu Island Trail",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Wide wooden boardwalk along Lake Liepāja with outdoor gym devices and picnic areas, continuing on a narrow dam to a birdwatching tower.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.51718,
+      "lon": 21.03084,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "birdwatching"
+    ],
+    "highlights": [
+      "Birdwatching tower",
+      "Outdoor gym devices",
+      "Picnic areas"
+    ],
+    "schedule": {
+      "hoursNote": "Open I–XII, 24/7; Nature house hours on liepaja.travel"
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 2.0,
+      "durationMinutes": 45,
+      "surfaceType": "wooden boardwalk (gaps > 1 cm), gravel road; narrow dam with small stones",
+      "waymarking": "Direction signs with accessibility pictograms",
+      "accessibilityNotes": "Assistant recommended on dam and some boardwalk sections for wheelchair users.",
+      "routeType": "loop",
+      "amenities": [
+        "outdoor gym",
+        "picnic tables",
+        "viewing tower"
+      ],
+      "rules": [
+        "Jet skis forbidden"
+      ]
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lake-liepaja-boardwalk",
+    "name": "Lake Liepāja Boardwalk",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Short wooden boardwalk stretch on Lake Liepāja’s shore starting from Lauku Street (east end).",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.49449,
+      "lon": 21.02443,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": false,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "waterfront"
+    ],
+    "highlights": [
+      "Shoreline boardwalk"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 0.5,
+      "durationMinutes": 15,
+      "surfaceType": "wooden boardwalk",
+      "waymarking": "Not marked; easy to follow",
+      "routeType": "linear",
+      "amenities": [],
+      "rules": [
+        "Jet skis forbidden"
+      ]
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "alande-river-park-trail",
+    "name": "Ālande River Park Trail (Grobiņa)",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Trail along the meanders of the Ālande River past castle ruins and ancient sites, with info stands on Grobiņa’s history.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.53513,
+      "lon": 21.1626,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "historical",
+      "stroller-friendly"
+    ],
+    "highlights": [
+      "Castle mound & ruins",
+      "Info stands",
+      "River views"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "history",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 2.75,
+      "durationMinutes": 60,
+      "surfaceType": "wooden boardwalk (~1.3 m, exchange areas), gravel (~1.3 m), asphalt start",
+      "waymarking": "Not marked; easy to follow",
+      "accessibilityNotes": "Slopes up to ~15%; stones near castle mound and second bridge may hinder movement; assistant recommended.",
+      "slopePercent": 15,
+      "routeType": "linear",
+      "amenities": [
+        "information stands"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "durbe-castle-mound-trail",
+    "name": "Durbe Castle Mound Trail",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Loop around Durbe castle mound and pond with historic sites and a viewing platform over Durbe’s landscape.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.58979,
+      "lon": 21.36563,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "historical"
+    ],
+    "highlights": [
+      "Viewing platform",
+      "Castle ruins",
+      "Memorial stone"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "history",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 1.8,
+      "durationMinutes": 30,
+      "surfaceType": "wooden boardwalk, gravel, brick (~1.2 m avg width)",
+      "waymarking": "Not marked; easy to follow",
+      "routeType": "loop",
+      "amenities": [
+        "viewing platform",
+        "resting area"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "dveseles-veldzes-darzs-paths",
+    "name": "Paths at Dvēseles Veldzes Dārzs",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Rehabilitation centre with three short adapted experiences: Barefoot path (530 m), Park of Senses (raised beds), and a shrub Labyrinth (800 m²).",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.727804,
+      "lon": 21.093084,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": true,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "tactile",
+      "family-friendly"
+    ],
+    "highlights": [
+      "Barefoot path",
+      "Park of Senses (raised beds)",
+      "Shrub labyrinth"
+    ],
+    "schedule": {
+      "hoursNote": "Suggested in spring–autumn during opening hours"
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "wellness",
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": null,
+      "durationMinutes": 90,
+      "surfaceType": "path, brick paving, gravel, forest road",
+      "waymarking": "Special signs; tactile tile for visually impaired",
+      "accessibilityNotes": "Barefoot path not accessible for wheelchair users.",
+      "routeType": "loop",
+      "amenities": [
+        "special gaming & exercise areas"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "kazdanga-park",
+    "name": "Kazdanga Park (Lake Boardwalk & Park Routes)",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Latvia’s largest historical park (~196 ha) with multiple color-marked routes and a lake boardwalk; many resting areas.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.72479,
+      "lon": 21.73533,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "family-friendly"
+    ],
+    "highlights": [
+      "Lake boardwalk",
+      "Marked routes (yellow/green/red)",
+      "Rest areas"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 9.0,
+      "durationMinutes": 180,
+      "surfaceType": "gravel, wooden boardwalk, forest path (~1.5 m avg width)",
+      "waymarking": "Direction signs; colored stripes on trees/objects",
+      "accessibilityNotes": "Boardwalk has no slope; elsewhere slopes can exceed 15% in parts.",
+      "slopePercent": 15,
+      "routeType": "loop",
+      "amenities": [
+        "resting areas with benches & tables",
+        "catamaran rental (summer)"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "skrunda-walking-path",
+    "name": "Skrunda Walking Path",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Riverside walk by Skrunda castle mound with viewpoints over the River Venta; benches and resting area; barefoot path nearby.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.67338,
+      "lon": 22.02398,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": null,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "family-friendly"
+    ],
+    "highlights": [
+      "Viewpoints",
+      "Resting area",
+      "Barefoot path nearby"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 1.6,
+      "durationMinutes": 45,
+      "surfaceType": "gravel",
+      "waymarking": "Direction signs",
+      "routeType": "loop",
+      "amenities": [
+        "benches",
+        "resting area"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "ciecere-nature-trail-saldus",
+    "name": "Ciecere Nature Trail in Saldus",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Central Saldus riverside path with cozy resting areas and links to Lake Saldus with wide boardwalks and a playground.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.66765,
+      "lon": 22.49233,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "family-friendly"
+    ],
+    "highlights": [
+      "Link to Lake Saldus boardwalks",
+      "Resting areas"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 2.6,
+      "durationMinutes": 60,
+      "surfaceType": "gravel, brick paving, wooden boardwalk (~1.8 m)",
+      "waymarking": "Not marked; easy to follow",
+      "accessibilityNotes": "First stretch (larch lane) accessible for wheelchair users; some steps near end; some boardwalk sections rough/damaged; small steps at starts/ends.",
+      "routeType": "linear",
+      "amenities": [
+        "playground near Lake Saldus",
+        "resting areas"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "pavilosta-beach-boardwalk",
+    "name": "Pāvilosta Beach Boardwalk",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Boardwalk across the widest gray dune in Latvia at Pāvilosta central beach; introduces unique dune flora.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.89303,
+      "lon": 21.18531,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": false,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "seaside"
+    ],
+    "highlights": [
+      "Gray dune landscape"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 0.5,
+      "durationMinutes": 30,
+      "surfaceType": "wooden boardwalk (~1.2 m); gravel at start",
+      "waymarking": "Not marked; easy to follow",
+      "accessibilityNotes": "Some slopes > 8%; assistant recommended; beach sand area not accessible to reach water in wheelchair.",
+      "slopePercent": 8,
+      "routeType": "linear",
+      "amenities": [],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "zibgrava-nature-trail",
+    "name": "Žibgrava Nature Trail (Alsunga)",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Hilly ravine trail along the Kauliņupīte with two loops; long loop features info stands with legends; short ‘Mazātak’ loop is wheelchair-friendly.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.98412,
+      "lon": 21.584,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly"
+    ],
+    "highlights": [
+      "Ravine up to 15 m",
+      "Info stands with riddles",
+      "Short accessible loop"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "educational"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 1.5,
+      "durationMinutes": 60,
+      "surfaceType": "forest path; gravel on short loop (~1.5 m)",
+      "waymarking": "Direction signs and poles",
+      "accessibilityNotes": "Long loop has steep terrain with slopes well over 8% and may flood in rainy periods; appropriate footwear advised.",
+      "routeType": "loop",
+      "amenities": [
+        "information stands"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "river-venta-left-bank-trail",
+    "name": "The River Venta Left Bank Trail (Kuldīga)",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Riverside path to Kuldīga’s new bridge with views of the Venta Rapid—the widest waterfall in Europe (249 m). Lighting installed on parts for evening walks.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 56.96741,
+      "lon": 21.97676,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": true,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "evening-friendly"
+    ],
+    "highlights": [
+      "Venta Rapid 249 m",
+      "Evening lighting"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social",
+      "photography"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 2.4,
+      "durationMinutes": 40,
+      "surfaceType": "gravel, wooden boardwalk (~2 m)",
+      "waymarking": "Not marked; info stands at both ends",
+      "routeType": "linear",
+      "amenities": [
+        "lighting (partial)",
+        "viewpoints"
+      ],
+      "rules": []
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "ventspils-seaside-park",
+    "name": "Ventspils Seaside Park",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "Well-equipped seaside park with 3.5 km of paths, a 730 m Anchor Trail (largest anchor 23 t, 6 m), and access to South pier Promenade with buoy exhibits.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 57.38586,
+      "lon": 21.53668,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "seaside"
+    ],
+    "highlights": [
+      "Anchor Trail 730 m",
+      "Access to seaside & South pier Promenade"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "social",
+      "history"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 3.5,
+      "durationMinutes": 90,
+      "surfaceType": "gravel; asphalt at parking area",
+      "waymarking": "Direction signs",
+      "routeType": "loop",
+      "amenities": [
+        "anchor exhibits",
+        "nearby museum train",
+        "promenade with buoy info"
+      ],
+      "rules": [
+        "Dogs prohibited in beach swimming area (assistance dogs excepted)"
+      ]
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "lake-busnieki-nature-trail",
+    "name": "Lake Būšnieki Nature Trail (Ventspils)",
+    "domain": "Venue",
+    "category": "Nature",
+    "activityType": "Trail",
+    "description": "8 km loop with exercise stations, a 187 m lake-edge boardwalk and birdwatching platform; part of a Natura 2000 reserve with swimming and picnic areas.",
+    "ageRange": {
+      "min": 0,
+      "max": null
+    },
+    "ageBuckets": [
+      "0-2",
+      "3-5",
+      "6-8",
+      "9-12",
+      "13-15",
+      "16-18"
+    ],
+    "price": {
+      "band": "Free",
+      "currency": "EUR",
+      "pricingModel": "free"
+    },
+    "location": {
+      "lat": 57.45294,
+      "lon": 21.62905,
+      "region": "Kurzeme",
+      "indoorOutdoor": [
+        "outdoor"
+      ]
+    },
+    "facilities": {
+      "restrooms": null,
+      "changingTable": null,
+      "parking": null,
+      "foodAvailable": null,
+      "waterFountain": null
+    },
+    "accessibility": {
+      "strollerFriendly": true,
+      "wheelchairAccessible": true,
+      "sensoryFriendly": null,
+      "adaptiveEquipment": null,
+      "quietHours": null
+    },
+    "tags": [
+      "outdoor",
+      "free",
+      "stroller-friendly",
+      "birdwatching"
+    ],
+    "highlights": [
+      "187 m boardwalk & viewing platform",
+      "Exercise info stands",
+      "Deer Garden nearby"
+    ],
+    "schedule": {
+      "hoursNote": null
+    },
+    "interactions": [
+      "together"
+    ],
+    "interests": [
+      "nature",
+      "sports",
+      "social"
+    ],
+    "media": {
+      "images": [],
+      "heroImage": null,
+      "icon": null
+    },
+    "provenance": {
+      "source": "Taku_celvedis_ENG_kurzemes_regions.pdf",
+      "lastUpdated": "2025-11-09",
+      "verified": false
+    },
+    "meta": {},
+    "trail": {
+      "lengthKm": 8.0,
+      "durationMinutes": 120,
+      "surfaceType": "gravel, wooden boardwalk, asphalt",
+      "waymarking": "Distance markers each km; direction signs with accessibility pictograms",
+      "accessibilityNotes": "Slope at start/end of lake boardwalk exceeds 8%.",
+      "slopePercent": 8,
+      "routeType": "loop",
+      "amenities": [
+        "birdwatching platform",
+        "exercise stations",
+        "swimming & picnic areas"
+      ],
+      "rules": [
+        "Dogs forbidden at designated beach swimming area (assistance dogs excepted)"
+      ]
+    }
+  }
+]

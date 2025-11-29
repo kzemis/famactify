@@ -1,72 +1,85 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, X, Calendar, MapPin, DollarSign, Clock } from "lucide-react";
+import { Heart, X, Calendar, MapPin, DollarSign, Clock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock events data - in production, this would come from an API
-const mockEvents = [
-  {
-    id: 1,
-    title: "Children's Science Museum",
-    description: "Interactive exhibits and hands-on experiments for all ages",
-    location: "Downtown San Francisco",
-    date: "March 15, 2024",
-    time: "10:00 AM - 2:00 PM",
-    price: "$25 per person",
-    image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800"
-  },
-  {
-    id: 2,
-    title: "Golden Gate Park Picnic",
-    description: "Enjoy a beautiful outdoor day with family activities",
-    location: "Golden Gate Park",
-    date: "March 15, 2024",
-    time: "12:00 PM - 4:00 PM",
-    price: "Free",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800"
-  },
-  {
-    id: 3,
-    title: "Art Workshop for Kids",
-    description: "Creative painting and sculpture session",
-    location: "SF Art Center",
-    date: "March 16, 2024",
-    time: "2:00 PM - 4:00 PM",
-    price: "$30 per person",
-    image: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800"
-  },
-  {
-    id: 4,
-    title: "Family Food Festival",
-    description: "Sample cuisines from around the world",
-    location: "Mission District",
-    date: "March 16, 2024",
-    time: "5:00 PM - 9:00 PM",
-    price: "$15 entry",
-    image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800"
-  },
-  {
-    id: 5,
-    title: "Ocean Beach Bonfire",
-    description: "S'mores and sunset at the beach",
-    location: "Ocean Beach",
-    date: "March 17, 2024",
-    time: "6:00 PM - 9:00 PM",
-    price: "Free",
-    image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800"
-  }
-];
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  date: string;
+  time: string;
+  price: string;
+  image: string;
+  matchReason?: string;
+}
 
 const Events = () => {
+  const [events, setEvents] = useState<Event[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [likedEvents, setLikedEvents] = useState<typeof mockEvents>([]);
+  const [likedEvents, setLikedEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
+
+  const loadRecommendations = async () => {
+    try {
+      setLoading(true);
+      
+      // Get user answers from sessionStorage
+      const answersStr = sessionStorage.getItem("onboardingAnswers");
+      const interestsStr = sessionStorage.getItem("userInterests");
+      
+      const answers = answersStr ? JSON.parse(answersStr) : null;
+      const interests = interestsStr || null;
+
+      console.log('Loading recommendations with:', { answers, interests });
+
+      // Call the edge function to get AI recommendations
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: { answers, interests }
+      });
+
+      if (error) {
+        console.error('Error getting recommendations:', error);
+        throw error;
+      }
+
+      console.log('Received recommendations:', data);
+
+      if (data?.recommendations && data.recommendations.length > 0) {
+        setEvents(data.recommendations);
+      } else {
+        toast({
+          title: "No recommendations found",
+          description: "Using default activities",
+          variant: "destructive"
+        });
+        // Fallback to empty state
+        setEvents([]);
+      }
+    } catch (error) {
+      console.error('Failed to load recommendations:', error);
+      toast({
+        title: "Error loading recommendations",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLike = () => {
-    const likedEvent = mockEvents[currentIndex];
+    const likedEvent = events[currentIndex];
     setLikedEvents([...likedEvents, likedEvent]);
     toast({
       title: "Event added!",
@@ -80,7 +93,7 @@ const Events = () => {
   };
 
   const handleNext = () => {
-    if (currentIndex < mockEvents.length - 1) {
+    if (currentIndex < events.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
       // Store liked events and navigate to summary
@@ -89,12 +102,40 @@ const Events = () => {
     }
   };
 
-  if (currentIndex >= mockEvents.length) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Finding perfect activities for you</h2>
+            <p className="text-muted-foreground">Our AI is analyzing your preferences...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">No activities found</h2>
+          <p className="text-muted-foreground">Please complete the onboarding to get recommendations</p>
+          <Button onClick={() => navigate("/onboarding/interests")}>
+            Start Onboarding
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentIndex >= events.length) {
     return null;
   }
 
-  const event = mockEvents[currentIndex];
-  const progress = ((currentIndex + 1) / mockEvents.length) * 100;
+  const event = events[currentIndex];
+  const progress = ((currentIndex + 1) / events.length) * 100;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
@@ -105,7 +146,7 @@ const Events = () => {
             Swipe right to add, left to skip
           </p>
           <div className="text-sm text-muted-foreground">
-            {currentIndex + 1} / {mockEvents.length}
+            {currentIndex + 1} / {events.length}
           </div>
         </div>
 
@@ -122,6 +163,14 @@ const Events = () => {
             </div>
           </div>
           <CardContent className="p-6 space-y-4">
+            {event.matchReason && (
+              <div className="bg-primary/10 rounded-lg p-3 mb-4">
+                <p className="text-sm font-medium text-primary">
+                  ✨ {event.matchReason}
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground" />

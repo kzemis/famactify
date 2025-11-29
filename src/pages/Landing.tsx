@@ -133,7 +133,7 @@ const Landing = () => {
               We understand the challenge of planning quality family time. That's why we built the ultimate solution.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {features.map((feature, idx) => (
               <Card key={idx} className="p-6 hover:shadow-lg transition-shadow">
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">

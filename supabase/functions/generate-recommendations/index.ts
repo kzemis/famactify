@@ -76,6 +76,10 @@ serve(async (req) => {
     
     console.log('Total activities data:', allActivitiesData.length, 'activities');
 
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][today.getDay()];
+    
     const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, analyze the provided activities database and recommend 5-10 activities for a SINGLE DAY itinerary.
 
 RULES:
@@ -87,11 +91,20 @@ RULES:
 6. Consider practical factors like timing, location proximity, and logical sequencing for a day trip
 
 CRITICAL DATE FORMAT REQUIREMENT:
+- TODAY IS: ${todayStr} (${dayName})
 - The "date" field MUST be in ISO format: YYYY-MM-DD (e.g., "2025-12-07")
-- If the user mentions "next Saturday", calculate the actual date and return it in ISO format
-- If the user mentions "this weekend", pick a specific date (Saturday or Sunday) in ISO format
+- Date calculation rules:
+  * "next Saturday" = the Saturday of NEXT week (7 days from the upcoming Saturday, NOT the closest Saturday)
+  * "this Saturday" = the closest upcoming Saturday (could be today if today is Saturday)
+  * "next week" = 7 days from today
+  * Always add 7 days when the user says "next [day]" to ensure it's truly the next occurrence
 - Never return natural language dates like "Next Saturday" or "This weekend"
-- Always calculate the exact date from today (${new Date().toISOString().split('T')[0]})
+- Always calculate the exact date from today (${todayStr})
+
+EXAMPLES:
+- If today is Saturday 2025-11-29 and user says "next Saturday", return: "2025-12-06"
+- If today is Friday 2025-11-29 and user says "this Saturday", return: "2025-11-30"
+- If today is Friday 2025-11-29 and user says "next Saturday", return: "2025-12-07"
 
 Return ONLY valid JSON in this exact format:
 {

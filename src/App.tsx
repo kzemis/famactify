@@ -21,6 +21,7 @@ import FAQ from "./pages/FAQ";
 import ContactUs from "./pages/ContactUs";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -33,14 +34,14 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/onboarding/interests" element={<OnboardingInterests />} />
-          <Route path="/onboarding/questions" element={<OnboardingQuestions />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/itinerary" element={<Itinerary />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/saved-trips" element={<SavedTrips />} />
+          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/onboarding/interests" element={<ProtectedRoute><OnboardingInterests /></ProtectedRoute>} />
+          <Route path="/onboarding/questions" element={<ProtectedRoute><OnboardingQuestions /></ProtectedRoute>} />
+          <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+          <Route path="/itinerary" element={<ProtectedRoute><Itinerary /></ProtectedRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+          <Route path="/saved-trips" element={<ProtectedRoute><SavedTrips /></ProtectedRoute>} />
           <Route path="/pitch-deck" element={<PitchDeck />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/careers" element={<Careers />} />

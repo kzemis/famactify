@@ -24,6 +24,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,24 +72,42 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-
-      // Handle remember me - save or remove email
-      if (rememberMe) {
-        localStorage.setItem("famactify_remembered_email", email);
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/home`,
+          },
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Account created!",
+          description: "You can now sign in with your credentials.",
+        });
+        setIsSignUp(false);
       } else {
-        localStorage.removeItem("famactify_remembered_email");
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) throw error;
+
+        // Handle remember me - save or remove email
+        if (rememberMe) {
+          localStorage.setItem("famactify_remembered_email", email);
+        } else {
+          localStorage.removeItem("famactify_remembered_email");
+        }
+        
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in.",
+        });
       }
-      
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in.",
-      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -115,10 +134,12 @@ const Auth = () => {
       <Card className="w-full max-w-md relative shadow-2xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-bold text-center">
-            Welcome Back
+            {isSignUp ? "Create Account" : "Welcome Back"}
           </CardTitle>
           <CardDescription className="text-center">
-            Sign in to continue planning amazing family activities
+            {isSignUp 
+              ? "Sign up to start planning amazing family activities" 
+              : "Sign in to continue planning amazing family activities"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -145,7 +166,7 @@ const Auth = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder=""
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -164,9 +185,24 @@ const Auth = () => {
               </Label>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing In..." : "Sign In"}
+              {loading 
+                ? (isSignUp ? "Creating Account..." : "Signing In...") 
+                : (isSignUp ? "Create Account" : "Sign In")}
             </Button>
           </form>
+
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">
+              {isSignUp ? "Already have an account? " : "Don't have an account? "}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-primary hover:underline font-medium"
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </div>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">

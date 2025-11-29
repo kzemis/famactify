@@ -89,9 +89,9 @@ const Landing = () => {
                 Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
+              <Button 
                   size="lg" 
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/onboarding/interests")}
                   className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
                 >
                   Get Started Free
@@ -178,7 +178,7 @@ const Landing = () => {
                 <Button 
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/onboarding/interests")}
                 >
                   {plan.price === "$0" ? "Start Free" : "Get Started"}
                 </Button>
@@ -197,7 +197,7 @@ const Landing = () => {
           </p>
           <Button 
             size="lg"
-            onClick={() => navigate("/auth")}
+            onClick={() => navigate("/onboarding/interests")}
             className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
           >
             Start Planning Now

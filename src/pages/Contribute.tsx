@@ -23,8 +23,8 @@ export default function Contribute() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -57,64 +57,88 @@ export default function Contribute() {
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    // Validate total number of images (max 5)
+    if (imageFiles.length + files.length > 5) {
+      toast.error('You can upload maximum 5 images');
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
-      return;
+    // Validate each file
+    const validFiles: File[] = [];
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image file`);
+        continue;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is larger than 5MB`);
+        continue;
+      }
+
+      validFiles.push(file);
     }
 
-    setImageFile(file);
+    if (validFiles.length === 0) return;
+
+    // Add to existing files
+    setImageFiles(prev => [...prev, ...validFiles]);
     
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Create previews for new files
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    e.target.value = '';
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
+  const uploadImages = async (): Promise<string[]> => {
+    if (imageFiles.length === 0) return [];
 
     try {
       setUploading(true);
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const uploadedUrls: string[] = [];
 
-      const { error: uploadError } = await supabase.storage
-        .from('activity-images')
-        .upload(filePath, imageFile);
+      for (const file of imageFiles) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        toast.error('Failed to upload image');
-        return null;
+        const { error: uploadError } = await supabase.storage
+          .from('activity-images')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast.error(`Failed to upload ${file.name}`);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('activity-images')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('activity-images')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      return uploadedUrls;
     } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload image');
-      return null;
+      toast.error('Failed to upload images');
+      return [];
     } finally {
       setUploading(false);
     }
@@ -149,14 +173,14 @@ export default function Contribute() {
     try {
       setSubmitting(true);
 
-      // Upload image if selected
-      let imageUrl = formData.imageurlthumb;
-      if (imageFile) {
-        const uploadedUrl = await uploadImage();
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        }
+      // Upload images if selected
+      let imageUrls: string[] = [];
+      if (imageFiles.length > 0) {
+        imageUrls = await uploadImages();
       }
+
+      // Use first image as thumbnail for backward compatibility
+      const imageUrl = imageUrls.length > 0 ? imageUrls[0] : formData.imageurlthumb;
 
       const id = slugify(formData.name);
       
@@ -198,6 +222,7 @@ export default function Contribute() {
           endTime: null
         },
         imageurlthumb: imageUrl || null,
+        images: imageUrls.length > 0 ? imageUrls : null,
         urlmoreinfo: formData.urlmoreinfo || null,
         schemaVersion: '1.0.0'
       };
@@ -262,8 +287,8 @@ export default function Contribute() {
         imageurlthumb: '',
         urlmoreinfo: '',
       });
-      setImageFile(null);
-      setImagePreview(null);
+      setImageFiles([]);
+      setImagePreviews([]);
 
     } catch (error: any) {
       console.error('Submit error:', error);
@@ -515,14 +540,15 @@ export default function Contribute() {
             </div>
 
             <div>
-              <Label>Or Upload Image</Label>
-              <div className="space-y-2">
+              <Label>Upload Photos (up to 5)</Label>
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Input
                     ref={fileInputRef}
                     id="image-upload"
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageSelect}
                     className="hidden"
                   />
@@ -539,46 +565,50 @@ export default function Contribute() {
                     type="button"
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
+                    disabled={uploading || imageFiles.length >= 5}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    {imageFile ? 'Change Photo' : 'Upload Photo'}
+                    Upload Photos
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => cameraInputRef.current?.click()}
-                    disabled={uploading}
+                    disabled={uploading || imageFiles.length >= 5}
                   >
                     <Camera className="w-4 h-4 mr-2" />
                     Take Photo
                   </Button>
-                  {imageFile && (
+                  {imageFiles.length > 0 && (
                     <span className="text-sm text-muted-foreground">
-                      {imageFile.name}
+                      {imageFiles.length} photo{imageFiles.length > 1 ? 's' : ''} selected
                     </span>
                   )}
                 </div>
-                {imagePreview && (
-                  <div className="relative inline-block">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="w-full max-w-xs h-48 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 w-6 h-6"
-                      onClick={removeImage}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index + 1}`} 
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 w-6 h-6"
+                          onClick={() => removeImage(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Take a photo with your camera or upload from gallery (max 5MB)
+                  Take photos with camera or upload from gallery. Max 5 images, 5MB each.
                 </p>
               </div>
             </div>

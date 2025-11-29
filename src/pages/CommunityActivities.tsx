@@ -10,6 +10,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { toast } from 'sonner';
+import AppHeader from '@/components/AppHeader';
+import Footer from '@/components/Footer';
 
 interface ActivitySpot {
   id: string;
@@ -149,16 +151,7 @@ export default function CommunityActivities() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-center">
-          <span 
-            className="text-2xl font-bold text-primary cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            FamActify
-          </span>
-        </div>
-      </header>
+      <AppHeader />
       
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -423,6 +416,8 @@ export default function CommunityActivities() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Footer />
     </div>
   );
 }

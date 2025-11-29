@@ -4,14 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Mail, MapPin, Send } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { MapPin, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
+import AppHeader from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 
 const ContactUs = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,17 +49,7 @@ const ContactUs = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            FamActify
-          </span>
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto space-y-12">

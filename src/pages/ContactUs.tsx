@@ -124,16 +124,6 @@ const ContactUs = () => {
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    <Mail className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Email</h3>
-                    <p className="text-muted-foreground">hello@famactify.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div>

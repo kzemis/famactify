@@ -331,15 +331,15 @@ const PitchDeck = () => {
           {/* Slide 5: Community QR Code */}
           {currentSlide === 4 && (
             <div className="flex flex-col items-center justify-center space-y-12 animate-in fade-in duration-500">
-              <div className="relative bg-white p-8 rounded-3xl shadow-2xl">
+              <div className="relative bg-white p-12 rounded-3xl shadow-2xl">
                 <QRCode 
                   value="https://famactify.app/contribute" 
-                  size={320}
+                  size={450}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 />
                 {/* Logo overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-3 shadow-lg">
-                  <span className="text-2xl font-bold text-primary">FA</span>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl px-6 py-4 shadow-lg">
+                  <span className="text-3xl font-bold text-primary">FamActify</span>
                 </div>
               </div>
               

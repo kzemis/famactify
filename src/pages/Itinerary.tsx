@@ -62,7 +62,7 @@ const SortableActivity = ({ event, eventIndex, date, onDelete }: SortableActivit
           <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
         <img
-          src={event.image}
+          src={event.image || event.imageUrl || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=300"}
           alt={event.title}
           className="w-24 h-24 rounded-lg object-cover"
         />

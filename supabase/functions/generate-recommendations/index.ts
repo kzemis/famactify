@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,54 +28,30 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
-    // Fetch activities data from multiple JSON files
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    if (!supabaseUrl) {
-      throw new Error('SUPABASE_URL is not configured');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration is missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Fetch activities from Supabase activityspots table
+    console.log('Fetching activities from Supabase activityspots table');
+    
+    const { data: activitiesData, error: fetchError } = await supabase
+      .from('activityspots')
+      .select('*');
+    
+    if (fetchError) {
+      console.error('Error fetching activities from Supabase:', fetchError);
+      throw new Error(`Failed to fetch activities: ${fetchError.message}`);
     }
     
-    // Extract project ID from supabase URL and construct lovableproject URL
-    // Example: https://ybzyhhhfykvbxakbrspf.supabase.co -> https://ybzyhhhfykvbxakbrspf.lovableproject.com
-    const projectId = supabaseUrl.split('//')[1]?.split('.')[0];
-    const projectUrl = `https://${projectId}.lovableproject.com`;
-    
-    const dataUrls = [
-      `${projectUrl}/data/activities-trails.json`,
-      `${projectUrl}/data/activities-transformed.json`,
-      `${projectUrl}/data/activities-spots-1.json`,
-      `${projectUrl}/data/activities-bs-transformed.json`
-    ];
-    
-    console.log('Fetching activities from:', dataUrls);
-    
-    // Fetch all JSON files in parallel
-    const responses = await Promise.all(
-      dataUrls.map(url => fetch(url).catch(err => {
-        console.error(`Failed to fetch ${url}:`, err);
-        return null;
-      }))
-    );
-    
-    // Parse all responses and combine the data
-    const allActivitiesData = [];
-    for (let i = 0; i < responses.length; i++) {
-      const response = responses[i];
-      if (response && response.ok) {
-        try {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            allActivitiesData.push(...data);
-          } else {
-            allActivitiesData.push(data);
-          }
-          console.log(`Fetched data from file ${i + 1}:`, Array.isArray(data) ? data.length : 1, 'activities');
-        } catch (err) {
-          console.error(`Failed to parse JSON from file ${i + 1}:`, err);
-        }
-      }
-    }
-    
-    console.log('Total activities data:', allActivitiesData.length, 'activities');
+    const allActivitiesData = activitiesData || [];
+    console.log('Total activities data from Supabase:', allActivitiesData.length, 'activities');
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];

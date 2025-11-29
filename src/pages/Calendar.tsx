@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Mail, Plus, X } from "lucide-react";
+import { Download, Mail, Plus, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Calendar = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [familyMembers, setFamilyMembers] = useState<string[]>([""]);
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,12 +34,65 @@ const Calendar = () => {
     setFamilyMembers(updated);
   };
 
-  const handleCreateCalendar = () => {
-    // In production, this would generate ICS files and send emails
-    toast({
-      title: "Calendar events created!",
-      description: `Invites sent to ${familyMembers.filter(m => m.trim()).length} family members`,
-    });
+  const handleCreateCalendar = async () => {
+    const validEmails = familyMembers.filter(m => m.trim());
+    
+    if (validEmails.length === 0) {
+      toast({
+        title: "No email addresses",
+        description: "Please add at least one family member email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSending(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    // Send emails to each family member
+    for (const email of validEmails) {
+      try {
+        const { data, error } = await supabase.functions.invoke('send-calendar-invite', {
+          body: {
+            recipientEmail: email,
+            events: events.map(event => ({
+              title: event.title,
+              date: event.date,
+              time: event.time,
+              location: event.location,
+              description: event.description,
+            })),
+          },
+        });
+
+        if (error) throw error;
+        
+        if (data?.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Failed to send invite to ${email}:`, error);
+        failCount++;
+      }
+    }
+
+    setIsSending(false);
+
+    if (successCount > 0) {
+      toast({
+        title: "Calendar invites sent!",
+        description: `Successfully sent ${successCount} invite${successCount > 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      });
+    } else {
+      toast({
+        title: "Failed to send invites",
+        description: "Please check the email addresses and try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownloadICS = () => {
@@ -104,10 +159,19 @@ const Calendar = () => {
                 onClick={handleCreateCalendar}
                 className="w-full"
                 size="lg"
-                disabled={!familyMembers.some(m => m.trim())}
+                disabled={!familyMembers.some(m => m.trim()) || isSending}
               >
-                <Mail className="h-5 w-5 mr-2" />
-                Send Calendar Invites
+                {isSending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Sending Invites...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-5 w-5 mr-2" />
+                    Send Calendar Invites
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"

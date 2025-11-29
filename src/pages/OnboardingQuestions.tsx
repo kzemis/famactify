@@ -34,14 +34,14 @@ const defaultQuestions: Question[] = [
     id: "location",
     icon: "MapPin",
     title: "Where are you planning activities?",
-    placeholder: "e.g., San Francisco, CA",
+    placeholder: "e.g., Riga, Jurmala, Sigulda",
     type: "text"
   },
   {
-    id: "dates",
+    id: "date",
     icon: "Calendar",
-    title: "What dates are you looking at?",
-    placeholder: "e.g., March 15-17, 2024",
+    title: "What date are you planning for?",
+    placeholder: "e.g., March 15, 2024",
     type: "text"
   },
   {
@@ -55,14 +55,7 @@ const defaultQuestions: Question[] = [
     id: "budget",
     icon: "DollarSign",
     title: "What's your budget per person?",
-    placeholder: "e.g., $50-100",
-    type: "text"
-  },
-  {
-    id: "duration",
-    icon: "Clock",
-    title: "Preferred activity duration?",
-    placeholder: "e.g., 2-3 hours",
+    placeholder: "e.g., €30-50",
     type: "text"
   }
 ];

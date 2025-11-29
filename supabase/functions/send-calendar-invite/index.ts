@@ -111,7 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: "FamActify <onboarding@resend.dev>",
+        from: "FamActify <noreply@notifications.famactify.app>",
         to: [recipientEmail],
         subject: "You're invited! Family Itinerary from FamActify",
         attachments: [

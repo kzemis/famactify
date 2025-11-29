@@ -98,7 +98,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate ICS file
     const icsContent = generateICS(events, recipientEmail);
-    const icsBase64 = btoa(icsContent);
+    // Properly encode UTF-8 string to base64
+    const encoder = new TextEncoder();
+    const icsBytes = encoder.encode(icsContent);
+    const icsBase64 = btoa(String.fromCharCode(...icsBytes));
 
     // Send email using Resend API directly
     const emailResponse = await fetch('https://api.resend.com/emails', {

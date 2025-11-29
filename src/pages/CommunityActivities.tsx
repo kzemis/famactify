@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Search, MapPin, Euro, Users, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +26,7 @@ interface ActivitySpot {
   accessibility_stroller: boolean | null;
   facilities_restrooms: boolean | null;
   created_at: string;
+  json: any;
 }
 
 export default function CommunityActivities() {
@@ -231,20 +233,52 @@ export default function CommunityActivities() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredActivities.map((activity) => (
               <Card key={activity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {/* Image */}
-                {activity.imageurlthumb ? (
-                  <div className="h-48 overflow-hidden">
-                    <img 
-                      src={activity.imageurlthumb} 
-                      alt={activity.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-48 bg-muted flex items-center justify-center">
-                    <MapPin className="w-12 h-12 text-muted-foreground" />
-                  </div>
-                )}
+                {/* Image or Carousel */}
+                {(() => {
+                  const images = activity.json?.images || [];
+                  const hasMultipleImages = images.length > 1;
+                  const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
+
+                  if (hasMultipleImages) {
+                    return (
+                      <div className="h-48 relative">
+                        <Carousel className="w-full h-full">
+                          <CarouselContent>
+                            {images.map((imageUrl, idx) => (
+                              <CarouselItem key={idx}>
+                                <div className="h-48 overflow-hidden">
+                                  <img 
+                                    src={imageUrl} 
+                                    alt={`${activity.name} - Image ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="left-2" />
+                          <CarouselNext className="right-2" />
+                        </Carousel>
+                      </div>
+                    );
+                  } else if (displayImage) {
+                    return (
+                      <div className="h-48 overflow-hidden">
+                        <img 
+                          src={displayImage} 
+                          alt={activity.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="h-48 bg-muted flex items-center justify-center">
+                        <MapPin className="w-12 h-12 text-muted-foreground" />
+                      </div>
+                    );
+                  }
+                })()}
 
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{activity.name}</CardTitle>

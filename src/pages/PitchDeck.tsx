@@ -1,12 +1,31 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Play, Target, Rocket, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Target, Rocket, X, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const navigate = useNavigate();
   const totalSlides = 4;
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   // Check if returning from demo flow
   useEffect(() => {
@@ -50,7 +69,7 @@ const PitchDeck = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex-col hidden md:flex">
       {/* Slide Container */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-5xl">
@@ -261,8 +280,17 @@ const PitchDeck = () => {
         </div>
       </div>
 
-      {/* Close Button */}
-      <div className="absolute top-8 right-8">
+      {/* Top Controls */}
+      <div className="absolute top-8 right-8 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleFullscreen}
+          className="text-muted-foreground hover:text-foreground"
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -272,6 +300,14 @@ const PitchDeck = () => {
         >
           <X className="h-6 w-6" />
         </Button>
+      </div>
+
+      {/* Mobile Message */}
+      <div className="min-h-screen bg-background flex md:hidden items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <p className="text-xl text-muted-foreground">Please view the pitch deck on a larger screen.</p>
+          <Button onClick={() => navigate("/")}>Go Back</Button>
+        </div>
       </div>
     </div>
   );

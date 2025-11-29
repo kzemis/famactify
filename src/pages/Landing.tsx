@@ -34,40 +34,25 @@ const Landing = () => {
   const plans = [
     {
       name: "Free",
-      price: "$0",
+      price: "€0",
       period: "forever",
       features: [
-        "5 AI recommendations per month",
-        "Basic itinerary planning",
-        "Up to 3 family members",
-        "Email support"
+        "Plan 1 trip for free",
+        "Basic planning features",
+        "Try before you buy"
       ]
     },
     {
       name: "Family",
-      price: "$9.99",
+      price: "€3.99",
       period: "per month",
       features: [
-        "Unlimited AI recommendations",
-        "Advanced itinerary planning",
-        "Unlimited family members",
-        "Priority support",
+        "Plan up to 4 trips per month",
+        "Create wishlists with relatives",
         "Calendar integration",
-        "Event reminders"
+        "Customer support"
       ],
       popular: true
-    },
-    {
-      name: "Premium",
-      price: "$19.99",
-      period: "per month",
-      features: [
-        "Everything in Family",
-        "VIP event access",
-        "Exclusive discounts",
-        "Personal concierge",
-        "Group planning tools"
-      ]
     }
   ];
 
@@ -260,7 +245,7 @@ const Landing = () => {
               Start free, upgrade when you're ready
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-center">
             {plans.map((plan, idx) => (
               <Card 
                 key={idx} 
@@ -291,7 +276,7 @@ const Landing = () => {
                   variant={plan.popular ? "default" : "outline"}
                   onClick={() => navigate("/home")}
                 >
-                  {plan.price === "$0" ? "Start Free" : "Get Started"}
+                  {plan.price === "€0" ? "Start Free" : "Get Started"}
                 </Button>
               </Card>
             ))}

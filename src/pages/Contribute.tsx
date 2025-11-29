@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Locate, Upload, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Locate, Upload, X, Camera } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
@@ -26,6 +26,8 @@ export default function Contribute() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -515,22 +517,41 @@ export default function Contribute() {
             <div>
               <Label>Or Upload Image</Label>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Input
+                    ref={fileInputRef}
                     id="image-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleImageSelect}
                     className="hidden"
                   />
+                  <Input
+                    ref={cameraInputRef}
+                    id="camera-capture"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById('image-upload')?.click()}
+                    onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    {imageFile ? 'Change Image' : 'Upload Image'}
+                    {imageFile ? 'Change Photo' : 'Upload Photo'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Take Photo
                   </Button>
                   {imageFile && (
                     <span className="text-sm text-muted-foreground">
@@ -543,7 +564,7 @@ export default function Contribute() {
                     <img 
                       src={imagePreview} 
                       alt="Preview" 
-                      className="w-32 h-32 object-cover rounded-lg border"
+                      className="w-full max-w-xs h-48 object-cover rounded-lg border"
                     />
                     <Button
                       type="button"
@@ -557,7 +578,7 @@ export default function Contribute() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Upload a photo of the activity spot (max 5MB)
+                  Take a photo with your camera or upload from gallery (max 5MB)
                 </p>
               </div>
             </div>

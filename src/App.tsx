@@ -16,6 +16,7 @@ import SavedTrips from "./pages/SavedTrips";
 import PitchDeck from "./pages/PitchDeck";
 import AboutUs from "./pages/AboutUs";
 import Careers from "./pages/Careers";
+import Benefits from "./pages/Benefits";
 import FAQ from "./pages/FAQ";
 import ContactUs from "./pages/ContactUs";
 import TermsOfService from "./pages/TermsOfService";
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/pitch-deck" element={<PitchDeck />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/careers" element={<Careers />} />
+          <Route path="/benefits" element={<Benefits />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/terms" element={<TermsOfService />} />

@@ -86,6 +86,13 @@ RULES:
 5. Ensure activities can be completed in one day with reasonable travel time between them
 6. Consider practical factors like timing, location proximity, and logical sequencing for a day trip
 
+CRITICAL DATE FORMAT REQUIREMENT:
+- The "date" field MUST be in ISO format: YYYY-MM-DD (e.g., "2025-12-07")
+- If the user mentions "next Saturday", calculate the actual date and return it in ISO format
+- If the user mentions "this weekend", pick a specific date (Saturday or Sunday) in ISO format
+- Never return natural language dates like "Next Saturday" or "This weekend"
+- Always calculate the exact date from today (${new Date().toISOString().split('T')[0]})
+
 Return ONLY valid JSON in this exact format:
 {
   "recommendations": [
@@ -94,7 +101,7 @@ Return ONLY valid JSON in this exact format:
       "title": "Activity Title",
       "description": "Why this matches their preferences",
       "location": "Location name",
-      "date": "Suggested date",
+      "date": "YYYY-MM-DD",
       "time": "Suggested time",
       "price": "Price information",
       "image": "Image URL from database",
@@ -107,6 +114,7 @@ IMPORTANT:
 - Use actual data from the activities database provided
 - Include the original activity ID and image URL
 - Adapt dates/times based on user preferences
+- The date field must ALWAYS be in ISO format (YYYY-MM-DD)
 - Return ONLY the JSON object, no additional text or markdown.`;
 
     const userPrompt = `User Interests: "${interests || 'Not specified'}"

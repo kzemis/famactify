@@ -49,56 +49,20 @@ function generateICS(events: CalendarEvent[], recipientEmail: string): string {
     const endHour = String(parseInt(startHour) + 2).padStart(2, '0');
     const endTime = `${endHour}${startMinute}00`;
     
-    // Parse the actual event date from the event object
+    // Parse the date - expecting ISO format (YYYY-MM-DD) from Claude AI
     let eventDate: Date;
     if (event.date && event.date !== "Any day") {
-      // Try multiple date parsing strategies
-      // First, try standard date parsing
-      eventDate = new Date(event.date);
+      // Parse ISO date format (YYYY-MM-DD)
+      eventDate = new Date(event.date + 'T00:00:00');
       
-      // If invalid, try to parse natural language dates like "Next Saturday"
+      // Fallback to tomorrow if parsing fails
       if (isNaN(eventDate.getTime())) {
-        const lowerDate = event.date.toLowerCase();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // Handle "next saturday", "this saturday", etc.
-        if (lowerDate.includes('saturday')) {
-          const daysUntilSaturday = (6 - today.getDay() + 7) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilSaturday);
-        } else if (lowerDate.includes('sunday')) {
-          const daysUntilSunday = (7 - today.getDay()) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilSunday);
-        } else if (lowerDate.includes('monday')) {
-          const daysUntilMonday = (1 - today.getDay() + 7) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilMonday);
-        } else if (lowerDate.includes('tuesday')) {
-          const daysUntilTuesday = (2 - today.getDay() + 7) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilTuesday);
-        } else if (lowerDate.includes('wednesday')) {
-          const daysUntilWednesday = (3 - today.getDay() + 7) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilWednesday);
-        } else if (lowerDate.includes('thursday')) {
-          const daysUntilThursday = (4 - today.getDay() + 7) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilThursday);
-        } else if (lowerDate.includes('friday')) {
-          const daysUntilFriday = (5 - today.getDay() + 7) % 7 || 7;
-          eventDate = new Date(today);
-          eventDate.setDate(today.getDate() + daysUntilFriday);
-        } else {
-          // Fallback to tomorrow if parsing fails
-          eventDate = new Date();
-          eventDate.setDate(eventDate.getDate() + 1);
-        }
+        console.error(`Invalid date format: "${event.date}", using tomorrow as fallback`);
+        eventDate = new Date();
+        eventDate.setDate(eventDate.getDate() + 1);
+      } else {
+        console.log(`Successfully parsed date: ${eventDate.toISOString()}`);
       }
-      
-      console.log(`Parsed date for "${event.date}": ${eventDate.toISOString()}`);
     } else {
       // Use tomorrow as default if no date specified
       eventDate = new Date();

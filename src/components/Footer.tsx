@@ -7,6 +7,7 @@ const Footer = () => {
     product: [
       { label: "Home", href: "/home" },
       { label: "How It Works", href: "/#features" },
+      { label: "Contribute Activity", href: "/contribute" },
     ],
     company: [
       { label: "About Us", href: "/about" },

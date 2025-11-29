@@ -25,7 +25,12 @@ const PitchDeck = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    };
   }, []);
 
   // Check if returning from demo flow

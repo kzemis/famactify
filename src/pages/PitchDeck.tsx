@@ -57,35 +57,26 @@ const PitchDeck = () => {
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground text-center">
-                The Problem
-              </h1>
+              <h1 className="text-5xl font-bold text-foreground text-center">The Problem</h1>
 
               <div className="space-y-4">
-                <h2 className="text-4xl font-bold text-primary">
-                  According to data, Planning a Family Trip usually takes up to 8 Hours!
-                </h2>
+                <h2 className="text-4xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span> etc. 
-                  to collect information, verify details, and manually plan trips.
+                  Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span>{" "}
+                  etc. to collect information, verify details, and manually plan trips.
                 </p>
               </div>
 
               <div className="border-t-2 border-primary pt-6 space-y-4">
-                <h2 className="text-4xl font-bold text-primary">
-                  Our Solution
-                </h2>
+                <h2 className="text-4xl font-bold text-primary">Our Solution</h2>
                 <p className="text-xl text-foreground leading-relaxed">
                   A simple AI tool that helps busy parents plan family activities in{" "}
-                  <span className="text-primary font-semibold">seconds</span>, 
-                  eliminating hours of planning.
+                  <span className="text-primary font-semibold">seconds</span>, eliminating hours of planning.
                 </p>
               </div>
 
               <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-                <h3 className="text-3xl font-semibold text-foreground">
-                  The Founders
-                </h3>
+                <h3 className="text-3xl font-semibold text-foreground">The Founders</h3>
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <h4 className="text-xl font-bold text-primary">Dainis Dulbinskis</h4>
@@ -95,15 +86,11 @@ const PitchDeck = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-muted-foreground">
-                      8+ years in ticketing service development
-                    </p>
+                    <p className="text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-xl font-bold text-primary">Kirill Luschin</h4>
-                    <p className="text-muted-foreground">
-                      AI specialist, the superhero!
-                    </p>
+                    <p className="text-muted-foreground">AI specialist, the superhero!</p>
                   </div>
                 </div>
               </div>
@@ -115,36 +102,26 @@ const PitchDeck = () => {
             <div className="space-y-12 animate-in fade-in duration-500 text-center">
               <div className="space-y-6">
                 <Play className="h-24 w-24 mx-auto text-primary" />
-                <h1 className="text-6xl font-bold text-foreground">
-                  See It In Action
-                </h1>
+                <h1 className="text-6xl font-bold text-foreground">See It In Action</h1>
                 <p className="text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                  Experience how FamActify helps you plan family activities in seconds. 
-                  Try our AI-powered questionnaire and see personalized recommendations.
+                  Experience how FamActify helps you plan family activities in seconds. Try our AI-powered questionnaire
+                  and see personalized recommendations.
                 </p>
               </div>
 
-              <Button 
-                size="lg" 
-                onClick={startDemo}
-                className="text-xl px-12 py-8 h-auto"
-              >
+              <Button size="lg" onClick={startDemo} className="text-xl px-12 py-8 h-auto">
                 <Play className="mr-3 h-6 w-6" />
                 Start Live Demo
               </Button>
 
-              <p className="text-muted-foreground">
-                You'll return to this presentation after the demo
-              </p>
+              <p className="text-muted-foreground">You'll return to this presentation after the demo</p>
             </div>
           )}
 
           {/* Slide 3: Pricing & GTM */}
           {currentSlide === 2 && (
             <div className="space-y-10 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground">
-                Pricing & Go-To-Market
-              </h1>
+              <h1 className="text-5xl font-bold text-foreground">Pricing & Go-To-Market</h1>
 
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Pricing */}
@@ -153,7 +130,7 @@ const PitchDeck = () => {
                     <Target className="h-8 w-8" />
                     Pricing
                   </h2>
-                  
+
                   <div className="bg-primary/10 border-2 border-primary rounded-lg p-6">
                     <h3 className="text-2xl font-bold text-primary">Free Plan</h3>
                     <p className="text-4xl font-bold text-foreground my-2">1 Trip</p>
@@ -179,12 +156,13 @@ const PitchDeck = () => {
                     <Rocket className="h-8 w-8" />
                     Go-To-Market
                   </h2>
-                  
+
                   <div className="bg-muted/50 rounded-lg p-6 space-y-4">
                     <h3 className="text-xl font-bold text-foreground">Grassroot Strategy</h3>
                     <p className="text-muted-foreground">
-                      Target micro-influencers (busy moms/parents) via <span className="text-primary font-semibold">Modash platform</span> who 
-                      talk about family values. Offer free trial in exchange for authentic reviews.
+                      Target micro-influencers (busy moms/parents) via{" "}
+                      <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
+                      Offer free trial in exchange for authentic reviews.
                     </p>
                     <div className="pt-3 border-t border-border">
                       <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
@@ -203,12 +181,11 @@ const PitchDeck = () => {
           {/* Slide 4: Milestones & Goal */}
           {currentSlide === 3 && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground">
-                Traction & Roadmap
-              </h1>
+              <h1 className="text-5xl font-bold text-foreground">Traction & Roadmap</h1>
 
               <p className="text-2xl text-foreground leading-relaxed">
-                Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span> and starting from January 8 achieve those milestones:
+                Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span>{" "}
+                and starting from January 8 achieve those milestones:
               </p>
 
               <div className="grid md:grid-cols-3 gap-6">
@@ -217,10 +194,7 @@ const PitchDeck = () => {
                   <h3 className="text-2xl font-bold text-primary">First Month</h3>
                   <div className="space-y-3">
                     {["Launch in Latvia and refine product", "Acquire first 100 customers"].map((milestone, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center gap-3 bg-muted/50 rounded-lg p-4"
-                      >
+                      <div key={index} className="flex items-center gap-3 bg-muted/50 rounded-lg p-4">
                         <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
                           {index + 1}
                         </div>
@@ -235,10 +209,7 @@ const PitchDeck = () => {
                   <h3 className="text-2xl font-bold text-primary">Second Month</h3>
                   <div className="space-y-3">
                     {["Raise pre-seed funding", "Raise up the team and modernize the app"].map((milestone, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center gap-3 bg-muted/50 rounded-lg p-4"
-                      >
+                      <div key={index} className="flex items-center gap-3 bg-muted/50 rounded-lg p-4">
                         <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
                           {index + 3}
                         </div>
@@ -253,10 +224,7 @@ const PitchDeck = () => {
                   <h3 className="text-2xl font-bold text-primary">Third Month</h3>
                   <div className="space-y-3">
                     {["Expand to Baltics", "Build GTM strategy for Europe"].map((milestone, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center gap-3 bg-muted/50 rounded-lg p-4"
-                      >
+                      <div key={index} className="flex items-center gap-3 bg-muted/50 rounded-lg p-4">
                         <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
                           {index + 5}
                         </div>
@@ -274,13 +242,7 @@ const PitchDeck = () => {
       {/* Navigation Controls */}
       <div className="border-t border-border bg-card/50">
         <div className="max-w-5xl mx-auto px-8 py-6 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={prevSlide}
-            disabled={currentSlide === 0}
-            className="gap-2"
-          >
+          <Button variant="ghost" size="lg" onClick={prevSlide} disabled={currentSlide === 0} className="gap-2">
             <ChevronLeft className="w-5 h-5" />
             Previous
           </Button>
@@ -291,9 +253,7 @@ const PitchDeck = () => {
                 key={index}
                 onClick={() => setCurrentSlide(index)}
                 className={`w-3 h-3 rounded-full transition-all ${
-                  index === currentSlide
-                    ? "bg-primary w-8"
-                    : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  index === currentSlide ? "bg-primary w-8" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />

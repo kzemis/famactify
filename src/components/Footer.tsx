@@ -98,9 +98,9 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary">FamActify</span>
-          </div>
+          <Link to="/home" className="flex items-center gap-2">
+            <span className="text-xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer">FamActify</span>
+          </Link>
           <p className="text-sm text-muted-foreground">
             Made for happy families 😊
           </p>

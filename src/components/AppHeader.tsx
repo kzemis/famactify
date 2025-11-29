@@ -35,7 +35,7 @@ const AppHeader = () => {
         
         <span 
           className="text-2xl font-bold text-primary cursor-pointer"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/home")}
         >
           Famactify
         </span>

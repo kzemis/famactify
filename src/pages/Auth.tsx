@@ -21,7 +21,7 @@ const Auth = () => {
     // Listen for auth changes - only redirect after successful login
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        navigate("/onboarding/interests");
+        navigate("/home");
       }
     });
 

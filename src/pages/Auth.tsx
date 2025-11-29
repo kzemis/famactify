@@ -18,18 +18,9 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/onboarding/interests");
-      }
-    };
-    checkUser();
-
-    // Listen for auth changes
+    // Listen for auth changes - only redirect after successful login
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (event === 'SIGNED_IN' && session) {
         navigate("/onboarding/interests");
       }
     });

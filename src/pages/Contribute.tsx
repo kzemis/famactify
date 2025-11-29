@@ -7,8 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ArrowLeft, MapPin, Locate, Upload, X, Camera } from 'lucide-react';
-import AppHeader from '@/components/AppHeader';
-
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
 const ENVIRONMENTS = ['inside', 'outside', 'both'];
@@ -327,7 +325,16 @@ export default function Contribute() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader />
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 flex h-16 items-center justify-center">
+          <span 
+            className="text-2xl font-bold text-primary cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            FamActify
+          </span>
+        </div>
+      </header>
       
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <Button

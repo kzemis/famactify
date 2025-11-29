@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Play, Target, Rocket, X, Maximize, Minimize,
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import QRCode from "react-qr-code";
 
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -10,7 +11,7 @@ const PitchDeck = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const navigate = useNavigate();
-  const totalSlides = 4;
+  const totalSlides = 5;
 
   // Minimum swipe distance (in px) to trigger navigation
   const minSwipeDistance = 50;
@@ -323,6 +324,28 @@ const PitchDeck = () => {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Slide 5: Community QR Code */}
+          {currentSlide === 4 && (
+            <div className="flex flex-col items-center justify-center space-y-12 animate-in fade-in duration-500">
+              <h1 className="text-6xl font-bold text-foreground text-center">Join Our Community</h1>
+              
+              <div className="bg-white p-8 rounded-3xl shadow-2xl">
+                <QRCode 
+                  value="https://famactify.app/contribute" 
+                  size={320}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                />
+              </div>
+              
+              <div className="text-center space-y-4">
+                <h2 className="text-4xl font-bold text-primary">Build Together</h2>
+                <p className="text-xl text-muted-foreground max-w-2xl">
+                  Help us grow by contributing activities and events for families in your area
+                </p>
               </div>
             </div>
           )}

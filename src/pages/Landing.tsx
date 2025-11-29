@@ -285,7 +285,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-primary/20 via-background to-accent/20">
+      <section className="py-24 bg-gradient-to-b from-background via-primary/10 to-accent/20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Transform Family Time?</h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

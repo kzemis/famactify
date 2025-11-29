@@ -3,9 +3,99 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Calendar, MapPin, Clock, DollarSign, Share2, Trash2, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import { Calendar, MapPin, Clock, DollarSign, Share2, Trash2, Plus, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableActivityProps {
+  event: any;
+  eventIndex: number;
+  date: string;
+  onDelete: (eventIndex: number, date: string) => void;
+}
+
+const SortableActivity = ({ event, eventIndex, date, onDelete }: SortableActivityProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `${date}-${eventIndex}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-6 hover:bg-muted/50 transition-colors"
+    >
+      <div className="flex gap-4">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing flex items-center"
+        >
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <img
+          src={event.image}
+          alt={event.title}
+          className="w-24 h-24 rounded-lg object-cover"
+        />
+        <div className="flex-1 space-y-2">
+          <h3 className="text-xl font-semibold">{event.title}</h3>
+          <p className="text-sm text-muted-foreground">{event.description}</p>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span>{event.location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span>{event.time}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span>{event.price}</span>
+            </div>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onDelete(eventIndex, date)}
+          className="text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const Itinerary = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -13,6 +103,13 @@ const Itinerary = () => {
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const storedEvents = sessionStorage.getItem("likedEvents");
@@ -51,20 +148,18 @@ const Itinerary = () => {
     });
   };
 
-  const moveEvent = (eventIndex: number, date: string, direction: 'up' | 'down') => {
-    const dayEvents = events.filter(e => e.date === date);
-    if (
-      (direction === 'up' && eventIndex === 0) || 
-      (direction === 'down' && eventIndex === dayEvents.length - 1)
-    ) {
+  const handleDragEnd = (event: DragEndEvent, date: string) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
       return;
     }
 
-    const targetIndex = direction === 'up' ? eventIndex - 1 : eventIndex + 1;
-    const updatedDayEvents = [...dayEvents];
-    [updatedDayEvents[eventIndex], updatedDayEvents[targetIndex]] = 
-    [updatedDayEvents[targetIndex], updatedDayEvents[eventIndex]];
+    const dayEvents = events.filter(e => e.date === date);
+    const activeIndex = dayEvents.findIndex((_, idx) => `${date}-${idx}` === active.id);
+    const overIndex = dayEvents.findIndex((_, idx) => `${date}-${idx}` === over.id);
 
+    const updatedDayEvents = arrayMove(dayEvents, activeIndex, overIndex);
     const otherEvents = events.filter(e => e.date !== date);
     const updatedEvents = [...otherEvents, ...updatedDayEvents].sort((a, b) => 
       a.date.localeCompare(b.date)
@@ -149,63 +244,28 @@ const Itinerary = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
-                {dayEvents.map((event, eventIndex) => (
-                  <div key={eventIndex} className="p-6 hover:bg-muted/50 transition-colors">
-                    <div className="flex gap-4">
-                      <img
-                        src={event.image}
-                        alt={event.title}
-                        className="w-24 h-24 rounded-lg object-cover"
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event) => handleDragEnd(event, date)}
+              >
+                <SortableContext
+                  items={dayEvents.map((_, idx) => `${date}-${idx}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="divide-y">
+                    {dayEvents.map((event, eventIndex) => (
+                      <SortableActivity
+                        key={`${date}-${eventIndex}`}
+                        event={event}
+                        eventIndex={eventIndex}
+                        date={date}
+                        onDelete={deleteEvent}
                       />
-                      <div className="flex-1 space-y-2">
-                        <h3 className="text-xl font-semibold">{event.title}</h3>
-                        <p className="text-sm text-muted-foreground">{event.description}</p>
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span>{event.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{event.time}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span>{event.price}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => moveEvent(eventIndex, date, 'up')}
-                          disabled={eventIndex === 0}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => moveEvent(eventIndex, date, 'down')}
-                          disabled={eventIndex === dayEvents.length - 1}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteEvent(eventIndex, date)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             </CardContent>
           </Card>
         ))}

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User, Settings, Map, Users, LogOut } from "lucide-react";
+import { User, Settings, Map, Users, LogOut, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -56,6 +56,10 @@ const AppHeader = () => {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/community")} className="cursor-pointer">
+              <Heart className="mr-2 h-4 w-4" />
+              Community Activities
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/saved-trips")} className="cursor-pointer">
               <Map className="mr-2 h-4 w-4" />
               View Saved Trips

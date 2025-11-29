@@ -6,6 +6,7 @@ const Footer = () => {
   const footerLinks = {
     product: [
       { label: "Home", href: "/home" },
+      { label: "Community Activities", href: "/community" },
       { label: "How It Works", href: "/#features" },
       { label: "Contribute Activity", href: "/contribute" },
     ],

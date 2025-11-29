@@ -202,10 +202,14 @@ const PitchDeck = () => {
 
           {/* Slide 4: Milestones & Goal */}
           {currentSlide === 3 && (
-            <div className="space-y-12 animate-in fade-in duration-500">
+            <div className="space-y-10 animate-in fade-in duration-500">
               <h1 className="text-5xl font-bold text-foreground">
                 Traction & Roadmap
               </h1>
+
+              <p className="text-2xl text-foreground leading-relaxed">
+                Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span> and starting from January 8 achieve those milestones:
+              </p>
 
               <div className="grid gap-4">
                 {[
@@ -225,17 +229,6 @@ const PitchDeck = () => {
                     <span className="text-xl text-foreground">{milestone}</span>
                   </div>
                 ))}
-              </div>
-
-              <div className="border-t-2 border-primary pt-8 text-center space-y-4">
-                <h2 className="text-4xl font-bold text-primary">
-                  Our Goal
-                </h2>
-                <p className="text-2xl text-foreground max-w-3xl mx-auto leading-relaxed">
-                  Make a simple and smart platform to help families{" "}
-                  <span className="text-primary font-semibold">focus on the family time</span>, 
-                  not planning it.
-                </p>
               </div>
             </div>
           )}

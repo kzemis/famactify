@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
 
 const Landing = () => {
@@ -88,43 +87,33 @@ const Landing = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-background to-primary/30" />
         <div className="absolute top-20 left-10 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="container relative mx-auto px-4 py-20">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
-            <div className="space-y-8">
-              <div className="inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                Making Family Time Easy
-              </div>
-              <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-                Plan Your Family Holidays with{" "}
-                <span className="text-primary">Famactify</span>
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl">
-                Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                  size="lg" 
-                  onClick={() => navigate("/auth")}
-                  className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                >
-                  Get Started Free
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  className="text-lg px-8 py-6 rounded-2xl"
-                >
-                  See How It Works
-                </Button>
-              </div>
+        <div className="container relative mx-auto px-4 py-32">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <div className="inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+              Making Family Time Easy
             </div>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/40 to-primary/40 rounded-3xl blur-3xl" />
-              <img 
-                src={heroImage} 
-                alt="Happy family enjoying activities together"
-                className="relative rounded-3xl shadow-2xl"
-              />
+            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+              Focus on spending time with family, not planning it with{" "}
+              <span className="text-primary">Famactify</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/auth")}
+                className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+              >
+                Get Started Free
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="text-lg px-8 py-6 rounded-2xl"
+              >
+                See How It Works
+              </Button>
             </div>
           </div>
         </div>

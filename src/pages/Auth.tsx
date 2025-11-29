@@ -20,7 +20,6 @@ const GoogleIcon = () => (
 );
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -72,42 +71,24 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
 
-        // Handle remember me - save or remove email
-        if (rememberMe) {
-          localStorage.setItem("famactify_remembered_email", email);
-        } else {
-          localStorage.removeItem("famactify_remembered_email");
-        }
-        
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in.",
-        });
+      // Handle remember me - save or remove email
+      if (rememberMe) {
+        localStorage.setItem("famactify_remembered_email", email);
       } else {
-        const redirectUrl = `${window.location.origin}/onboarding/interests`;
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl,
-          },
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Account created!",
-          description: "Welcome to Famactify! Let's get started.",
-        });
+        localStorage.removeItem("famactify_remembered_email");
       }
+      
+      toast({
+        title: "Welcome back!",
+        description: "Successfully signed in.",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -134,12 +115,10 @@ const Auth = () => {
       <Card className="w-full max-w-md relative shadow-2xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-bold text-center">
-            {isLogin ? "Welcome Back" : "Create Account"}
+            Welcome Back
           </CardTitle>
           <CardDescription className="text-center">
-            {isLogin 
-              ? "Sign in to continue planning amazing family activities" 
-              : "Join Famactify and start discovering perfect events for your family"}
+            Sign in to continue planning amazing family activities
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -174,20 +153,18 @@ const Auth = () => {
                 />
               </div>
             </div>
-            {isLogin && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked === true)}
-                />
-                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
-                  Remember me
-                </Label>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                Remember me
+              </Label>
+            </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
@@ -209,16 +186,6 @@ const Auth = () => {
             <GoogleIcon />
             Sign in with Google
           </Button>
-
-          <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>

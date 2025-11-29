@@ -37,6 +37,8 @@ function generateICS(events: CalendarEvent[], recipientEmail: string): string {
   events.forEach((event, index) => {
     const eventId = `famactify-${Date.now()}-${index}@famactify.com`;
     
+    console.log(`Processing event ${index + 1}: "${event.title}", date: "${event.date}"`);
+    
     // Parse time range (e.g., "10:00 - 18:00")
     const timeMatch = event.time.match(/(\d{2}):(\d{2})/);
     const startHour = timeMatch ? timeMatch[1] : '10';
@@ -50,17 +52,58 @@ function generateICS(events: CalendarEvent[], recipientEmail: string): string {
     // Parse the actual event date from the event object
     let eventDate: Date;
     if (event.date && event.date !== "Any day") {
-      // Try to parse the date string
+      // Try multiple date parsing strategies
+      // First, try standard date parsing
       eventDate = new Date(event.date);
-      // If invalid, use tomorrow as fallback
+      
+      // If invalid, try to parse natural language dates like "Next Saturday"
       if (isNaN(eventDate.getTime())) {
-        eventDate = new Date();
-        eventDate.setDate(eventDate.getDate() + 1);
+        const lowerDate = event.date.toLowerCase();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Handle "next saturday", "this saturday", etc.
+        if (lowerDate.includes('saturday')) {
+          const daysUntilSaturday = (6 - today.getDay() + 7) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilSaturday);
+        } else if (lowerDate.includes('sunday')) {
+          const daysUntilSunday = (7 - today.getDay()) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilSunday);
+        } else if (lowerDate.includes('monday')) {
+          const daysUntilMonday = (1 - today.getDay() + 7) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilMonday);
+        } else if (lowerDate.includes('tuesday')) {
+          const daysUntilTuesday = (2 - today.getDay() + 7) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilTuesday);
+        } else if (lowerDate.includes('wednesday')) {
+          const daysUntilWednesday = (3 - today.getDay() + 7) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilWednesday);
+        } else if (lowerDate.includes('thursday')) {
+          const daysUntilThursday = (4 - today.getDay() + 7) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilThursday);
+        } else if (lowerDate.includes('friday')) {
+          const daysUntilFriday = (5 - today.getDay() + 7) % 7 || 7;
+          eventDate = new Date(today);
+          eventDate.setDate(today.getDate() + daysUntilFriday);
+        } else {
+          // Fallback to tomorrow if parsing fails
+          eventDate = new Date();
+          eventDate.setDate(eventDate.getDate() + 1);
+        }
       }
+      
+      console.log(`Parsed date for "${event.date}": ${eventDate.toISOString()}`);
     } else {
       // Use tomorrow as default if no date specified
       eventDate = new Date();
       eventDate.setDate(eventDate.getDate() + 1);
+      console.log(`Using default date (tomorrow): ${eventDate.toISOString()}`);
     }
     const dateStr = eventDate.toISOString().split('T')[0].replace(/-/g, '');
     

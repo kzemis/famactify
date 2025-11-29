@@ -225,24 +225,14 @@ const Calendar = () => {
             Return to Presentation
           </Button>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/saved-trips")}
-              className="w-full"
-              size="lg"
-            >
-              View Saved Trips
-            </Button>
-            <Button
-              onClick={() => navigate("/onboarding/interests")}
-              className="w-full"
-              size="lg"
-            >
-              <CalendarIcon className="h-5 w-5 mr-2" />
-              Plan New Itinerary
-            </Button>
-          </div>
+          <Button
+            onClick={() => navigate("/onboarding/interests")}
+            className="w-full"
+            size="lg"
+          >
+            <CalendarIcon className="h-5 w-5 mr-2" />
+            Plan New Itinerary
+          </Button>
         )}
 
         <div className="bg-card rounded-lg p-6 space-y-4">

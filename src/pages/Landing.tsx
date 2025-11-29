@@ -65,13 +65,6 @@ const Landing = () => {
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
-              onClick={() => navigate("/community")}
-              className="hidden sm:inline-flex"
-            >
-              Community
-            </Button>
-            <Button 
-              variant="ghost" 
               size="icon"
               onClick={() => navigate("/pitch-deck")}
               className="hover:text-primary"
@@ -79,7 +72,7 @@ const Landing = () => {
             >
               <Presentation className="h-5 w-5" />
             </Button>
-            <Button variant="outline" onClick={() => navigate("/contribute")}>
+            <Button variant="outline" onClick={() => navigate("/community")}>
               Contribute
             </Button>
           </div>

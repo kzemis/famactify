@@ -253,11 +253,6 @@ const Landing = () => {
                 key={idx} 
                 className={`p-8 relative transition-transform ${plan.popular ? 'border-primary border-2 shadow-2xl scale-105 md:scale-110 py-12 z-10' : ''}`}
               >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-                    Most Popular
-                  </div>
-                )}
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">

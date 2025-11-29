@@ -77,8 +77,8 @@ const Landing = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary">famactify</span>
-          <Button variant="outline" onClick={() => navigate("/auth")}>
-            Login
+          <Button variant="outline" onClick={() => navigate("/home")}>
+            Get Started
           </Button>
         </div>
       </header>
@@ -102,7 +102,7 @@ const Landing = () => {
               <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                   size="lg" 
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/home")}
                   className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
                 >
                   Get Started Free
@@ -289,7 +289,7 @@ const Landing = () => {
                 <Button 
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/home")}
                 >
                   {plan.price === "$0" ? "Start Free" : "Get Started"}
                 </Button>
@@ -308,7 +308,7 @@ const Landing = () => {
           </p>
           <Button 
             size="lg"
-            onClick={() => navigate("/auth")}
+            onClick={() => navigate("/home")}
             className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
           >
             Start Planning Now

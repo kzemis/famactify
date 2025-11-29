@@ -7,8 +7,13 @@ import { useNavigate } from "react-router-dom";
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const navigate = useNavigate();
   const totalSlides = 4;
+
+  // Minimum swipe distance (in px) to trigger navigation
+  const minSwipeDistance = 50;
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -74,10 +79,39 @@ const PitchDeck = () => {
     navigate("/onboarding/interests");
   };
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && currentSlide < totalSlides - 1) {
+      nextSlide();
+    }
+    if (isRightSwipe && currentSlide > 0) {
+      prevSlide();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Slide Container */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div 
+        className="flex-1 flex items-center justify-center p-8"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         <div className="w-full max-w-5xl">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (

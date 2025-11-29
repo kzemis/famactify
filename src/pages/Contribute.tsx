@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, Locate } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
@@ -22,6 +24,8 @@ function slugify(name: string): string {
 export default function Contribute() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -30,6 +34,8 @@ export default function Contribute() {
     minPrice: '',
     maxPrice: '',
     address: '',
+    lat: null as number | null,
+    lon: null as number | null,
     environment: '',
     wheelchair: false,
     stroller: false,
@@ -89,8 +95,8 @@ export default function Contribute() {
         maxPrice: maxP,
         location: {
           address: formData.address,
-          lat: null,
-          lon: null,
+          lat: formData.lat,
+          lon: formData.lon,
           environment: formData.environment || null
         },
         accessibility: {
@@ -130,8 +136,8 @@ export default function Contribute() {
         min_price: minP,
         max_price: maxP,
         location_address: formData.address,
-        location_lat: null,
-        location_lon: null,
+        location_lat: formData.lat,
+        location_lon: formData.lon,
         location_environment: formData.environment || null,
         accessibility_wheelchair: formData.wheelchair || null,
         accessibility_stroller: formData.stroller || null,
@@ -171,6 +177,8 @@ export default function Contribute() {
         minPrice: '',
         maxPrice: '',
         address: '',
+        lat: null,
+        lon: null,
         environment: '',
         wheelchair: false,
         stroller: false,
@@ -179,6 +187,7 @@ export default function Contribute() {
         imageurlthumb: '',
         urlmoreinfo: '',
       });
+      setShowMap(false);
 
     } catch (error: any) {
       console.error('Submit error:', error);
@@ -186,6 +195,103 @@ export default function Contribute() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleUseMyLocation = () => {
+    if (!('geolocation' in navigator)) {
+      toast.error('Geolocation not supported by your browser');
+      return;
+    }
+    
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData(prev => ({
+          ...prev,
+          lat: latitude,
+          lon: longitude
+        }));
+        setShowMap(true);
+        setLocating(false);
+        toast.success(`Location set: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+      },
+      (error) => {
+        setLocating(false);
+        toast.error(`Failed to get location: ${error.message}`);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const MapSelector = () => {
+    const mapContainer = useRef<HTMLDivElement>(null);
+    const map = useRef<mapboxgl.Map | null>(null);
+    const marker = useRef<mapboxgl.Marker | null>(null);
+
+    useEffect(() => {
+      if (!mapContainer.current || map.current) return;
+
+      // Set Mapbox token - will use placeholder for now, user can add their token
+      mapboxgl.accessToken = 'pk.eyJ1IjoiZmFtYWN0aWZ5IiwiYSI6ImNtNWJ3ejB5ajBiMHgyaXB6eDBmd2NvOHgifQ.placeholder';
+
+      const startLat = formData.lat || 56.9496; // Riga default
+      const startLon = formData.lon || 24.1052;
+
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [startLon, startLat],
+        zoom: 13
+      });
+
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+      marker.current = new mapboxgl.Marker({ draggable: true })
+        .setLngLat([startLon, startLat])
+        .addTo(map.current);
+
+      marker.current.on('dragend', () => {
+        const lngLat = marker.current!.getLngLat();
+        setFormData(prev => ({
+          ...prev,
+          lat: lngLat.lat,
+          lon: lngLat.lng
+        }));
+      });
+
+      map.current.on('click', (e) => {
+        const { lng, lat } = e.lngLat;
+        marker.current!.setLngLat([lng, lat]);
+        setFormData(prev => ({
+          ...prev,
+          lat: lat,
+          lon: lng
+        }));
+      });
+
+      return () => {
+        map.current?.remove();
+      };
+    }, []);
+
+    useEffect(() => {
+      if (marker.current && formData.lat && formData.lon) {
+        marker.current.setLngLat([formData.lon, formData.lat]);
+        if (map.current) {
+          map.current.setCenter([formData.lon, formData.lat]);
+        }
+      }
+    }, [formData.lat, formData.lon]);
+
+    return (
+      <div className="space-y-2">
+        <div ref={mapContainer} className="w-full h-64 rounded-lg border" />
+        <p className="text-xs text-muted-foreground">
+          Click on the map or drag the marker to set the exact location
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -266,6 +372,33 @@ export default function Contribute() {
                   required
                 />
               </div>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUseMyLocation}
+                  disabled={locating}
+                >
+                  <Locate className="w-4 h-4 mr-2" />
+                  {locating ? 'Getting location...' : 'Use My Location'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMap(!showMap)}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {showMap ? 'Hide Map' : 'Show Map'}
+                </Button>
+              </div>
+              {formData.lat && formData.lon && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Coordinates: {formData.lat.toFixed(6)}, {formData.lon.toFixed(6)}
+                </p>
+              )}
+              {showMap && <div className="mt-4"><MapSelector /></div>}
             </div>
 
             <div>

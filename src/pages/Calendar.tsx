@@ -88,6 +88,13 @@ const Calendar = () => {
         title: "Calendar invites sent!",
         description: `Successfully sent ${successCount} invite${successCount > 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
       });
+      
+      // Check if in presentation mode and redirect back to pitch deck
+      const presentationMode = sessionStorage.getItem("presentationMode");
+      if (presentationMode === "active") {
+        sessionStorage.setItem("presentationMode", "returning");
+        setTimeout(() => navigate("/pitch-deck"), 1500);
+      }
     } else {
       toast({
         title: "Failed to send invites",
@@ -95,6 +102,11 @@ const Calendar = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleReturnToPresentation = () => {
+    sessionStorage.setItem("presentationMode", "returning");
+    navigate("/pitch-deck");
   };
 
   const handleDownloadICS = () => {
@@ -203,24 +215,35 @@ const Calendar = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {sessionStorage.getItem("presentationMode") === "active" ? (
           <Button
-            variant="outline"
-            onClick={() => navigate("/saved-trips")}
+            onClick={handleReturnToPresentation}
             className="w-full"
             size="lg"
           >
-            View Saved Trips
+            <CheckCircle2 className="h-5 w-5 mr-2" />
+            Return to Presentation
           </Button>
-          <Button
-            onClick={() => navigate("/onboarding/interests")}
-            className="w-full"
-            size="lg"
-          >
-            <CalendarIcon className="h-5 w-5 mr-2" />
-            Plan New Itinerary
-          </Button>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/saved-trips")}
+              className="w-full"
+              size="lg"
+            >
+              View Saved Trips
+            </Button>
+            <Button
+              onClick={() => navigate("/onboarding/interests")}
+              className="w-full"
+              size="lg"
+            >
+              <CalendarIcon className="h-5 w-5 mr-2" />
+              Plan New Itinerary
+            </Button>
+          </div>
+        )}
 
         <div className="bg-card rounded-lg p-6 space-y-4">
           <h3 className="text-xl font-semibold">Events to be added:</h3>

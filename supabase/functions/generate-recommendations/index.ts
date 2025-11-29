@@ -76,14 +76,15 @@ serve(async (req) => {
     
     console.log('Total activities data:', allActivitiesData.length, 'activities');
 
-    const systemPrompt = `You are a family activity recommendation assistant. Based on the user's interests and answers to planning questions, analyze the provided activities database and recommend 5-10 activities that best match their preferences.
+    const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, analyze the provided activities database and recommend 5-10 activities for a SINGLE DAY itinerary.
 
 RULES:
 1. Recommend between 5-10 activities from the provided database
-2. Consider all user preferences: location, dates, budget, group size, interests
-3. Prioritize activities that align with their stated interests
-4. Ensure variety in the recommendations
-5. Consider practical factors like timing and location
+2. Focus on creating a ONE-DAY itinerary (activities should fit within a single day)
+3. Consider all user preferences: location in Latvia, budget in EUR, group size, interests
+4. Prioritize activities that align with their stated interests
+5. Ensure activities can be completed in one day with reasonable travel time between them
+6. Consider practical factors like timing, location proximity, and logical sequencing for a day trip
 
 Return ONLY valid JSON in this exact format:
 {

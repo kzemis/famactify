@@ -27,14 +27,15 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are a family activity planning assistant. Based on the user's interests, generate 5-10 personalized questions to gather more specific information for planning their activities.
+    const systemPrompt = `You are a family activity planning assistant for Latvia. Based on the user's interests, generate exactly 4 personalized questions to gather information for planning a ONE-DAY family activity.
 
 RULES:
-1. Generate between 5-10 questions
+1. Generate exactly 4 questions
 2. Each question should be specific and relevant to their stated interests
-3. Questions should help gather practical planning information (location, dates, budget, group size, preferences, etc.)
+3. Questions should help gather practical planning information (location in Latvia, specific date, budget in EUR, group size, preferences, etc.)
 4. Make questions conversational and friendly
-5. Include helpful placeholder examples for each question
+5. Include helpful placeholder examples using Latvian cities and locations (e.g., Riga, Jurmala, Sigulda)
+6. Focus on planning for a SINGLE DAY activity
 
 Return ONLY valid JSON in this exact format:
 {

@@ -72,6 +72,16 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+          <span className="text-2xl font-bold text-primary">famactify</span>
+          <Button variant="outline" onClick={() => navigate("/auth")}>
+            Login
+          </Button>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />

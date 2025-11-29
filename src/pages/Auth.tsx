@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Lock } from "lucide-react";
@@ -13,9 +14,19 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Load remembered email on mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("famactify_remembered_email");
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   useEffect(() => {
     // Listen for auth changes - only redirect after successful login
@@ -40,6 +51,13 @@ const Auth = () => {
         });
         
         if (error) throw error;
+
+        // Handle remember me - save or remove email
+        if (rememberMe) {
+          localStorage.setItem("famactify_remembered_email", email);
+        } else {
+          localStorage.removeItem("famactify_remembered_email");
+        }
         
         toast({
           title: "Welcome back!",
@@ -128,6 +146,18 @@ const Auth = () => {
                 />
               </div>
             </div>
+            {isLogin && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                />
+                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                  Remember me
+                </Label>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
             </Button>

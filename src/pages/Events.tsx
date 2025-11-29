@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, X, Calendar, MapPin, DollarSign, Clock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Event {
   id: string;
@@ -25,6 +26,12 @@ const Events = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  
+  // Touch handling for swipe
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadRecommendations();
@@ -110,6 +117,29 @@ const Events = () => {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const swipeThreshold = 100;
+    const swipeDistance = touchStartX.current - touchEndX.current;
+
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+      if (swipeDistance > 0) {
+        // Swiped left - dislike
+        handleDislike();
+      } else {
+        // Swiped right - like
+        handleLike();
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
@@ -176,15 +206,23 @@ const Events = () => {
         <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Discover Activities</h1>
-          <p className="text-muted-foreground">
-            Swipe right to add, left to skip
-          </p>
+          {isMobile && (
+            <p className="text-muted-foreground">
+              Swipe right to add, left to skip
+            </p>
+          )}
           <div className="text-sm text-muted-foreground">
             {currentIndex + 1} / {events.length}
           </div>
         </div>
 
-        <Card className="overflow-hidden shadow-2xl">
+        <Card 
+          ref={cardRef}
+          className="overflow-hidden shadow-2xl"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="relative h-[400px]">
             <img
               src={event.image}

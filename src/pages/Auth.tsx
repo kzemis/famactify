@@ -120,18 +120,26 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `url(${patternBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-      
-      <Card className="w-full max-w-md relative shadow-2xl">
+    <div className="min-h-screen relative overflow-hidden">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center">
+          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+            FamActify
+          </span>
+        </div>
+      </header>
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url(${patternBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
+        
+        <Card className="w-full max-w-md relative shadow-2xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-bold text-center">
             {isSignUp ? "Create Account" : "Welcome Back"}
@@ -224,6 +232,7 @@ const Auth = () => {
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

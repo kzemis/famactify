@@ -50,8 +50,16 @@ const OnboardingInterests = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-      <Card className="w-full max-w-2xl shadow-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center">
+          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+            FamActify
+          </span>
+        </div>
+      </header>
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+        <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
             <Sparkles className="h-8 w-8 text-primary" />
@@ -90,6 +98,7 @@ const OnboardingInterests = () => {
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

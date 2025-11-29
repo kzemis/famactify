@@ -45,7 +45,7 @@ const Home = () => {
         {/* Welcome Section */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">
-            Welcome to <span className="text-primary">Famactify</span>!
+            Welcome to <span className="text-primary">FamActify</span>!
           </h1>
           <p className="text-muted-foreground text-lg">
             Ready to plan your next family adventure?

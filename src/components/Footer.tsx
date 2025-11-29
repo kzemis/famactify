@@ -99,13 +99,13 @@ const Footer = () => {
         
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary">Famactify</span>
+            <span className="text-xl font-bold text-primary">FamActify</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Made for happy families 😊
           </p>
           <p className="text-sm text-muted-foreground">
-            © {currentYear} Famactify. All rights reserved.
+            © {currentYear} FamActify. All rights reserved.
           </p>
         </div>
       </div>

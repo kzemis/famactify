@@ -14,8 +14,8 @@ const FAQ = () => {
 
   const faqs = [
     {
-      question: "What is Famactify?",
-      answer: "Famactify is an AI-powered family activity planning tool that helps busy parents discover and plan perfect activities for their families in seconds, instead of spending hours researching across multiple platforms."
+      question: "What is FamActify?",
+      answer: "FamActify is an AI-powered family activity planning tool that helps busy parents discover and plan perfect activities for their families in seconds, instead of spending hours researching across multiple platforms."
     },
     {
       question: "How does the AI recommendation work?",
@@ -23,7 +23,7 @@ const FAQ = () => {
     },
     {
       question: "Is the first trip really free?",
-      answer: "Yes! You can plan your first family trip completely free with no credit card required. This lets you experience the full value of Famactify before deciding to subscribe."
+      answer: "Yes! You can plan your first family trip completely free with no credit card required. This lets you experience the full value of FamActify before deciding to subscribe."
     },
     {
       question: "What's included in the Family plan?",
@@ -52,7 +52,7 @@ const FAQ = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            famactify
+            FamActify
           </span>
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -66,7 +66,7 @@ const FAQ = () => {
           <div className="text-center space-y-4">
             <h1 className="text-5xl font-bold text-foreground">Frequently Asked Questions</h1>
             <p className="text-xl text-muted-foreground">
-              Everything you need to know about Famactify.
+              Everything you need to know about FamActify.
             </p>
           </div>
 

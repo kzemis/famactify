@@ -35,7 +35,7 @@ const ContactUs = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            famactify
+            FamActify
           </span>
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -98,7 +98,7 @@ const ContactUs = () => {
               <div className="space-y-4">
                 <h2 className="text-2xl font-semibold">Get in Touch</h2>
                 <p className="text-muted-foreground">
-                  Have questions about Famactify? We're here to help you make the most of your family time.
+                  Have questions about FamActify? We're here to help you make the most of your family time.
                 </p>
               </div>
 

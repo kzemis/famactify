@@ -11,7 +11,7 @@ const TermsOfService = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            famactify
+            FamActify
           </span>
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -31,7 +31,7 @@ const TermsOfService = () => {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">1. Acceptance of Terms</h2>
               <p className="text-muted-foreground">
-                By accessing and using Famactify, you accept and agree to be bound by the terms and 
+                By accessing and using FamActify, you accept and agree to be bound by the terms and 
                 provisions of this agreement. If you do not agree to these terms, please do not use our service.
               </p>
             </section>
@@ -39,7 +39,7 @@ const TermsOfService = () => {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">2. Description of Service</h2>
               <p className="text-muted-foreground">
-                Famactify provides an AI-powered platform for family activity planning and recommendations. 
+                FamActify provides an AI-powered platform for family activity planning and recommendations. 
                 We offer both free and paid subscription plans with varying features and usage limits.
               </p>
             </section>
@@ -71,7 +71,7 @@ const TermsOfService = () => {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">6. Limitation of Liability</h2>
               <p className="text-muted-foreground">
-                Famactify provides activity recommendations for informational purposes only. We are not 
+                FamActify provides activity recommendations for informational purposes only. We are not 
                 responsible for the accuracy of third-party information or the quality of recommended activities.
               </p>
             </section>

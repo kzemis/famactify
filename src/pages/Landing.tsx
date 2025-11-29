@@ -61,7 +61,7 @@ const Landing = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <span className="text-2xl font-bold text-primary">famactify</span>
+          <span className="text-2xl font-bold text-primary">FamActify</span>
           <Button variant="outline" onClick={() => navigate("/home")}>
             Get Started
           </Button>
@@ -79,7 +79,7 @@ const Landing = () => {
               </div>
               <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
                 Plan Your Family Holidays with{" "}
-                <span className="text-primary">Famactify</span>
+                <span className="text-primary">FamActify</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl">
                 Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.
@@ -117,7 +117,7 @@ const Landing = () => {
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Busy Parents Love Famactify</h2>
+            <h2 className="text-4xl font-bold mb-4">Why Busy Parents Love FamActify</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               We understand the challenge of planning quality family time. That's why we built the ultimate solution.
             </p>
@@ -136,11 +136,11 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Why Famactify Section */}
+      {/* Why FamActify Section */}
       <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose Famactify?</h2>
+            <h2 className="text-4xl font-bold mb-4">Why Choose FamActify?</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               See how we compare to other ways of planning family activities
             </p>
@@ -202,7 +202,7 @@ const Landing = () => {
               </ul>
             </Card>
 
-            {/* Famactify */}
+            {/* FamActify */}
             <Card className="p-6 border-primary border-2 shadow-xl relative">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
                 Best Choice
@@ -211,7 +211,7 @@ const Landing = () => {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Sparkles className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold text-primary">Famactify</h3>
+                <h3 className="text-xl font-semibold text-primary">FamActify</h3>
               </div>
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-2">

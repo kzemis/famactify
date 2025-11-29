@@ -67,15 +67,9 @@ const AboutUs = () => {
                   challenges of modern family life. Every feature we build is designed with real families in mind.
                 </p>
               </div>
-            </div>
-          </div>
-
-          <div className="text-center pt-8">
-            <Button onClick={() => navigate("/home")} size="lg">
-              Start Planning Today
-            </Button>
           </div>
         </div>
+      </div>
       </main>
 
       <Footer />

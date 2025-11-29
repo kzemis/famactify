@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, Calendar, Sparkles, Users, Heart } from "lucide-react";
+import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
@@ -147,6 +147,106 @@ const Landing = () => {
                 <p className="text-muted-foreground">{feature.description}</p>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Famactify Section */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Why Choose Famactify?</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              See how we compare to other ways of planning family activities
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Manual Search */}
+            <Card className="p-6 border-muted">
+              <div className="text-center mb-6">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold">Manual Search</h3>
+              </div>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">Hours of browsing multiple websites</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">No personalization for your family</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">Manual scheduling and conflict checking</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">Outdated or incomplete information</span>
+                </li>
+              </ul>
+            </Card>
+
+            {/* ChatGPT */}
+            <Card className="p-6 border-muted">
+              <div className="text-center mb-6">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold">ChatGPT</h3>
+              </div>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">Generic suggestions, not local events</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">No real-time availability or pricing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">Cannot save or share itineraries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-muted-foreground">No calendar integration</span>
+                </li>
+              </ul>
+            </Card>
+
+            {/* Famactify */}
+            <Card className="p-6 border-primary border-2 shadow-xl relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                Best Choice
+              </div>
+              <div className="text-center mb-6">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-primary">Famactify</h3>
+              </div>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span>Real local events updated in real-time</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span>Personalized to your family's interests</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span>Auto-generated conflict-free itineraries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span>Save, share, and export to calendar</span>
+                </li>
+              </ul>
+            </Card>
           </div>
         </div>
       </section>

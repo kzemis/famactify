@@ -204,7 +204,7 @@ const PitchDeck = () => {
           {currentSlide === 3 && (
             <div className="space-y-12 animate-in fade-in duration-500">
               <h1 className="text-5xl font-bold text-foreground">
-                3-Month Milestones
+                Traction & Roadmap
               </h1>
 
               <div className="grid gap-4">

@@ -56,28 +56,26 @@ const PitchDeck = () => {
         <div className="w-full max-w-5xl">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <div className="space-y-6 text-center">
-                <h1 className="text-5xl font-bold text-foreground">
-                  The Problem
-                </h1>
-                <p className="text-2xl text-muted-foreground leading-relaxed">
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <h1 className="text-5xl font-bold text-foreground text-center">
+                The Problem
+              </h1>
+
+              <div className="border-t-2 border-primary pt-6 space-y-4">
+                <h2 className="text-4xl font-bold text-primary">
+                  According to data, Planning a Family Trip usually takes up to 8 Hours!
+                </h2>
+                <p className="text-xl text-muted-foreground leading-relaxed">
                   Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span> etc. 
                   to collect information, verify details, and manually plan trips.
                 </p>
               </div>
 
-              <div className="border-t-2 border-primary pt-8 space-y-6">
-                <h2 className="text-3xl font-bold text-primary">
-                  According to data, Planning a Family Trip usually takes up to 8 Hours!
-                </h2>
-              </div>
-
-              <div className="border-t-2 border-primary pt-8 space-y-6">
-                <h2 className="text-5xl font-bold text-primary">
+              <div className="border-t-2 border-primary pt-6 space-y-4">
+                <h2 className="text-4xl font-bold text-primary">
                   Our Solution
                 </h2>
-                <p className="text-2xl text-foreground leading-relaxed">
+                <p className="text-xl text-foreground leading-relaxed">
                   A simple AI tool that helps busy parents plan family activities in{" "}
                   <span className="text-primary font-semibold">seconds</span>, 
                   eliminating hours of planning.

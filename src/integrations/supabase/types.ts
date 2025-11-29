@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      activityspots: {
+        Row: {
+          accessibility_stroller: boolean | null
+          accessibility_wheelchair: boolean | null
+          activity_type: string[]
+          age_buckets: string[]
+          created_at: string
+          description: string
+          duration_minutes: number | null
+          event_endtime: string | null
+          event_starttime: string | null
+          facilities_changingtable: boolean | null
+          facilities_restrooms: boolean | null
+          foodvenue_kidamenities: boolean | null
+          foodvenue_kidcorner: boolean | null
+          foodvenue_kidmenu: boolean | null
+          id: string
+          imageurlthumb: string | null
+          json: Json
+          location_address: string | null
+          location_environment: string | null
+          location_lat: number | null
+          location_lon: number | null
+          max_price: number | null
+          min_price: number | null
+          name: string
+          schedule_openinghours: Json | null
+          schema_version: string | null
+          trail_durationminutes: number | null
+          trail_lengthkm: number | null
+          trail_routetype: string | null
+          updated_at: string
+          urlmoreinfo: string | null
+        }
+        Insert: {
+          accessibility_stroller?: boolean | null
+          accessibility_wheelchair?: boolean | null
+          activity_type?: string[]
+          age_buckets?: string[]
+          created_at?: string
+          description: string
+          duration_minutes?: number | null
+          event_endtime?: string | null
+          event_starttime?: string | null
+          facilities_changingtable?: boolean | null
+          facilities_restrooms?: boolean | null
+          foodvenue_kidamenities?: boolean | null
+          foodvenue_kidcorner?: boolean | null
+          foodvenue_kidmenu?: boolean | null
+          id: string
+          imageurlthumb?: string | null
+          json: Json
+          location_address?: string | null
+          location_environment?: string | null
+          location_lat?: number | null
+          location_lon?: number | null
+          max_price?: number | null
+          min_price?: number | null
+          name: string
+          schedule_openinghours?: Json | null
+          schema_version?: string | null
+          trail_durationminutes?: number | null
+          trail_lengthkm?: number | null
+          trail_routetype?: string | null
+          updated_at?: string
+          urlmoreinfo?: string | null
+        }
+        Update: {
+          accessibility_stroller?: boolean | null
+          accessibility_wheelchair?: boolean | null
+          activity_type?: string[]
+          age_buckets?: string[]
+          created_at?: string
+          description?: string
+          duration_minutes?: number | null
+          event_endtime?: string | null
+          event_starttime?: string | null
+          facilities_changingtable?: boolean | null
+          facilities_restrooms?: boolean | null
+          foodvenue_kidamenities?: boolean | null
+          foodvenue_kidcorner?: boolean | null
+          foodvenue_kidmenu?: boolean | null
+          id?: string
+          imageurlthumb?: string | null
+          json?: Json
+          location_address?: string | null
+          location_environment?: string | null
+          location_lat?: number | null
+          location_lon?: number | null
+          max_price?: number | null
+          min_price?: number | null
+          name?: string
+          schedule_openinghours?: Json | null
+          schema_version?: string | null
+          trail_durationminutes?: number | null
+          trail_lengthkm?: number | null
+          trail_routetype?: string | null
+          updated_at?: string
+          urlmoreinfo?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           bio: string | null

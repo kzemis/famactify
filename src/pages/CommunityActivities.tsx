@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import AppHeader from '@/components/AppHeader';
 import { Search, MapPin, Euro, Users, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -130,7 +129,16 @@ export default function CommunityActivities() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader />
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 flex h-16 items-center justify-center">
+          <span 
+            className="text-2xl font-bold text-primary cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            FamActify
+          </span>
+        </div>
+      </header>
       
       <main className="container mx-auto px-4 py-8">
         {/* Header */}

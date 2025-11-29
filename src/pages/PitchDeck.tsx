@@ -61,7 +61,7 @@ const PitchDeck = () => {
                 The Problem
               </h1>
 
-              <div className="border-t-2 border-primary pt-6 space-y-4">
+              <div className="space-y-4">
                 <h2 className="text-4xl font-bold text-primary">
                   According to data, Planning a Family Trip usually takes up to 8 Hours!
                 </h2>

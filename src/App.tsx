@@ -22,6 +22,7 @@ import ContactUs from "./pages/ContactUs";
 import TermsOfService from "./pages/TermsOfService";
 import Contribute from "./pages/Contribute";
 import CommunityActivities from "./pages/CommunityActivities";
+import TestAuth from "./pages/TestAuth";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
           <Route path="/community" element={<CommunityActivities />} />
+          <Route path="/test-auth" element={<TestAuth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

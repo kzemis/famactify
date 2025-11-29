@@ -91,7 +91,7 @@ const Landing = () => {
               <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                   size="lg" 
-                  onClick={() => navigate("/onboarding/interests")}
+                  onClick={() => navigate("/auth")}
                   className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
                 >
                   Get Started Free
@@ -178,7 +178,7 @@ const Landing = () => {
                 <Button 
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
-                  onClick={() => navigate("/onboarding/interests")}
+                  onClick={() => navigate("/auth")}
                 >
                   {plan.price === "$0" ? "Start Free" : "Get Started"}
                 </Button>
@@ -197,7 +197,7 @@ const Landing = () => {
           </p>
           <Button 
             size="lg"
-            onClick={() => navigate("/onboarding/interests")}
+            onClick={() => navigate("/auth")}
             className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
           >
             Start Planning Now

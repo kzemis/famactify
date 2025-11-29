@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Search, MapPin, Euro, Users, Plus } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ActivitySpot {
@@ -37,6 +38,9 @@ export default function CommunityActivities() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedAge, setSelectedAge] = useState<string>('all');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const activityTypes = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
   const ageBuckets = ['0-2', '3-5', '6-8', '9-12', '13+'];
@@ -127,6 +131,20 @@ export default function CommunityActivities() {
     if (activity.min_price) return `From €${activity.min_price}`;
     if (activity.max_price) return `Up to €${activity.max_price}`;
     return 'Price varies';
+  };
+
+  const openLightbox = (images: string[], index: number) => {
+    setLightboxImages(images);
+    setCurrentImageIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % lightboxImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
   };
 
   return (
@@ -246,7 +264,10 @@ export default function CommunityActivities() {
                           <CarouselContent>
                             {images.map((imageUrl, idx) => (
                               <CarouselItem key={idx}>
-                                <div className="h-48 overflow-hidden">
+                                <div 
+                                  className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => openLightbox(images, idx)}
+                                >
                                   <img 
                                     src={imageUrl} 
                                     alt={`${activity.name} - Image ${idx + 1}`}
@@ -263,7 +284,10 @@ export default function CommunityActivities() {
                     );
                   } else if (displayImage) {
                     return (
-                      <div className="h-48 overflow-hidden">
+                      <div 
+                        className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openLightbox([displayImage], 0)}
+                      >
                         <img 
                           src={displayImage} 
                           alt={activity.name}
@@ -344,6 +368,61 @@ export default function CommunityActivities() {
           </div>
         )}
       </main>
+
+      {/* Lightbox Modal */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
+          <div className="relative w-full h-[95vh] flex items-center justify-center">
+            {/* Close button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+
+            {/* Image counter */}
+            {lightboxImages.length > 1 && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
+                {currentImageIndex + 1} / {lightboxImages.length}
+              </div>
+            )}
+
+            {/* Previous button */}
+            {lightboxImages.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-4 z-50 text-white hover:bg-white/20 h-12 w-12"
+                onClick={prevImage}
+              >
+                <ChevronLeft className="h-8 w-8" />
+              </Button>
+            )}
+
+            {/* Current image */}
+            <img
+              src={lightboxImages[currentImageIndex]}
+              alt={`Full size image ${currentImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+            />
+
+            {/* Next button */}
+            {lightboxImages.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 z-50 text-white hover:bg-white/20 h-12 w-12"
+                onClick={nextImage}
+              >
+                <ChevronRight className="h-8 w-8" />
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

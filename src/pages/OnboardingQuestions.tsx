@@ -108,8 +108,16 @@ const OnboardingQuestions = () => {
   const questionIcon = iconMap[question.icon] || <Heart className="h-6 w-6" />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-      <Card className="w-full max-w-2xl shadow-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center">
+          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+            FamActify
+          </span>
+        </div>
+      </header>
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+        <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader>
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -168,6 +176,7 @@ const OnboardingQuestions = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

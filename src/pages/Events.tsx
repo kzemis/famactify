@@ -112,12 +112,21 @@ const Events = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Finding perfect activities for you</h2>
-            <p className="text-muted-foreground">Our AI is analyzing your preferences...</p>
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4 flex h-16 items-center">
+            <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+              FamActify
+            </span>
+          </div>
+        </header>
+        <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Finding perfect activities for you</h2>
+              <p className="text-muted-foreground">Our AI is analyzing your preferences...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -126,13 +135,22 @@ const Events = () => {
 
   if (events.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">No activities found</h2>
-          <p className="text-muted-foreground">Please complete the onboarding to get recommendations</p>
-          <Button onClick={() => navigate("/onboarding/interests")}>
-            Start Onboarding
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4 flex h-16 items-center">
+            <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+              FamActify
+            </span>
+          </div>
+        </header>
+        <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">No activities found</h2>
+            <p className="text-muted-foreground">Please complete the onboarding to get recommendations</p>
+            <Button onClick={() => navigate("/onboarding/interests")}>
+              Start Onboarding
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -146,8 +164,16 @@ const Events = () => {
   const progress = ((currentIndex + 1) / events.length) * 100;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center">
+          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+            FamActify
+          </span>
+        </div>
+      </header>
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+        <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Discover Activities</h1>
           <p className="text-muted-foreground">
@@ -235,6 +261,7 @@ const Events = () => {
             </Button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

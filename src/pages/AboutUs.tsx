@@ -63,7 +63,7 @@ const AboutUs = () => {
               <div>
                 <h2 className="text-2xl font-semibold mb-2">Our Team</h2>
                 <p className="text-muted-foreground">
-                  We're a small but passionate team of parents, engineers, and designers who understand the 
+                  We're a small but passionate team of engineers and designers who understand the 
                   challenges of modern family life. Every feature we build is designed with real families in mind.
                 </p>
               </div>

@@ -105,6 +105,13 @@ const PitchDeck = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center">
+          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
+            FamActify
+          </span>
+        </div>
+      </header>
       {/* Slide Container */}
       <div 
         className="flex-1 flex items-center justify-center p-8"

@@ -61,14 +61,16 @@ const PitchDeck = () => {
                 <h1 className="text-5xl font-bold text-foreground">
                   The Problem
                 </h1>
-                <p className="text-3xl text-foreground leading-relaxed">
-                  According to data, <span className="text-primary font-semibold">Planning a Family Trip</span>{" "}
-                  usually takes up to <span className="text-primary font-semibold">8 Hours!</span>
-                </p>
                 <p className="text-2xl text-muted-foreground leading-relaxed">
                   Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span> etc. 
                   to collect information, verify details, and manually plan trips.
                 </p>
+              </div>
+
+              <div className="border-t-2 border-primary pt-8 space-y-6">
+                <h2 className="text-5xl font-bold text-primary">
+                  According to data, Planning a Family Trip usually takes up to 8 Hours!
+                </h2>
               </div>
 
               <div className="border-t-2 border-primary pt-8 space-y-6">

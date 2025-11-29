@@ -47,9 +47,21 @@ function generateICS(events: CalendarEvent[], recipientEmail: string): string {
     const endHour = String(parseInt(startHour) + 2).padStart(2, '0');
     const endTime = `${endHour}${startMinute}00`;
     
-    // Use tomorrow as default date if "Any day" is specified
-    const eventDate = new Date();
-    eventDate.setDate(eventDate.getDate() + 1);
+    // Parse the actual event date from the event object
+    let eventDate: Date;
+    if (event.date && event.date !== "Any day") {
+      // Try to parse the date string
+      eventDate = new Date(event.date);
+      // If invalid, use tomorrow as fallback
+      if (isNaN(eventDate.getTime())) {
+        eventDate = new Date();
+        eventDate.setDate(eventDate.getDate() + 1);
+      }
+    } else {
+      // Use tomorrow as default if no date specified
+      eventDate = new Date();
+      eventDate.setDate(eventDate.getDate() + 1);
+    }
     const dateStr = eventDate.toISOString().split('T')[0].replace(/-/g, '');
     
     icsContent += '\r\n' + [

@@ -1,0 +1,58 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkles } from "lucide-react";
+
+const OnboardingInterests = () => {
+  const [interests, setInterests] = useState("");
+  const navigate = useNavigate();
+
+  const handleContinue = () => {
+    if (interests.trim()) {
+      // Store interests in session storage for now
+      sessionStorage.setItem("userInterests", interests);
+      navigate("/onboarding/questions");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <Card className="w-full max-w-2xl shadow-2xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle className="text-3xl font-bold">Tell Us About Your Interests</CardTitle>
+          <CardDescription className="text-lg">
+            Let's discover what makes your family happy! Share your interests, hobbies, and the types of activities you enjoy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Textarea
+            placeholder="We love outdoor activities, especially hiking and picnics. The kids are into art and science. We're also interested in cultural events and trying new cuisines..."
+            value={interests}
+            onChange={(e) => setInterests(e.target.value)}
+            className="min-h-[200px] text-lg"
+          />
+          <div className="bg-accent rounded-lg p-4">
+            <p className="text-sm text-accent-foreground">
+              <strong>Pro tip:</strong> The more details you share, the better we can personalize your recommendations!
+            </p>
+          </div>
+          <Button
+            onClick={handleContinue}
+            disabled={!interests.trim()}
+            className="w-full text-lg py-6"
+            size="lg"
+          >
+            Continue to Questions
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default OnboardingInterests;

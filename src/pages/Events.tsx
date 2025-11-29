@@ -225,9 +225,12 @@ const Events = () => {
         >
           <div className="relative h-[400px]">
             <img
-              src={event.image}
+              src={event.image || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800"}
               alt={event.title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800";
+              }}
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
               <h2 className="text-2xl font-bold mb-2">{event.title}</h2>

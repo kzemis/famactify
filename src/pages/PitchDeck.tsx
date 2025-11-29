@@ -158,12 +158,12 @@ const PitchDeck = () => {
 
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Left Column: 3-Month Roadmap */}
-                <div className="space-y-4">
+                <div className="bg-muted/50 rounded-lg p-6 space-y-4">
                   {/* First Month */}
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold text-primary">First Month</h3>
                     {["Launch in Latvia and refine product", "Acquire first 100 customers"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                      <div key={index} className="flex items-center gap-2 bg-background rounded-lg p-3">
                         <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
                           {index + 1}
                         </div>
@@ -176,7 +176,7 @@ const PitchDeck = () => {
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold text-primary">Second Month</h3>
                     {["Raise pre-seed funding", "Raise up the team and modernize the app"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                      <div key={index} className="flex items-center gap-2 bg-background rounded-lg p-3">
                         <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
                           {index + 3}
                         </div>
@@ -189,7 +189,7 @@ const PitchDeck = () => {
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold text-primary">Third Month</h3>
                     {["Expand to Baltics", "Build GTM strategy for Europe"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                      <div key={index} className="flex items-center gap-2 bg-background rounded-lg p-3">
                         <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
                           {index + 5}
                         </div>
@@ -200,7 +200,7 @@ const PitchDeck = () => {
                 </div>
 
                 {/* Right Column: GTM Section */}
-                <div className="bg-muted/50 rounded-lg p-6 h-fit">
+                <div className="bg-muted/50 rounded-lg p-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-4">
                     <Rocket className="h-6 w-6" />
                     Go-To-Market Strategy

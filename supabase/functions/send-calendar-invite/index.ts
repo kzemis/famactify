@@ -22,6 +22,57 @@ interface InviteRequest {
   events: CalendarEvent[];
 }
 
+function generateICS(events: CalendarEvent[], recipientEmail: string): string {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  
+  let icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//FamActify//Calendar Invite//EN',
+    'METHOD:REQUEST',
+    'CALSCALE:GREGORIAN',
+  ].join('\r\n');
+
+  events.forEach((event, index) => {
+    const eventId = `famactify-${Date.now()}-${index}@famactify.com`;
+    
+    // Parse time range (e.g., "10:00 - 18:00")
+    const timeMatch = event.time.match(/(\d{2}):(\d{2})/);
+    const startHour = timeMatch ? timeMatch[1] : '10';
+    const startMinute = timeMatch ? timeMatch[2] : '00';
+    
+    // Create start and end times (default 2 hour duration)
+    const startTime = `${startHour}${startMinute}00`;
+    const endHour = String(parseInt(startHour) + 2).padStart(2, '0');
+    const endTime = `${endHour}${startMinute}00`;
+    
+    // Use tomorrow as default date if "Any day" is specified
+    const eventDate = new Date();
+    eventDate.setDate(eventDate.getDate() + 1);
+    const dateStr = eventDate.toISOString().split('T')[0].replace(/-/g, '');
+    
+    icsContent += '\r\n' + [
+      'BEGIN:VEVENT',
+      `UID:${eventId}`,
+      `DTSTAMP:${timestamp}`,
+      `DTSTART:${dateStr}T${startTime}`,
+      `DTEND:${dateStr}T${endTime}`,
+      `SUMMARY:${event.title}`,
+      `DESCRIPTION:${event.description || event.title}`,
+      `LOCATION:${event.location || ''}`,
+      `ORGANIZER;CN=FamActify:mailto:noreply@famactify.com`,
+      `ATTENDEE;CN=${recipientEmail};RSVP=TRUE;PARTSTAT=NEEDS-ACTION:mailto:${recipientEmail}`,
+      'STATUS:CONFIRMED',
+      'SEQUENCE:0',
+      'END:VEVENT',
+    ].join('\r\n');
+  });
+
+  icsContent += '\r\nEND:VCALENDAR';
+  return icsContent;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -45,6 +96,10 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `).join('');
 
+    // Generate ICS file
+    const icsContent = generateICS(events, recipientEmail);
+    const icsBase64 = btoa(icsContent);
+
     // Send email using Resend API directly
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -56,6 +111,12 @@ const handler = async (req: Request): Promise<Response> => {
         from: "FamActify <onboarding@resend.dev>",
         to: [recipientEmail],
         subject: "You're invited! Family Itinerary from FamActify",
+        attachments: [
+          {
+            filename: 'family-itinerary.ics',
+            content: icsBase64,
+          },
+        ],
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">

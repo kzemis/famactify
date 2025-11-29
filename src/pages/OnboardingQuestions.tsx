@@ -135,6 +135,11 @@ const OnboardingQuestions = () => {
                 placeholder={question.placeholder}
                 value={currentAnswer}
                 onChange={(e) => handleAnswer(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && currentAnswer.trim()) {
+                    handleNext();
+                  }
+                }}
                 className="text-lg py-6"
                 autoFocus
               />

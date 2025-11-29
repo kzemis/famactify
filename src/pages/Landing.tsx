@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Check, Calendar, Sparkles, Users, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
+import Footer from "@/components/Footer";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -214,6 +215,8 @@ const Landing = () => {
           </Button>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

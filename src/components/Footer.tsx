@@ -1,9 +1,15 @@
 import { Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
+    product: [
+      { label: "Home", href: "/home" },
+      { label: "Pricing", href: "/#pricing" },
+      { label: "How It Works", href: "/#features" },
+    ],
     company: [
       { label: "About Us", href: "#" },
       { label: "Careers", href: "#" },
@@ -11,18 +17,11 @@ const Footer = () => {
     ],
     support: [
       { label: "Contact Us", href: "#" },
-      { label: "Help Center", href: "#" },
       { label: "FAQs", href: "#" },
     ],
     legal: [
       { label: "Privacy Policy", href: "#" },
       { label: "Terms of Service", href: "#" },
-      { label: "Cookie Policy", href: "#" },
-    ],
-    social: [
-      { label: "Facebook", href: "#" },
-      { label: "Instagram", href: "#" },
-      { label: "Twitter", href: "#" },
     ],
   };
 
@@ -30,6 +29,21 @@ const Footer = () => {
     <footer className="bg-muted/50 border-t border-border">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Product</h4>
+            <ul className="space-y-2">
+              {footerLinks.product.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
           <div>
             <h4 className="font-semibold text-foreground mb-4">Company</h4>
             <ul className="space-y-2">
@@ -64,21 +78,6 @@ const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Legal</h4>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-foreground mb-4">Follow Us</h4>
-            <ul className="space-y-2">
-              {footerLinks.social.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}

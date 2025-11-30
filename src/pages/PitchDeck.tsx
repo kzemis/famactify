@@ -118,7 +118,7 @@ const PitchDeck = () => {
         <div className="w-full h-full px-4 md:px-8">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
-            <div className="space-y-12 animate-in fade-in duration-500 max-w-6xl mx-auto">
+            <div className="space-y-12 animate-in fade-in duration-500 max-w-7xl mx-auto">
               <div className="space-y-6">
                 <h2 className="text-7xl md:text-8xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
                 <p className="text-2xl md:text-3xl text-muted-foreground leading-relaxed">

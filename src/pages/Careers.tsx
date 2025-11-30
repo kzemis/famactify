@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Briefcase, MapPin, Clock } from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import AppHeader from "@/components/AppHeader";
@@ -47,41 +47,32 @@ const Careers = () => {
             
             {openPositions.map((job, index) => (
               <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold">{job.title}</h3>
-                    <p className="text-muted-foreground">{job.description}</p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {job.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {job.type}
-                      </span>
-                    </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">{job.title}</h3>
+                  <p className="text-muted-foreground">{job.description}</p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {job.location}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {job.type}
+                    </span>
                   </div>
-                  <Button>
-                    <Briefcase className="w-4 h-4 mr-2" />
-                    Apply Now
-                  </Button>
                 </div>
               </Card>
             ))}
           </div>
 
           <div className="bg-muted/50 rounded-lg p-8 text-center space-y-4">
-            <h2 className="text-2xl font-semibold">Don't see a perfect fit?</h2>
+            <h2 className="text-2xl font-semibold">Interested in Joining Us?</h2>
             <p className="text-muted-foreground">
-              We're always looking for talented people. Send us your resume and tell us how you'd like to contribute.
+              We'd love to hear from you. Get in touch with us to discuss opportunities at FamActify.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="outline">Send General Application</Button>
-              <Button onClick={() => navigate("/benefits")}>
-                View Our Benefits
-              </Button>
-            </div>
+            <Button onClick={() => navigate("/contact")}>
+              Contact Us
+            </Button>
           </div>
         </div>
       </main>

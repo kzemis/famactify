@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare, Presentation, User, LogOut } from "lucide-react";
+import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
@@ -124,14 +124,8 @@ const Landing = () => {
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary">FamActify</span>
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate("/pitch-deck")}
-              className="hover:text-primary"
-              aria-label="View Pitch Deck"
-            >
-              <Presentation className="h-5 w-5" />
+            <Button onClick={() => navigate("/onboarding/interests")}>
+              Plan
             </Button>
             <Button variant="outline" onClick={() => navigate("/community")}>
               Contribute

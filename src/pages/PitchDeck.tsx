@@ -120,6 +120,7 @@ const PitchDeck = () => {
           {currentSlide === 0 && (
             <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
               <div className="space-y-4">
+                <span className="text-2xl font-bold text-primary">FamActify</span>
                 <h2 className="text-6xl md:text-7xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
                 <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">
                   Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span>{" "}

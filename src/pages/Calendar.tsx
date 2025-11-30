@@ -20,6 +20,7 @@ import {
 const Calendar = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [familyMembers, setFamilyMembers] = useState<string[]>([""]);
+  const [inviteTripName, setInviteTripName] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [showSaveTripDialog, setShowSaveTripDialog] = useState(false);
@@ -82,6 +83,7 @@ const Calendar = () => {
         const { data, error } = await supabase.functions.invoke('send-calendar-invite', {
           body: {
             recipientEmail: email,
+            tripName: inviteTripName.trim() || undefined,
             events: events.map(event => ({
               title: event.title,
               date: event.date,
@@ -323,6 +325,21 @@ END:VCALENDAR`;
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <Label htmlFor="tripName" className="text-lg font-semibold">Trip Name (Optional)</Label>
+              <Input
+                id="tripName"
+                type="text"
+                placeholder="e.g., Weekend Family Adventure"
+                value={inviteTripName}
+                onChange={(e) => setInviteTripName(e.target.value)}
+                maxLength={100}
+              />
+              <p className="text-sm text-muted-foreground">
+                This name will appear in the email subject. If left empty, a default subject will be used.
+              </p>
+            </div>
+
             <div className="space-y-4">
               <Label className="text-lg font-semibold">Family Members</Label>
               <p className="text-sm text-muted-foreground">

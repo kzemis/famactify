@@ -26,7 +26,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-gradient-to-b from-accent/20 to-accent/30 border-t border-border/30">
+    <footer className="bg-gradient-to-b from-accent/20 to-accent/30 border-t border-border/30 relative z-10">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div>
@@ -36,7 +36,7 @@ const Footer = () => {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
                   >
                     {link.label}
                   </Link>
@@ -51,7 +51,7 @@ const Footer = () => {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
                   >
                     {link.label}
                   </Link>
@@ -66,7 +66,7 @@ const Footer = () => {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
                   >
                     {link.label}
                   </Link>
@@ -81,7 +81,7 @@ const Footer = () => {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
                   >
                     {link.label}
                   </Link>

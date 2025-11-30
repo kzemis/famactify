@@ -45,7 +45,7 @@ const Events = () => {
       setLoading(true);
       
       // Get user answers from sessionStorage
-      const answersStr = sessionStorage.getItem("onboardingAnswers");
+      const answersStr = sessionStorage.getItem("userAnswers");
       const interestsStr = sessionStorage.getItem("userInterests");
       
       const answers = answersStr ? JSON.parse(answersStr) : null;

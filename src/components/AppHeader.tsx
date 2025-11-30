@@ -61,6 +61,9 @@ const AppHeader = () => {
         </span>
         
         <div className="flex items-center gap-4">
+          <Button onClick={() => navigate("/onboarding/interests")}>
+            Plan
+          </Button>
           <Button variant="outline" onClick={() => navigate("/community")}>
             Contribute
           </Button>

@@ -12,7 +12,7 @@ const Home = () => {
       icon: <Sparkles className="h-8 w-8" />,
       title: "Discover Events",
       description: "Find perfect activities for your family",
-      action: () => navigate("/events"),
+      action: () => navigate("/onboarding/interests"),
       color: "from-primary/20 to-primary/5",
     },
     {

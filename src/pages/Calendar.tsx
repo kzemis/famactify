@@ -254,6 +254,7 @@ END:VCALENDAR`;
       return;
     }
 
+    setTripName(inviteTripName.trim());
     setShowSaveTripDialog(true);
   };
 

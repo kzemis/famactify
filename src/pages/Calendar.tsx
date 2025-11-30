@@ -283,6 +283,7 @@ END:VCALENDAR`;
           events: events,
           total_events: events.length,
           total_cost: totalCost,
+          recipients: familyMembers.filter(email => email.trim() !== ""),
         });
 
       if (error) throw error;

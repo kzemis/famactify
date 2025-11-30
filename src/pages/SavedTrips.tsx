@@ -22,6 +22,7 @@ interface SavedTrip {
     total: number;
     confirmed: number;
     confirmedEmails: string[];
+    pendingEmails: string[];
   };
 }
 
@@ -68,13 +69,14 @@ const SavedTrips = () => {
           const total = confirmations?.length || 0;
           const confirmed = confirmations?.filter((c) => c.confirmed).length || 0;
           const confirmedEmails = confirmations?.filter((c) => c.confirmed).map((c) => c.recipient_email) || [];
+          const pendingEmails = confirmations?.filter((c) => !c.confirmed).map((c) => c.recipient_email) || [];
 
           return {
             ...trip,
             events: Array.isArray(trip.events) ? trip.events : [],
             total_cost: trip.total_cost ?? 0,
             total_events: trip.total_events ?? 0,
-            confirmations: { total, confirmed, confirmedEmails },
+            confirmations: { total, confirmed, confirmedEmails, pendingEmails },
           };
         })
       );
@@ -240,7 +242,12 @@ const SavedTrips = () => {
                         </span>
                         {trip.confirmations.confirmedEmails.length > 0 && (
                           <span className="text-xs text-muted-foreground ml-5">
-                            {trip.confirmations.confirmedEmails.join(", ")}
+                            Confirmed: {trip.confirmations.confirmedEmails.join(", ")}
+                          </span>
+                        )}
+                        {trip.confirmations.pendingEmails.length > 0 && (
+                          <span className="text-xs text-muted-foreground ml-5">
+                            Waiting: {trip.confirmations.pendingEmails.join(", ")}
                           </span>
                         )}
                       </div>

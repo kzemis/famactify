@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail, Send } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
@@ -21,7 +21,6 @@ interface SavedTrip {
 const SavedTrips = () => {
   const [trips, setTrips] = useState<SavedTrip[]>([]);
   const [loading, setLoading] = useState(true);
-  const [resendingInvites, setResendingInvites] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -93,45 +92,6 @@ const SavedTrips = () => {
     });
   };
 
-  const resendInvites = async (trip: SavedTrip) => {
-    if (!trip.recipients || trip.recipients.length === 0) {
-      toast({
-        title: "No recipients",
-        description: "This trip has no saved recipients to send invites to.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setResendingInvites(trip.id);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("send-calendar-invite", {
-        body: {
-          events: trip.events,
-          familyMembers: trip.recipients,
-          tripName: trip.name,
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Invites sent!",
-        description: `Calendar invitations have been resent to ${trip.recipients.length} recipient(s).`,
-      });
-    } catch (error: any) {
-      console.error("Error resending invites:", error);
-      toast({
-        title: "Failed to send invites",
-        description: error.message || "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setResendingInvites(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex flex-col">
       <AppHeader />
@@ -200,20 +160,6 @@ const SavedTrips = () => {
                       <Eye className="h-4 w-4 mr-2" />
                       View Trip
                     </Button>
-                    {trip.recipients && trip.recipients.length > 0 && (
-                      <Button
-                        variant="secondary"
-                        onClick={() => resendInvites(trip)}
-                        disabled={resendingInvites === trip.id}
-                      >
-                        {resendingInvites === trip.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                        ) : (
-                          <Send className="h-4 w-4 mr-2" />
-                        )}
-                        Resend Invites
-                      </Button>
-                    )}
                     <Button
                       variant="destructive"
                       size="icon"

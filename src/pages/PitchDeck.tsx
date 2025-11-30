@@ -118,52 +118,52 @@ const PitchDeck = () => {
         <div className="w-full h-full px-4 md:px-8">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="space-y-4">
-                <h2 className="text-4xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
-                <p className="text-xl text-muted-foreground leading-relaxed">
+            <div className="space-y-12 animate-in fade-in duration-500">
+              <div className="space-y-6">
+                <h2 className="text-5xl md:text-6xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
+                <p className="text-2xl md:text-3xl text-muted-foreground leading-relaxed">
                   Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span>{" "}
                   etc. to collect information, verify details, and manually plan trips.
                 </p>
               </div>
 
-              <div className="border-t-2 border-primary pt-6 space-y-4">
-                <h2 className="text-4xl font-bold text-primary">Our Solution</h2>
-                <p className="text-xl text-foreground leading-relaxed">
+              <div className="border-t-2 border-primary pt-8 space-y-6">
+                <h2 className="text-5xl md:text-6xl font-bold text-primary">Our Solution</h2>
+                <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
                   A simple AI tool that helps busy parents plan family activities in{" "}
                   <span className="text-primary font-semibold">seconds</span>, eliminating hours of planning.
                 </p>
               </div>
 
-              <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-                <h3 className="text-3xl font-semibold text-foreground">Team</h3>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="space-y-3 text-center">
+              <div className="bg-muted/50 rounded-lg p-12 space-y-8">
+                <h3 className="text-4xl md:text-5xl font-semibold text-foreground">Team</h3>
+                <div className="grid md:grid-cols-3 gap-10">
+                  <div className="space-y-4 text-center">
                     <img 
                       src={kasparsPhoto} 
                       alt="Kaspars Zemitis"
-                      className="mx-auto h-24 w-24 rounded-full object-cover mb-3"
+                      className="mx-auto h-40 w-40 rounded-full object-cover mb-4"
                     />
-                    <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-muted-foreground">8+ years in ticketing service development</p>
+                    <h4 className="text-2xl font-bold text-primary">Kaspars Zemitis</h4>
+                    <p className="text-lg text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
-                  <div className="space-y-3 text-center">
+                  <div className="space-y-4 text-center">
                     <img 
                       src={dainisPhoto} 
                       alt="Dainis Dulbinskis"
-                      className="mx-auto h-24 w-24 rounded-full object-cover mb-3"
+                      className="mx-auto h-40 w-40 rounded-full object-cover mb-4"
                     />
-                    <h4 className="text-xl font-bold text-primary">Dainis Dulbinskis</h4>
-                    <p className="text-muted-foreground">
+                    <h4 className="text-2xl font-bold text-primary">Dainis Dulbinskis</h4>
+                    <p className="text-lg text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)
                     </p>
                   </div>
-                  <div className="space-y-3 text-center">
-                    <div className="mx-auto h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-                      <span className="text-3xl font-bold text-primary">KL</span>
+                  <div className="space-y-4 text-center">
+                    <div className="mx-auto h-40 w-40 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                      <span className="text-5xl font-bold text-primary">KL</span>
                     </div>
-                    <h4 className="text-xl font-bold text-primary">Kirill Luschin</h4>
-                    <p className="text-muted-foreground">AI specialist, the superhero!</p>
+                    <h4 className="text-2xl font-bold text-primary">Kirill Luschin</h4>
+                    <p className="text-lg text-muted-foreground">AI specialist, the superhero!</p>
                   </div>
                 </div>
               </div>
@@ -172,91 +172,91 @@ const PitchDeck = () => {
 
           {/* Slide 2: Interactive Demo */}
           {currentSlide === 1 && (
-            <div className="space-y-12 animate-in fade-in duration-500 text-center">
-              <div className="space-y-6">
-                <Play className="h-24 w-24 mx-auto text-primary" />
-                <h1 className="text-6xl font-bold text-foreground">See It In Action</h1>
-                <p className="text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            <div className="space-y-16 animate-in fade-in duration-500 text-center">
+              <div className="space-y-8">
+                <Play className="h-32 w-32 mx-auto text-primary" />
+                <h1 className="text-7xl md:text-8xl font-bold text-foreground">See It In Action</h1>
+                <p className="text-3xl md:text-4xl text-muted-foreground leading-relaxed max-w-4xl mx-auto">
                   Experience how FamActify helps you plan family activities in seconds. Try our AI-powered questionnaire
                   and see personalized recommendations.
                 </p>
               </div>
 
-              <Button size="lg" onClick={startDemo} className="text-xl px-12 py-8 h-auto">
-                <Play className="mr-3 h-6 w-6" />
+              <Button size="lg" onClick={startDemo} className="text-2xl px-16 py-10 h-auto">
+                <Play className="mr-4 h-8 w-8" />
                 Start Live Demo
               </Button>
 
-              <p className="text-muted-foreground">You'll return to this presentation after the demo</p>
+              <p className="text-xl text-muted-foreground">You'll return to this presentation after the demo</p>
             </div>
           )}
 
           {/* Slide 3: Pricing */}
           {currentSlide === 2 && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <div className="text-center mb-16">
-                <h1 className="text-5xl font-bold text-foreground mb-4">Choose Your Plan</h1>
-                <p className="text-2xl text-muted-foreground">Start free, upgrade when you're ready</p>
+            <div className="space-y-14 animate-in fade-in duration-500">
+              <div className="text-center mb-20">
+                <h1 className="text-6xl md:text-7xl font-bold text-foreground mb-6">Choose Your Plan</h1>
+                <p className="text-3xl md:text-4xl text-muted-foreground">Start free, upgrade when you're ready</p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-center">
-                <Card className="p-8">
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">Free</h3>
-                    <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold">€0</span>
-                      <span className="text-muted-foreground">/forever</span>
+              <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto items-center">
+                <Card className="p-12">
+                  <div className="text-center mb-8">
+                    <h3 className="text-3xl font-bold mb-4">Free</h3>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-5xl font-bold">€0</span>
+                      <span className="text-xl text-muted-foreground">/forever</span>
                     </div>
                   </div>
-                  <ul className="space-y-3 mb-8">
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Plan 1 trip for free</span>
+                  <ul className="space-y-4 mb-10">
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Plan 1 trip for free</span>
                     </li>
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Basic planning features</span>
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Basic planning features</span>
                     </li>
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Try before you buy</span>
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Try before you buy</span>
                     </li>
                   </ul>
-                  <Button className="w-full" variant="outline">
+                  <Button className="w-full text-xl py-6" variant="outline">
                     Start Free
                   </Button>
                 </Card>
 
-                <Card className="p-8 relative border-primary border-2 shadow-2xl scale-105 md:scale-110 py-12 z-10">
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                <Card className="p-12 relative border-primary border-2 shadow-2xl scale-105 md:scale-110 py-16 z-10">
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-6 py-2 rounded-full text-lg font-medium">
                     Most Popular
                   </div>
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">Family</h3>
-                    <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold">€3.99</span>
-                      <span className="text-muted-foreground">/per month</span>
+                  <div className="text-center mb-8">
+                    <h3 className="text-3xl font-bold mb-4">Family</h3>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-5xl font-bold">€3.99</span>
+                      <span className="text-xl text-muted-foreground">/per month</span>
                     </div>
                   </div>
-                  <ul className="space-y-3 mb-8">
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Plan up to 4 trips per month</span>
+                  <ul className="space-y-4 mb-10">
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Plan up to 4 trips per month</span>
                     </li>
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Create wishlists with relatives</span>
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Create wishlists with relatives</span>
                     </li>
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Calendar integration</span>
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Calendar integration</span>
                     </li>
-                    <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Customer support</span>
+                    <li className="flex items-start gap-4">
+                      <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-lg">Customer support</span>
                     </li>
                   </ul>
-                  <Button className="w-full">
+                  <Button className="w-full text-xl py-6">
                     Get Started
                   </Button>
                 </Card>
@@ -266,30 +266,30 @@ const PitchDeck = () => {
 
           {/* Slide 4: Traction, Roadmap & GTM */}
           {currentSlide === 3 && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <h1 className="text-5xl font-bold text-foreground">Traction & Roadmap</h1>
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <h1 className="text-6xl md:text-7xl font-bold text-foreground">Traction & Roadmap</h1>
 
-              <p className="text-xl text-foreground leading-relaxed">
+              <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
                 Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span>{" "}
                 and starting from January 8 achieve those milestones:
               </p>
 
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid md:grid-cols-2 gap-12">
                 {/* Left Column: GTM Section */}
-                <div className="bg-muted/50 rounded-lg p-6">
-                  <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-4">
-                    <Rocket className="h-6 w-6" />
+                <div className="bg-muted/50 rounded-lg p-10">
+                  <h2 className="text-3xl font-bold text-primary flex items-center gap-3 mb-6">
+                    <Rocket className="h-8 w-8" />
                     Go-To-Market Strategy
                   </h2>
-                  <div className="space-y-4">
-                    <p className="text-muted-foreground">
+                  <div className="space-y-6">
+                    <p className="text-xl text-muted-foreground">
                       Target micro-influencers (busy moms/parents) via{" "}
                       <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
                       Offer free trial in exchange for authentic reviews.
                     </p>
                     <div>
-                      <p className="text-sm font-semibold text-foreground mb-2">Target Audience:</p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
+                      <p className="text-lg font-semibold text-foreground mb-3">Target Audience:</p>
+                      <ul className="text-lg text-muted-foreground space-y-2">
                         <li>• Busy parents and moms</li>
                         <li>• Family content creators</li>
                         <li>• Parenting community voices</li>
@@ -299,42 +299,42 @@ const PitchDeck = () => {
                 </div>
 
                 {/* Right Column: 3-Month Roadmap */}
-                <div className="bg-muted/50 rounded-lg p-6 space-y-4">
+                <div className="bg-muted/50 rounded-lg p-10 space-y-6">
                   {/* First Month */}
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-primary">First Month</h3>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-bold text-primary">First Month</h3>
                     {["Launch in Latvia and refine product", "Acquire first 100 customers"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-background rounded-lg p-3">
-                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                      <div key={index} className="flex items-center gap-3 bg-background rounded-lg p-4">
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
                           {index + 1}
                         </div>
-                        <span className="text-sm text-foreground">{milestone}</span>
+                        <span className="text-lg text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Second Month */}
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-primary">Second Month</h3>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-bold text-primary">Second Month</h3>
                     {["Raise pre-seed funding", "Raise up the team and modernize the app"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-background rounded-lg p-3">
-                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                      <div key={index} className="flex items-center gap-3 bg-background rounded-lg p-4">
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
                           {index + 3}
                         </div>
-                        <span className="text-sm text-foreground">{milestone}</span>
+                        <span className="text-lg text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Third Month */}
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-primary">Third Month</h3>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-bold text-primary">Third Month</h3>
                     {["Expand to Baltics", "Build GTM strategy for Europe"].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-background rounded-lg p-3">
-                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                      <div key={index} className="flex items-center gap-3 bg-background rounded-lg p-4">
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
                           {index + 5}
                         </div>
-                        <span className="text-sm text-foreground">{milestone}</span>
+                        <span className="text-lg text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
@@ -345,22 +345,22 @@ const PitchDeck = () => {
 
           {/* Slide 5: Community QR Code */}
           {currentSlide === 4 && (
-            <div className="flex flex-col items-center justify-center space-y-12 animate-in fade-in duration-500">
-              <div className="relative bg-white p-12 rounded-3xl shadow-2xl">
+            <div className="flex flex-col items-center justify-center space-y-16 animate-in fade-in duration-500">
+              <div className="relative bg-white p-16 rounded-3xl shadow-2xl">
                 <QRCode 
                   value="https://famactify.app/contribute" 
-                  size={450}
+                  size={600}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 />
                 {/* Logo overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl px-6 py-4 shadow-lg">
-                  <span className="text-3xl font-bold text-primary">FamActify</span>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl px-10 py-6 shadow-lg">
+                  <span className="text-5xl font-bold text-primary">FamActify</span>
                 </div>
               </div>
               
-              <div className="text-center space-y-4">
-                <h2 className="text-4xl font-bold text-primary">Build Together</h2>
-                <p className="text-xl text-muted-foreground max-w-2xl">
+              <div className="text-center space-y-6">
+                <h2 className="text-5xl md:text-6xl font-bold text-primary">Build Together</h2>
+                <p className="text-2xl md:text-3xl text-muted-foreground max-w-3xl">
                   Help us grow by contributing activities and events for families in your area
                 </p>
               </div>

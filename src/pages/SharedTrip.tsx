@@ -33,7 +33,7 @@ const SharedTrip = () => {
 
       try {
         const { data, error } = await supabase
-          .from("saved_trips")
+          .from("shared_trips_view")
           .select("id, name, events, total_cost, total_events, created_at")
           .eq("share_token", shareToken)
           .single();

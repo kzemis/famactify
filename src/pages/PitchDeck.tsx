@@ -140,6 +140,15 @@ const PitchDeck = () => {
                 <div className="grid md:grid-cols-3 gap-10">
                   <div className="space-y-4 text-center">
                     <img 
+                      src={kasparsPhoto} 
+                      alt="Kaspars Zemitis"
+                      className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
+                    />
+                    <h4 className="text-3xl font-bold text-primary">Kaspars Zemitis</h4>
+                    <p className="text-xl text-muted-foreground">8+ years in ticketing service development</p>
+                  </div>
+                  <div className="space-y-4 text-center">
+                    <img 
                       src={dainisPhoto} 
                       alt="Dainis Dulbinskis"
                       className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
@@ -148,15 +157,6 @@ const PitchDeck = () => {
                     <p className="text-xl text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)
                     </p>
-                  </div>
-                  <div className="space-y-4 text-center">
-                    <img 
-                      src={kasparsPhoto} 
-                      alt="Kaspars Zemitis"
-                      className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
-                    />
-                    <h4 className="text-3xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-xl text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
                   <div className="space-y-4 text-center">
                     <div className="mx-auto h-56 w-56 rounded-full bg-primary/20 flex items-center justify-center mb-4">

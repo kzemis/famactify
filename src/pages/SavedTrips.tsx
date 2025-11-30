@@ -123,7 +123,7 @@ const SavedTrips = () => {
       return;
     }
 
-    const shareUrl = `${window.location.origin}/trip/${trip.share_token}`;
+    const shareUrl = `https://famactify.app/trip/${trip.share_token}`;
     
     try {
       await navigator.clipboard.writeText(shareUrl);

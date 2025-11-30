@@ -4,14 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Mail, Plus, X, Loader2, CheckCircle2, Calendar as CalendarIcon } from "lucide-react";
+import { Download, Mail, Plus, X, Loader2, CheckCircle2, Calendar as CalendarIcon, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Calendar = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [familyMembers, setFamilyMembers] = useState<string[]>([""]);
   const [isSending, setIsSending] = useState(false);
+  const [isSavingTrip, setIsSavingTrip] = useState(false);
+  const [showSaveTripDialog, setShowSaveTripDialog] = useState(false);
+  const [tripName, setTripName] = useState("");
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -20,6 +32,17 @@ const Calendar = () => {
     if (storedEvents) {
       setEvents(JSON.parse(storedEvents));
     }
+
+    // Check if user is logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const addFamilyMember = () => {
@@ -116,6 +139,69 @@ const Calendar = () => {
     });
   };
 
+  const handleSaveTrip = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save your trip",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    setShowSaveTripDialog(true);
+  };
+
+  const confirmSaveTrip = async () => {
+    if (!tripName.trim()) {
+      toast({
+        title: "Trip name required",
+        description: "Please enter a name for your trip",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingTrip(true);
+
+    try {
+      const totalCost = events.reduce((sum, event) => {
+        const price = parseFloat(event.price) || 0;
+        return sum + price;
+      }, 0);
+
+      const { error } = await supabase
+        .from("saved_trips")
+        .insert({
+          user_id: user.id,
+          name: tripName,
+          events: events,
+          total_events: events.length,
+          total_cost: totalCost,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Trip saved!",
+        description: "Your itinerary has been saved successfully",
+      });
+
+      setShowSaveTripDialog(false);
+      setTripName("");
+    } catch (error: any) {
+      console.error("Failed to save trip:", error);
+      toast({
+        title: "Failed to save trip",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingTrip(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
@@ -194,6 +280,19 @@ const Calendar = () => {
                   </>
                 )}
               </Button>
+
+              {user && events.length > 0 && (
+                <Button
+                  onClick={handleSaveTrip}
+                  variant="secondary"
+                  className="w-full"
+                  size="lg"
+                >
+                  <Save className="h-5 w-5 mr-2" />
+                  Save My Trip
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 onClick={handleDownloadICS}
@@ -247,6 +346,55 @@ const Calendar = () => {
             ))}
           </div>
         </div>
+
+        <Dialog open={showSaveTripDialog} onOpenChange={setShowSaveTripDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Your Trip</DialogTitle>
+              <DialogDescription>
+                Give your trip a name to save it for later
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="tripName">Trip Name</Label>
+                <Input
+                  id="tripName"
+                  placeholder="e.g., Family Weekend in Rīga"
+                  value={tripName}
+                  onChange={(e) => setTripName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      confirmSaveTrip();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowSaveTripDialog(false)}
+                disabled={isSavingTrip}
+              >
+                Cancel
+              </Button>
+              <Button onClick={confirmSaveTrip} disabled={isSavingTrip}>
+                {isSavingTrip ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Trip
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

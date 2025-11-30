@@ -20,6 +20,7 @@ import Benefits from "./pages/Benefits";
 import FAQ from "./pages/FAQ";
 import ContactUs from "./pages/ContactUs";
 import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Contribute from "./pages/Contribute";
 import CommunityActivities from "./pages/CommunityActivities";
 import TestAuth from "./pages/TestAuth";
@@ -52,6 +53,7 @@ const App = () => (
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
           <Route path="/community" element={<CommunityActivities />} />
           <Route path="/test-auth" element={<TestAuth />} />

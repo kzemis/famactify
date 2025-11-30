@@ -96,7 +96,7 @@ const Footer = () => {
             <span className="text-xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer">FamActify</span>
           </Link>
           <p className="text-sm text-muted-foreground">
-            Made for happy families 😊
+            Made for happy families
           </p>
           <p className="text-sm text-muted-foreground">
             © {currentYear} FamActify. All rights reserved.

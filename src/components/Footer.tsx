@@ -8,6 +8,7 @@ const Footer = () => {
       { label: "Activity Planner", href: "/onboarding/interests" },
       { label: "Community Activities", href: "/community" },
       { label: "Contribute Activity", href: "/contribute" },
+      { label: "My Planned Trips", href: "/saved-trips" },
     ],
     company: [
       { label: "About Us", href: "/about" },

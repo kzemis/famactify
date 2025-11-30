@@ -60,7 +60,7 @@ const OnboardingInterests = () => {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 hidden md:flex items-center justify-center">
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-3xl font-bold">Tell Us About Your Interests</CardTitle>

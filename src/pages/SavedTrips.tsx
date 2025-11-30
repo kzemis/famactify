@@ -16,6 +16,10 @@ interface SavedTrip {
   total_events: number;
   created_at: string;
   recipients: string[] | null;
+  confirmations?: {
+    total: number;
+    confirmed: number;
+  };
 }
 
 const SavedTrips = () => {
@@ -47,13 +51,28 @@ const SavedTrips = () => {
         variant: "destructive",
       });
     } else {
-      const formattedTrips = (data || []).map(trip => ({
-        ...trip,
-        events: Array.isArray(trip.events) ? trip.events : [],
-        total_cost: trip.total_cost ?? 0,
-        total_events: trip.total_events ?? 0,
-      }));
-      setTrips(formattedTrips);
+      // Fetch confirmation counts for each trip
+      const tripsWithConfirmations = await Promise.all(
+        (data || []).map(async (trip) => {
+          const { data: confirmations } = await supabase
+            .from("trip_confirmations")
+            .select("confirmed")
+            .eq("trip_id", trip.id);
+
+          const total = confirmations?.length || 0;
+          const confirmed = confirmations?.filter((c) => c.confirmed).length || 0;
+
+          return {
+            ...trip,
+            events: Array.isArray(trip.events) ? trip.events : [],
+            total_cost: trip.total_cost ?? 0,
+            total_events: trip.total_events ?? 0,
+            confirmations: { total, confirmed },
+          };
+        })
+      );
+
+      setTrips(tripsWithConfirmations);
     }
     setLoading(false);
   };
@@ -147,6 +166,13 @@ const SavedTrips = () => {
                         <Mail className="h-4 w-4 text-primary" />
                         <span className="text-muted-foreground">
                           Shared with: {trip.recipients.join(", ")}
+                        </span>
+                      </div>
+                    )}
+                    {trip.confirmations && trip.confirmations.total > 0 && (
+                      <div className="flex items-center gap-2 text-sm w-full">
+                        <span className="text-sm font-medium text-primary">
+                          ✓ {trip.confirmations.confirmed} of {trip.confirmations.total} confirmed
                         </span>
                       </div>
                     )}

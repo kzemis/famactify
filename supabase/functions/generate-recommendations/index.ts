@@ -181,6 +181,8 @@ Return ONLY valid JSON in this exact format:
       "title": "Activity Title",
       "description": "Why this matches their preferences",
       "location": "Full address in Latvia",
+      "lat": 56.9496,
+      "lon": 24.1052,
       "date": "YYYY-MM-DD",
       "time": "Suggested time",
       "price": "Price information or estimate",
@@ -191,12 +193,14 @@ Return ONLY valid JSON in this exact format:
 }
 
 IMPORTANT: 
-- For database activities: Use actual data, include original ID and image URL
-- For activities from your knowledge: Create a unique ID (e.g., "claude-museum-xyz"), set image to null, provide real addresses in Latvia
+- For database activities: Use actual data, include original ID, image URL, and coordinates (lat/lon)
+- For activities from your knowledge: Create a unique ID (e.g., "claude-museum-xyz"), set image to null, provide real addresses in Latvia AND accurate coordinates
+- COORDINATES ARE MANDATORY: Every activity must include lat (latitude) and lon (longitude) as decimal numbers
+- Use accurate GPS coordinates for all locations in Latvia (Riga center is approximately 56.9496, 24.1052)
 - Mix database and knowledge-based suggestions to create the best itinerary
 - Adapt dates/times based on user preferences
 - The date field must ALWAYS be in ISO format (YYYY-MM-DD)
-- All locations must be real, existing places in Latvia
+- All locations must be real, existing places in Latvia with accurate coordinates
 - Return ONLY the JSON object, no additional text or markdown.`;
 
     const userPrompt = `User Interests: "${interests || 'Not specified'}"

@@ -105,6 +105,7 @@ const Itinerary = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [newActivity, setNewActivity] = useState({ name: "", timeFrom: "", timeTo: "" });
   const [isAddingActivity, setIsAddingActivity] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -237,23 +238,35 @@ const Itinerary = () => {
         </div>
 
         {mapPlaces.length > 0 && (
-          <Card className="shadow-lg border-primary/20">
-            <CardHeader className="bg-primary/5">
-              <CardTitle className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-primary" />
-                Interactive Trip Map
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                View all your activities on the map with numbered sequence and connecting routes
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <MapView
-                places={mapPlaces}
-                path={mapPath.length > 1 ? mapPath : undefined}
-              />
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowMap(!showMap)}
+              className="w-full"
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              {showMap ? "Hide Map" : "Show on the map"}
+            </Button>
+            {showMap && (
+              <Card className="shadow-lg border-primary/20">
+                <CardHeader className="bg-primary/5">
+                  <CardTitle className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Interactive Trip Map
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    View all your activities on the map with numbered sequence and connecting routes
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <MapView
+                    places={mapPlaces}
+                    path={mapPath.length > 1 ? mapPath : undefined}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {Object.entries(groupedEvents).map(([date, dayEvents], dayIndex) => (

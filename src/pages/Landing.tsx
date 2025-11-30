@@ -52,6 +52,23 @@ const Landing = () => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const features = [
     {
       icon: <Sparkles className="h-6 w-6" />,
@@ -120,7 +137,7 @@ const Landing = () => {
               Contribute
             </Button>
 
-            {user && (
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
@@ -152,6 +169,15 @@ const Landing = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : (
+              <Button 
+                variant="default" 
+                onClick={handleGoogleSignIn}
+                className="gap-2"
+              >
+                <User className="h-4 w-4" />
+                Sign In
+              </Button>
             )}
           </div>
         </div>

@@ -12,6 +12,8 @@ interface Event {
   title: string;
   description: string;
   location: string;
+  lat?: number;
+  lon?: number;
   date: string;
   time: string;
   price: string;

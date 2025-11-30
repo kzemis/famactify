@@ -237,14 +237,17 @@ const Itinerary = () => {
         </div>
 
         {mapPlaces.length > 0 && (
-          <Card className="shadow-lg">
-            <CardHeader>
+          <Card className="shadow-lg border-primary/20">
+            <CardHeader className="bg-primary/5">
               <CardTitle className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-primary" />
-                Trip Map
+                Interactive Trip Map
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                View all your activities on the map with numbered sequence and connecting routes
+              </p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <MapView
                 places={mapPlaces}
                 path={mapPath.length > 1 ? mapPath : undefined}

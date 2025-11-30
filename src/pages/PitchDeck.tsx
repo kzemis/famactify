@@ -267,9 +267,9 @@ const PitchDeck = () => {
           {/* Slide 4: Traction, Roadmap & GTM */}
           {currentSlide === 3 && (
             <div className="space-y-10 animate-in fade-in duration-500">
-              <h1 className="text-6xl md:text-7xl font-bold text-foreground">Traction & Roadmap</h1>
+              <h1 className="text-7xl md:text-8xl font-bold text-foreground">Traction & Roadmap</h1>
 
-              <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
+              <p className="text-3xl md:text-4xl text-foreground leading-relaxed">
                 Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span>{" "}
                 and starting from January 8 achieve those milestones:
               </p>
@@ -277,19 +277,19 @@ const PitchDeck = () => {
               <div className="grid md:grid-cols-2 gap-12">
                 {/* Left Column: GTM Section */}
                 <div className="bg-muted/50 rounded-lg p-10">
-                  <h2 className="text-3xl font-bold text-primary flex items-center gap-3 mb-6">
-                    <Rocket className="h-8 w-8" />
+                  <h2 className="text-4xl font-bold text-primary flex items-center gap-3 mb-6">
+                    <Rocket className="h-10 w-10" />
                     Go-To-Market Strategy
                   </h2>
                   <div className="space-y-6">
-                    <p className="text-xl text-muted-foreground">
+                    <p className="text-2xl text-muted-foreground leading-relaxed">
                       Target micro-influencers (busy moms/parents) via{" "}
                       <span className="text-primary font-semibold">Modash platform</span> who talk about family values.
                       Offer free trial in exchange for authentic reviews.
                     </p>
                     <div>
-                      <p className="text-lg font-semibold text-foreground mb-3">Target Audience:</p>
-                      <ul className="text-lg text-muted-foreground space-y-2">
+                      <p className="text-2xl font-semibold text-foreground mb-3">Target Audience:</p>
+                      <ul className="text-xl text-muted-foreground space-y-2">
                         <li>• Busy parents and moms</li>
                         <li>• Family content creators</li>
                         <li>• Parenting community voices</li>
@@ -302,39 +302,39 @@ const PitchDeck = () => {
                 <div className="bg-muted/50 rounded-lg p-10 space-y-6">
                   {/* First Month */}
                   <div className="space-y-3">
-                    <h3 className="text-2xl font-bold text-primary">First Month</h3>
+                    <h3 className="text-3xl font-bold text-primary">First Month</h3>
                     {["Launch in Latvia and refine product", "Acquire first 100 customers"].map((milestone, index) => (
                       <div key={index} className="flex items-center gap-3 bg-background rounded-lg p-4">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
+                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                           {index + 1}
                         </div>
-                        <span className="text-lg text-foreground">{milestone}</span>
+                        <span className="text-xl text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Second Month */}
                   <div className="space-y-3">
-                    <h3 className="text-2xl font-bold text-primary">Second Month</h3>
+                    <h3 className="text-3xl font-bold text-primary">Second Month</h3>
                     {["Raise pre-seed funding", "Raise up the team and modernize the app"].map((milestone, index) => (
                       <div key={index} className="flex items-center gap-3 bg-background rounded-lg p-4">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
+                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                           {index + 3}
                         </div>
-                        <span className="text-lg text-foreground">{milestone}</span>
+                        <span className="text-xl text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Third Month */}
                   <div className="space-y-3">
-                    <h3 className="text-2xl font-bold text-primary">Third Month</h3>
+                    <h3 className="text-3xl font-bold text-primary">Third Month</h3>
                     {["Expand to Baltics", "Build GTM strategy for Europe"].map((milestone, index) => (
                       <div key={index} className="flex items-center gap-3 bg-background rounded-lg p-4">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
+                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                           {index + 5}
                         </div>
-                        <span className="text-lg text-foreground">{milestone}</span>
+                        <span className="text-xl text-foreground">{milestone}</span>
                       </div>
                     ))}
                   </div>

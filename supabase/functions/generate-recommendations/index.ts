@@ -38,8 +38,8 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Fetch activities from BOTH JSON files and Supabase database
-    console.log('Fetching activities from JSON files and Supabase database');
+    // Fetch activities from JSON files, Supabase database, AND Bilesu Serviss API
+    console.log('Fetching activities from multiple sources');
     
     // 1. Fetch from JSON files
     const projectId = supabaseUrl.split('//')[1]?.split('.')[0];
@@ -51,6 +51,9 @@ serve(async (req) => {
       `${projectUrl}/data/activities-spots-1.json`,
       `${projectUrl}/data/activities-bs-transformed.json`
     ];
+    
+    // Private Bilesu Serviss API endpoint (not exposed publicly)
+    const BILESU_SERVISS_API_URL = 'https://www.bilesuserviss.lv/api/action/filter/?types=category,concert,promoter,venue,price&export=category&order=title,desc&fields=category/decoratedTitle,hidden,id,image,link,parentCategoryId,shortImageUrl,title;concert/ageRestriction,badgeData,buyButtonConfig,centerId,country,customDate,customTargetUrl,decoratedTitle,description,descriptionLanguages,descriptionPlain,discount,endTime,eventPlace,feeRange,festivalTitle,id,image,imageUrl,link,localisedEndDate,localisedStartDate,maxAdditionalFee,maxPrice,maxServiceFee,minAdditionalFee,minPrice,minServiceFee,modifiedTimeStamp,originalImageUrl,prices,promoterId,purchaseDescription,rank,salesStatus,salesTime,serviceFeeRange,shopAppUrl,shopUrl,shortImageUrl,shortUrl,showId,specialStatus,startTime,subMode,systemId,templateShort,title,topPosition,trackingUrl,url,venueDecoratedTitle,venueDescription,venueId,venueTitle,video,videoUrl;promoter/address,decoratedTitle,email,externalUrl,id,link,modifiedTimeStamp,originalImageUrl,phone,shortImageUrl,title,url;venue/address,city,coordinates,countryId,county,decoratedTitle,externalUrl,id,image,link,location_country,logoImageUrl,map,modifiedTimeStamp,originalImageUrl,region,title,url&filter=categoryId/1004,1034,1041,1138,1396,1021,1224;concertActive&limit=2000000&start=0&language=eng';
     
     console.log('Fetching activities from JSON files:', dataUrls);
     
@@ -83,7 +86,39 @@ serve(async (req) => {
     
     console.log('Total activities from JSON files:', jsonActivitiesData.length);
     
-    // 2. Fetch from Supabase activityspots table
+    // 2. Fetch from Bilesu Serviss API (private data source)
+    console.log('Fetching activities from Bilesu Serviss API');
+    let bilesuActivitiesData = [];
+    try {
+      const bilesuResponse = await fetch(BILESU_SERVISS_API_URL);
+      if (bilesuResponse.ok) {
+        const bilesuData = await bilesuResponse.json();
+        // The API returns concerts array under concerts key
+        if (bilesuData && bilesuData.concerts && Array.isArray(bilesuData.concerts)) {
+          // Transform Bilesu Serviss format to our format
+          bilesuActivitiesData = bilesuData.concerts.map((concert: any) => ({
+            id: `bilesu-${concert.id}`,
+            name: concert.title || concert.decoratedTitle,
+            description: concert.descriptionPlain || concert.description || '',
+            location_address: concert.venueTitle || concert.eventPlace || '',
+            event_starttime: concert.startTime,
+            event_endtime: concert.endTime,
+            min_price: concert.minPrice,
+            max_price: concert.maxPrice,
+            imageurlthumb: concert.shortImageUrl || concert.imageUrl || concert.originalImageUrl,
+            urlmoreinfo: concert.url || concert.shopUrl,
+            activity_type: ['event', 'concert'],
+            age_buckets: concert.ageRestriction ? [`${concert.ageRestriction}+`] : []
+          }));
+          console.log('Fetched and transformed Bilesu Serviss events:', bilesuActivitiesData.length);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch from Bilesu Serviss API:', err);
+      // Don't throw error, just continue with other data sources
+    }
+    
+    // 3. Fetch from Supabase activityspots table
     const { data: dbActivitiesData, error: fetchError } = await supabase
       .from('activityspots')
       .select('*');
@@ -96,23 +131,25 @@ serve(async (req) => {
     const dbActivities = dbActivitiesData || [];
     console.log('Total activities from Supabase database:', dbActivities.length);
     
-    // 3. Combine both data sources
-    const allActivitiesData = [...jsonActivitiesData, ...dbActivities];
+    // 4. Combine all data sources
+    const allActivitiesData = [...jsonActivitiesData, ...bilesuActivitiesData, ...dbActivities];
     console.log('Total combined activities data:', allActivitiesData.length, 'activities');
+    console.log('Sources: JSON files:', jsonActivitiesData.length, ', Bilesu Serviss:', bilesuActivitiesData.length, ', Database:', dbActivities.length);
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][today.getDay()];
     
-    const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, recommend 5-10 activities for a SINGLE DAY itinerary from THREE SOURCES:
+    const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, recommend 5-10 activities for a SINGLE DAY itinerary from FOUR SOURCES:
 
 1. PROVIDED DATABASE: Activities from our curated database (prioritize these when available)
-2. YOUR KNOWLEDGE: Activities you know about in Latvia, Riga, Jurmala, Sigulda, and other Latvian cities
-3. WEB SEARCH: Use your knowledge to suggest real, existing places and activities in Latvia
+2. BILESU SERVISS API: Live events and concerts from Latvia's ticket service (includes concerts, shows, and cultural events)
+3. YOUR KNOWLEDGE: Activities you know about in Latvia, Riga, Jurmala, Sigulda, and other Latvian cities
+4. WEB SEARCH: Use your knowledge to suggest real, existing places and activities in Latvia
 
 RULES:
-1. Recommend between 5-10 total activities combining all three sources
-2. Prioritize activities from the provided database when they match user preferences
+1. Recommend between 5-10 total activities combining all four sources
+2. Prioritize activities from the provided database and Bilesu Serviss when they match user preferences
 3. Supplement with 2-4 activities from your knowledge of Latvia when database activities don't cover all interests
 4. Focus on creating a ONE-DAY itinerary (activities should fit within a single day)
 5. Consider all user preferences: location in Latvia, budget in EUR, group size, interests

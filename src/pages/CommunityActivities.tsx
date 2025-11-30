@@ -23,6 +23,7 @@ interface ActivitySpot {
   location_lat: number | null;
   location_lon: number | null;
   imageurlthumb: string | null;
+  urlmoreinfo: string | null;
   min_price: number | null;
   max_price: number | null;
   accessibility_wheelchair: boolean | null;
@@ -355,6 +356,21 @@ export default function CommunityActivities() {
                       <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
                     )}
                   </div>
+
+                  {/* Official Website Link */}
+                  {activity.urlmoreinfo && (
+                    <div className="pt-2">
+                      <Button
+                        variant="link"
+                        className="h-auto p-0 text-primary"
+                        asChild
+                      >
+                        <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
+                          Visit Official Website →
+                        </a>
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

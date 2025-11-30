@@ -16,6 +16,7 @@ interface Event {
   time: string;
   price: string;
   image: string;
+  urlmoreinfo?: string;
   matchReason?: string;
 }
 
@@ -256,6 +257,20 @@ const Events = () => {
                 <span>{event.price}</span>
               </div>
             </div>
+
+            {event.urlmoreinfo && (
+              <div className="pt-2">
+                <Button
+                  variant="link"
+                  className="h-auto p-0 text-primary"
+                  asChild
+                >
+                  <a href={event.urlmoreinfo} target="_blank" rel="noopener noreferrer">
+                    Visit Official Website →
+                  </a>
+                </Button>
+              </div>
+            )}
 
             <div className="flex gap-4 pt-4">
               <Button

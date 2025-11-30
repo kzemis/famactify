@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
+import kasparsPhoto from "@/assets/team-kaspars.jpg";
+import dainisPhoto from "@/assets/team-dainis.jpg";
 
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -137,16 +139,20 @@ const PitchDeck = () => {
                 <h3 className="text-3xl font-semibold text-foreground">Team</h3>
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-3 text-center">
-                    <div className="mx-auto h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-                      <span className="text-3xl font-bold text-primary">KZ</span>
-                    </div>
+                    <img 
+                      src={kasparsPhoto} 
+                      alt="Kaspars Zemitis"
+                      className="mx-auto h-24 w-24 rounded-full object-cover mb-3"
+                    />
                     <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
                     <p className="text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
                   <div className="space-y-3 text-center">
-                    <div className="mx-auto h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-                      <span className="text-3xl font-bold text-primary">DD</span>
-                    </div>
+                    <img 
+                      src={dainisPhoto} 
+                      alt="Dainis Dulbinskis"
+                      className="mx-auto h-24 w-24 rounded-full object-cover mb-3"
+                    />
                     <h4 className="text-xl font-bold text-primary">Dainis Dulbinskis</h4>
                     <p className="text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)

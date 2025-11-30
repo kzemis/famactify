@@ -70,10 +70,11 @@ const OnboardingInterests = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <Textarea
-            placeholder="We love outdoor activities, especially hiking and picnics. The kids are into art and science. We're also interested in cultural events and trying new cuisines..."
+            placeholder="We love outdoor activities, hiking, museums, and trying new cuisines..."
             value={interests}
             onChange={(e) => setInterests(e.target.value)}
-            className="min-h-[200px] text-lg"
+            rows={3}
+            className="text-lg resize-none"
           />
           <div className="space-y-3">
             <Label className="text-base font-medium">

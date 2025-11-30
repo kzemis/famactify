@@ -163,7 +163,7 @@ const PitchDeck = () => {
                       <span className="text-6xl font-bold text-primary">KL</span>
                     </div>
                     <h4 className="text-3xl font-bold text-primary">Kirill Luschin</h4>
-                    <p className="text-xl text-muted-foreground">AI specialist, the superhero!</p>
+                    <p className="text-xl text-muted-foreground">Developer at heart and teenager!</p>
                   </div>
                 </div>
               </div>

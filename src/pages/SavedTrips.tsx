@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail, Share2, Copy, Check } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail, Share2, Copy, Check, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
+import { EditTripDialog } from "@/components/EditTripDialog";
 
 interface SavedTrip {
   id: string;
@@ -27,6 +28,7 @@ const SavedTrips = () => {
   const [trips, setTrips] = useState<SavedTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedTripId, setCopiedTripId] = useState<string | null>(null);
+  const [editingTrip, setEditingTrip] = useState<SavedTrip | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -145,6 +147,43 @@ const SavedTrips = () => {
     }
   };
 
+  const handleSaveEditedTrip = async (tripId: string, updatedName: string, updatedEvents: any[]) => {
+    try {
+      const totalCost = updatedEvents.reduce((sum, event) => {
+        const price = parseFloat(event.price?.replace(/[^0-9.-]+/g, "") || "0");
+        return sum + price;
+      }, 0);
+
+      const { error } = await supabase
+        .from("saved_trips")
+        .update({
+          name: updatedName,
+          events: updatedEvents,
+          total_events: updatedEvents.length,
+          total_cost: totalCost,
+        })
+        .eq("id", tripId);
+
+      if (error) throw error;
+
+      // Refresh trips list
+      await fetchTrips();
+
+      toast({
+        title: "Trip updated!",
+        description: "Your changes have been saved successfully.",
+      });
+    } catch (error: any) {
+      console.error("Failed to update trip:", error);
+      toast({
+        title: "Failed to update trip",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex flex-col">
       <AppHeader />
@@ -223,6 +262,14 @@ const SavedTrips = () => {
                     <Button
                       variant="secondary"
                       size="icon"
+                      onClick={() => setEditingTrip(trip)}
+                      title="Edit trip"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon"
                       onClick={() => copyShareLink(trip)}
                       title="Copy shareable link"
                     >
@@ -247,6 +294,17 @@ const SavedTrips = () => {
         )}
       </div>
       <Footer />
+
+      {editingTrip && (
+        <EditTripDialog
+          open={!!editingTrip}
+          onOpenChange={(open) => !open && setEditingTrip(null)}
+          tripId={editingTrip.id}
+          tripName={editingTrip.name}
+          events={editingTrip.events}
+          onSave={handleSaveEditedTrip}
+        />
+      )}
     </div>
   );
 };

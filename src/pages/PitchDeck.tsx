@@ -118,52 +118,52 @@ const PitchDeck = () => {
         <div className="w-full h-full px-4 md:px-8">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
-            <div className="space-y-12 animate-in fade-in duration-500 max-w-7xl mx-auto">
-              <div className="space-y-6">
-                <h2 className="text-7xl md:text-8xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
-                <p className="text-2xl md:text-3xl text-muted-foreground leading-relaxed">
+            <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+              <div className="space-y-4">
+                <h2 className="text-6xl md:text-7xl font-bold text-primary">Planning a Family Trip usually takes up to 8 Hours!</h2>
+                <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">
                   Parents use <span className="text-primary font-semibold">Google, Instagram, TikTok, ChatGPT</span>{" "}
                   etc. to collect information, verify details, and manually plan trips.
                 </p>
               </div>
 
-              <div className="border-t-2 border-primary pt-8 space-y-6">
-                <h2 className="text-7xl md:text-8xl font-bold text-primary">Our Solution</h2>
-                <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
+              <div className="border-t-2 border-primary pt-6 space-y-4">
+                <h2 className="text-6xl md:text-7xl font-bold text-primary">Our Solution</h2>
+                <p className="text-xl md:text-2xl text-foreground leading-relaxed">
                   A simple AI tool that helps busy parents plan family activities in{" "}
                   <span className="text-primary font-semibold">seconds</span>, eliminating hours of planning.
                 </p>
               </div>
 
-              <div className="bg-muted/50 rounded-lg p-12 space-y-8">
-                <h3 className="text-4xl md:text-5xl font-semibold text-foreground">Team</h3>
-                <div className="grid md:grid-cols-3 gap-10">
-                  <div className="space-y-4 text-center">
+              <div className="bg-muted/50 rounded-lg p-8 space-y-6">
+                <h3 className="text-3xl md:text-4xl font-semibold text-foreground">Team</h3>
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div className="space-y-3 text-center">
                     <img 
                       src={kasparsPhoto} 
                       alt="Kaspars Zemitis"
-                      className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
+                      className="mx-auto h-48 w-48 rounded-full object-cover mb-2"
                     />
-                    <h4 className="text-3xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-xl text-muted-foreground">8+ years in ticketing service development</p>
+                    <h4 className="text-2xl font-bold text-primary">Kaspars Zemitis</h4>
+                    <p className="text-lg text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
-                  <div className="space-y-4 text-center">
+                  <div className="space-y-3 text-center">
                     <img 
                       src={dainisPhoto} 
                       alt="Dainis Dulbinskis"
-                      className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
+                      className="mx-auto h-48 w-48 rounded-full object-cover mb-2"
                     />
-                    <h4 className="text-3xl font-bold text-primary">Dainis Dulbinskis</h4>
-                    <p className="text-xl text-muted-foreground">
+                    <h4 className="text-2xl font-bold text-primary">Dainis Dulbinskis</h4>
+                    <p className="text-lg text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)
                     </p>
                   </div>
-                  <div className="space-y-4 text-center">
-                    <div className="mx-auto h-56 w-56 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                      <span className="text-6xl font-bold text-primary">KL</span>
+                  <div className="space-y-3 text-center">
+                    <div className="mx-auto h-48 w-48 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+                      <span className="text-5xl font-bold text-primary">KL</span>
                     </div>
-                    <h4 className="text-3xl font-bold text-primary">Kirill Luschin</h4>
-                    <p className="text-xl text-muted-foreground">Developer at heart and teenager!</p>
+                    <h4 className="text-2xl font-bold text-primary">Kirill Luschin</h4>
+                    <p className="text-lg text-muted-foreground">Developer at heart and teenager!</p>
                   </div>
                 </div>
               </div>

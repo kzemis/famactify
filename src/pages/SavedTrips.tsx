@@ -21,6 +21,7 @@ interface SavedTrip {
   confirmations?: {
     total: number;
     confirmed: number;
+    confirmedEmails: string[];
   };
 }
 
@@ -61,18 +62,19 @@ const SavedTrips = () => {
         (data || []).map(async (trip) => {
           const { data: confirmations } = await supabase
             .from("trip_confirmations")
-            .select("confirmed")
+            .select("confirmed, recipient_email")
             .eq("trip_id", trip.id);
 
           const total = confirmations?.length || 0;
           const confirmed = confirmations?.filter((c) => c.confirmed).length || 0;
+          const confirmedEmails = confirmations?.filter((c) => c.confirmed).map((c) => c.recipient_email) || [];
 
           return {
             ...trip,
             events: Array.isArray(trip.events) ? trip.events : [],
             total_cost: trip.total_cost ?? 0,
             total_events: trip.total_events ?? 0,
-            confirmations: { total, confirmed },
+            confirmations: { total, confirmed, confirmedEmails },
           };
         })
       );
@@ -232,10 +234,15 @@ const SavedTrips = () => {
                       </div>
                     )}
                     {trip.confirmations && trip.confirmations.total > 0 && (
-                      <div className="flex items-center gap-2 text-sm w-full">
+                      <div className="flex flex-col gap-1 text-sm w-full">
                         <span className="text-sm font-medium text-primary">
                           ✓ {trip.confirmations.confirmed} of {trip.confirmations.total} confirmed
                         </span>
+                        {trip.confirmations.confirmedEmails.length > 0 && (
+                          <span className="text-xs text-muted-foreground ml-5">
+                            {trip.confirmations.confirmedEmails.join(", ")}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

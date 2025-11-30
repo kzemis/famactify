@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail, Share2, Copy, Check, Edit } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Trash2, Mail, Share2, Check, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
@@ -102,10 +102,6 @@ const SavedTrips = () => {
     }
   };
 
-  const viewTrip = (trip: SavedTrip) => {
-    sessionStorage.setItem("likedEvents", JSON.stringify(trip.events));
-    navigate("/itinerary");
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -254,18 +250,10 @@ const SavedTrips = () => {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => viewTrip(trip)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Trip
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="icon"
                       onClick={() => setEditingTrip(trip)}
-                      title="Edit trip"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Trip
                     </Button>
                     <Button
                       variant="secondary"

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar, MapPin, Clock, DollarSign, Share2, Trash2, Plus, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
+import MapView from "@/components/MapView";
 import {
   DndContext,
   closestCenter,
@@ -205,6 +206,25 @@ const Itinerary = () => {
     });
   };
 
+  // Prepare map data
+  const mapPlaces = events
+    .filter(e => e.lat && e.lon)
+    .map(e => ({
+      id: e.id || e.title,
+      name: e.title,
+      lat: e.lat,
+      lon: e.lon,
+      activityType: e.description,
+    }));
+
+  const mapPath = events
+    .filter(e => e.lat && e.lon)
+    .map(e => ({
+      id: e.id || e.title,
+      lat: e.lat,
+      lon: e.lon,
+    }));
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
       <AppHeader />
@@ -215,6 +235,23 @@ const Itinerary = () => {
             All activities organized for the perfect day
           </p>
         </div>
+
+        {mapPlaces.length > 0 && (
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-primary" />
+                Trip Map
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MapView
+                places={mapPlaces}
+                path={mapPath.length > 1 ? mapPath : undefined}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {Object.entries(groupedEvents).map(([date, dayEvents], dayIndex) => (
           <Card key={dayIndex} className="shadow-lg">

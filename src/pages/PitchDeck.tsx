@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
-import kasparsPhoto from "@/assets/team-kaspars.jpg";
+import kasparsPhoto from "@/assets/team-kaspars-new.jpg";
 import dainisPhoto from "@/assets/team-dainis.jpg";
 
 const PitchDeck = () => {

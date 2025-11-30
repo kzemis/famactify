@@ -348,7 +348,7 @@ const PitchDeck = () => {
             <div className="flex flex-col items-center justify-center space-y-16 animate-in fade-in duration-500">
               <div className="bg-white p-20 rounded-3xl shadow-2xl">
                 <QRCode 
-                  value="https://famactify.app/contribute" 
+                  value="https://famactify.app/" 
                   size={700}
                   level="M"
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
@@ -356,11 +356,8 @@ const PitchDeck = () => {
               </div>
               
               <div className="text-center space-y-8">
-                <h2 className="text-6xl md:text-7xl font-bold text-primary">Build Together</h2>
-                <p className="text-3xl md:text-4xl text-muted-foreground max-w-4xl leading-relaxed">
-                  Help us grow by contributing activities and events for families in your area
-                </p>
-                <p className="text-2xl text-primary font-semibold">famactify.app/contribute</p>
+                <h2 className="text-6xl md:text-7xl font-bold text-primary">Plan your weekend now</h2>
+                <p className="text-2xl text-primary font-semibold">famactify.app</p>
               </div>
             </div>
           )}

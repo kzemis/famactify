@@ -115,7 +115,7 @@ const PitchDeck = () => {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div className="w-full max-w-7xl px-4">
+        <div className="w-full h-full px-4 md:px-8">
           {/* Slide 1: Problem/Solution & Founders */}
           {currentSlide === 0 && (
             <div className="space-y-8 animate-in fade-in duration-500">
@@ -371,7 +371,7 @@ const PitchDeck = () => {
 
       {/* Navigation Controls */}
       <div className="border-t border-border bg-card/50">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+        <div className="w-full px-8 py-6 flex items-center justify-between">
           <Button variant="ghost" size="lg" onClick={prevSlide} disabled={currentSlide === 0} className="gap-2">
             <ChevronLeft className="w-5 h-5" />
             Previous

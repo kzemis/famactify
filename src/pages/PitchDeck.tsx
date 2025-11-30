@@ -142,28 +142,28 @@ const PitchDeck = () => {
                     <img 
                       src={kasparsPhoto} 
                       alt="Kaspars Zemitis"
-                      className="mx-auto h-40 w-40 rounded-full object-cover mb-4"
+                      className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
                     />
-                    <h4 className="text-2xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-lg text-muted-foreground">8+ years in ticketing service development</p>
+                    <h4 className="text-3xl font-bold text-primary">Kaspars Zemitis</h4>
+                    <p className="text-xl text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
                   <div className="space-y-4 text-center">
                     <img 
                       src={dainisPhoto} 
                       alt="Dainis Dulbinskis"
-                      className="mx-auto h-40 w-40 rounded-full object-cover mb-4"
+                      className="mx-auto h-56 w-56 rounded-full object-cover mb-4"
                     />
-                    <h4 className="text-2xl font-bold text-primary">Dainis Dulbinskis</h4>
-                    <p className="text-lg text-muted-foreground">
+                    <h4 className="text-3xl font-bold text-primary">Dainis Dulbinskis</h4>
+                    <p className="text-xl text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)
                     </p>
                   </div>
                   <div className="space-y-4 text-center">
-                    <div className="mx-auto h-40 w-40 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                      <span className="text-5xl font-bold text-primary">KL</span>
+                    <div className="mx-auto h-56 w-56 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                      <span className="text-6xl font-bold text-primary">KL</span>
                     </div>
-                    <h4 className="text-2xl font-bold text-primary">Kirill Luschin</h4>
-                    <p className="text-lg text-muted-foreground">AI specialist, the superhero!</p>
+                    <h4 className="text-3xl font-bold text-primary">Kirill Luschin</h4>
+                    <p className="text-xl text-muted-foreground">AI specialist, the superhero!</p>
                   </div>
                 </div>
               </div>
@@ -346,23 +346,21 @@ const PitchDeck = () => {
           {/* Slide 5: Community QR Code */}
           {currentSlide === 4 && (
             <div className="flex flex-col items-center justify-center space-y-16 animate-in fade-in duration-500">
-              <div className="relative bg-white p-16 rounded-3xl shadow-2xl">
+              <div className="bg-white p-20 rounded-3xl shadow-2xl">
                 <QRCode 
                   value="https://famactify.app/contribute" 
-                  size={600}
+                  size={700}
+                  level="M"
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 />
-                {/* Logo overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl px-10 py-6 shadow-lg">
-                  <span className="text-5xl font-bold text-primary">FamActify</span>
-                </div>
               </div>
               
-              <div className="text-center space-y-6">
-                <h2 className="text-5xl md:text-6xl font-bold text-primary">Build Together</h2>
-                <p className="text-2xl md:text-3xl text-muted-foreground max-w-3xl">
+              <div className="text-center space-y-8">
+                <h2 className="text-6xl md:text-7xl font-bold text-primary">Build Together</h2>
+                <p className="text-3xl md:text-4xl text-muted-foreground max-w-4xl leading-relaxed">
                   Help us grow by contributing activities and events for families in your area
                 </p>
+                <p className="text-2xl text-primary font-semibold">famactify.app/contribute</p>
               </div>
             </div>
           )}

@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.fetch-bilesu-events]
 verify_jwt = false
+
+[functions.get-discoverable-users]
+verify_jwt = false

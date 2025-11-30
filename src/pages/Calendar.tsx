@@ -5,9 +5,22 @@ import AppHeader from "@/components/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Mail, Plus, X, Loader2, CheckCircle2, Calendar as CalendarIcon, Save } from "lucide-react";
+import { Download, Mail, Plus, X, Loader2, CheckCircle2, Calendar as CalendarIcon, Save, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +40,8 @@ const Calendar = () => {
   const [tripName, setTripName] = useState("");
   const [tripSaved, setTripSaved] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [discoverableUsers, setDiscoverableUsers] = useState<any[]>([]);
+  const [showDiscoverableUsers, setShowDiscoverableUsers] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -45,8 +60,28 @@ const Calendar = () => {
       setUser(session?.user ?? null);
     });
 
+    // Fetch discoverable users
+    loadDiscoverableUsers();
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadDiscoverableUsers = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-discoverable-users');
+
+      if (error) {
+        console.error("Error loading discoverable users:", error);
+        return;
+      }
+
+      if (data?.users) {
+        setDiscoverableUsers(data.users);
+      }
+    } catch (error) {
+      console.error("Failed to load discoverable users:", error);
+    }
+  };
 
   const addFamilyMember = () => {
     setFamilyMembers([...familyMembers, ""]);
@@ -356,10 +391,59 @@ END:VCALENDAR`;
             </div>
 
             <div className="space-y-4">
-              <Label className="text-lg font-semibold">Family Members</Label>
-              <p className="text-sm text-muted-foreground">
-                Enter email addresses to send calendar invites
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-lg font-semibold">Family Members</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enter email addresses to send calendar invites
+                  </p>
+                </div>
+                {discoverableUsers.length > 0 && (
+                  <Popover open={showDiscoverableUsers} onOpenChange={setShowDiscoverableUsers}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Users className="h-4 w-4 mr-2" />
+                        Browse Users
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="end">
+                      <Command>
+                        <CommandInput placeholder="Search users..." />
+                        <CommandList>
+                          <CommandEmpty>No users found.</CommandEmpty>
+                          <CommandGroup heading="Discoverable Users">
+                            {discoverableUsers.map((user) => (
+                              <CommandItem
+                                key={user.user_id}
+                                onSelect={() => {
+                                  // Add email to family members if not already present
+                                  if (!familyMembers.includes(user.email)) {
+                                    const emptyIndex = familyMembers.findIndex(m => !m.trim());
+                                    if (emptyIndex !== -1) {
+                                      updateFamilyMember(emptyIndex, user.email);
+                                    } else {
+                                      setFamilyMembers([...familyMembers, user.email]);
+                                    }
+                                  }
+                                  setShowDiscoverableUsers(false);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{user.full_name || "Unknown"}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {user.email}
+                                    {user.city && ` • ${user.city}`}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
               {familyMembers.map((member, index) => (
                 <div key={index} className="flex gap-2">
                   <Input

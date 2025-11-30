@@ -149,6 +149,7 @@ export type Database = {
           children_ages: string | null
           city: string | null
           created_at: string
+          discoverable: boolean | null
           family_size: number | null
           full_name: string | null
           id: string
@@ -161,6 +162,7 @@ export type Database = {
           children_ages?: string | null
           city?: string | null
           created_at?: string
+          discoverable?: boolean | null
           family_size?: number | null
           full_name?: string | null
           id?: string
@@ -173,6 +175,7 @@ export type Database = {
           children_ages?: string | null
           city?: string | null
           created_at?: string
+          discoverable?: boolean | null
           family_size?: number | null
           full_name?: string | null
           id?: string

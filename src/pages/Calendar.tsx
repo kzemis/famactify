@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import AppHeader from "@/components/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -204,13 +205,7 @@ const Calendar = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 flex h-16 items-center">
-          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            FamActify
-          </span>
-        </div>
-      </header>
+      <AppHeader />
       <div className="max-w-3xl mx-auto space-y-6 p-4 py-8">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">Share Your Itinerary</h1>

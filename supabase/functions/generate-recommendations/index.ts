@@ -104,15 +104,21 @@ serve(async (req) => {
     const todayStr = today.toISOString().split('T')[0];
     const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][today.getDay()];
     
-    const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, analyze the provided activities database and recommend 5-10 activities for a SINGLE DAY itinerary.
+    const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, recommend 5-10 activities for a SINGLE DAY itinerary from THREE SOURCES:
+
+1. PROVIDED DATABASE: Activities from our curated database (prioritize these when available)
+2. YOUR KNOWLEDGE: Activities you know about in Latvia, Riga, Jurmala, Sigulda, and other Latvian cities
+3. WEB SEARCH: Use your knowledge to suggest real, existing places and activities in Latvia
 
 RULES:
-1. Recommend between 5-10 activities from the provided database
-2. Focus on creating a ONE-DAY itinerary (activities should fit within a single day)
-3. Consider all user preferences: location in Latvia, budget in EUR, group size, interests
-4. Prioritize activities that align with their stated interests
-5. Ensure activities can be completed in one day with reasonable travel time between them
-6. Consider practical factors like timing, location proximity, and logical sequencing for a day trip
+1. Recommend between 5-10 total activities combining all three sources
+2. Prioritize activities from the provided database when they match user preferences
+3. Supplement with 2-4 activities from your knowledge of Latvia when database activities don't cover all interests
+4. Focus on creating a ONE-DAY itinerary (activities should fit within a single day)
+5. Consider all user preferences: location in Latvia, budget in EUR, group size, interests
+6. Ensure activities can be completed in one day with reasonable travel time between them
+7. Consider practical factors like timing, location proximity, and logical sequencing for a day trip
+8. For activities from your knowledge: provide accurate, real locations with actual addresses in Latvia
 
 CRITICAL DATE FORMAT REQUIREMENT:
 - TODAY IS: ${todayStr} (${dayName})
@@ -134,24 +140,26 @@ Return ONLY valid JSON in this exact format:
 {
   "recommendations": [
     {
-      "id": "activity_id_from_database",
+      "id": "activity_id_from_database OR unique_id_you_create",
       "title": "Activity Title",
       "description": "Why this matches their preferences",
-      "location": "Location name",
+      "location": "Full address in Latvia",
       "date": "YYYY-MM-DD",
       "time": "Suggested time",
-      "price": "Price information",
-      "image": "Image URL from database",
+      "price": "Price information or estimate",
+      "image": "Image URL from database OR null if suggesting from your knowledge",
       "matchReason": "Brief explanation of why this is a good match"
     }
   ]
 }
 
 IMPORTANT: 
-- Use actual data from the activities database provided
-- Include the original activity ID and image URL
+- For database activities: Use actual data, include original ID and image URL
+- For activities from your knowledge: Create a unique ID (e.g., "claude-museum-xyz"), set image to null, provide real addresses in Latvia
+- Mix database and knowledge-based suggestions to create the best itinerary
 - Adapt dates/times based on user preferences
 - The date field must ALWAYS be in ISO format (YYYY-MM-DD)
+- All locations must be real, existing places in Latvia
 - Return ONLY the JSON object, no additional text or markdown.`;
 
     const userPrompt = `User Interests: "${interests || 'Not specified'}"

@@ -134,19 +134,28 @@ const PitchDeck = () => {
               </div>
 
               <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-                <h3 className="text-3xl font-semibold text-foreground">The Founders</h3>
+                <h3 className="text-3xl font-semibold text-foreground">Team</h3>
                 <div className="grid md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
+                  <div className="space-y-3 text-center">
+                    <div className="mx-auto h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                      <span className="text-3xl font-bold text-primary">KZ</span>
+                    </div>
                     <h4 className="text-xl font-bold text-primary">Kaspars Zemitis</h4>
                     <p className="text-muted-foreground">8+ years in ticketing service development</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3 text-center">
+                    <div className="mx-auto h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                      <span className="text-3xl font-bold text-primary">DD</span>
+                    </div>
                     <h4 className="text-xl font-bold text-primary">Dainis Dulbinskis</h4>
                     <p className="text-muted-foreground">
                       2nd time founder, successful launch of marketplace ($250K+ revenue)
                     </p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3 text-center">
+                    <div className="mx-auto h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                      <span className="text-3xl font-bold text-primary">KL</span>
+                    </div>
                     <h4 className="text-xl font-bold text-primary">Kirill Luschin</h4>
                     <p className="text-muted-foreground">AI specialist, the superhero!</p>
                   </div>

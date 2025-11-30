@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.confirm-attendance]
 verify_jwt = false
+
+[functions.fetch-bilesu-events]
+verify_jwt = false

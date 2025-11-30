@@ -15,7 +15,6 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
     full_name: "",
-    phone: "",
     city: "",
     family_size: "",
     children_ages: "",
@@ -53,7 +52,6 @@ const Profile = () => {
       if (data) {
         setProfile({
           full_name: data.full_name || "",
-          phone: data.phone || "",
           city: data.city || "",
           family_size: data.family_size?.toString() || "",
           children_ages: data.children_ages || "",
@@ -82,11 +80,12 @@ const Profile = () => {
       .upsert({
         user_id: session.user.id,
         full_name: profile.full_name || null,
-        phone: profile.phone || null,
         city: profile.city || null,
         family_size: profile.family_size ? parseInt(profile.family_size) : null,
         children_ages: profile.children_ages || null,
         bio: profile.bio || null,
+      }, {
+        onConflict: 'user_id'
       });
 
     if (error) {
@@ -175,32 +174,23 @@ const Profile = () => {
                 <Label htmlFor="full_name">Full Name</Label>
                 <Input
                   id="full_name"
-                  placeholder="John Smith"
+                  placeholder="Jānis Bērziņš"
                   value={profile.full_name}
                   onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="city">City</Label>
                 <Input
-                  id="phone"
-                  placeholder="+1 (555) 000-0000"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  id="city"
+                  placeholder="Rīga"
+                  value={profile.city}
+                  onChange={(e) => setProfile({ ...profile, city: e.target.value })}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  placeholder="New York"
-                  value={profile.city}
-                  onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="family_size">Family Size</Label>
                 <Input
@@ -211,16 +201,15 @@ const Profile = () => {
                   onChange={(e) => setProfile({ ...profile, family_size: e.target.value })}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="children_ages">Children's Ages</Label>
-              <Input
-                id="children_ages"
-                placeholder="e.g., 5, 8, 12"
-                value={profile.children_ages}
-                onChange={(e) => setProfile({ ...profile, children_ages: e.target.value })}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="children_ages">Children's Ages</Label>
+                <Input
+                  id="children_ages"
+                  placeholder="e.g., 5, 8, 12"
+                  value={profile.children_ages}
+                  onChange={(e) => setProfile({ ...profile, children_ages: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

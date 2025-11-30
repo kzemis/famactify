@@ -19,6 +19,7 @@ interface CalendarEvent {
 interface InviteRequest {
   recipientEmail: string;
   recipientName?: string;
+  tripName?: string;
   events: CalendarEvent[];
 }
 
@@ -99,9 +100,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { recipientEmail, recipientName, events }: InviteRequest = await req.json();
+    const { recipientEmail, recipientName, tripName, events }: InviteRequest = await req.json();
 
     console.log(`Sending calendar invite to ${recipientEmail} with ${events.length} events`);
+
+    const emailSubject = tripName 
+      ? `You're invited! ${tripName} - Family Itinerary from FamActify`
+      : "You're invited! Family Itinerary from FamActify";
 
     const eventsHtml = events.map(event => `
       <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
@@ -132,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "FamActify <noreply@notifications.famactify.app>",
         to: [recipientEmail],
-        subject: "You're invited! Family Itinerary from FamActify",
+        subject: emailSubject,
         attachments: [
           {
             filename: 'family-itinerary.ics',
@@ -150,6 +155,8 @@ const handler = async (req: Request): Promise<Response> => {
               <h2 style="color: #333; margin-top: 0;">
                 ${recipientName ? `Hi ${recipientName}!` : 'Hi there!'}
               </h2>
+              
+              ${tripName ? `<h3 style="color: #667eea; margin-top: 0;">${tripName}</h3>` : ''}
               
               <p style="color: #555; line-height: 1.6;">
                 You've been invited to join a family activity itinerary! Here are the planned events:

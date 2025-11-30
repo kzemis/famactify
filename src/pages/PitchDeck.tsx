@@ -245,7 +245,7 @@ const PitchDeck = () => {
                   <ul className="space-y-4 mb-10">
                     <li className="flex items-start gap-4">
                       <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-lg">Plan up to 4 trips per month</span>
+                      <span className="text-lg">Unlimited trips</span>
                     </li>
                     <li className="flex items-start gap-4">
                       <Check className="h-7 w-7 text-primary flex-shrink-0 mt-0.5" />

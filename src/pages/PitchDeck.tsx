@@ -269,11 +269,6 @@ const PitchDeck = () => {
             <div className="space-y-10 animate-in fade-in duration-500">
               <h1 className="text-7xl md:text-8xl font-bold text-foreground">Traction & Roadmap</h1>
 
-              <p className="text-3xl md:text-4xl text-foreground leading-relaxed">
-                Our Goal is to get into the <span className="text-primary font-semibold">Shipyard Build program</span>{" "}
-                and starting from January 8 achieve those milestones:
-              </p>
-
               <div className="grid md:grid-cols-2 gap-12">
                 {/* Left Column: GTM Section */}
                 <div className="bg-muted/50 rounded-lg p-10">

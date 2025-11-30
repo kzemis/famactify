@@ -177,7 +177,7 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
-        <div className="container relative mx-auto px-4 py-20">
+        <div className="container relative mx-auto px-4 py-8 md:py-20">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
             <div className="space-y-8">
               <div className="inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">

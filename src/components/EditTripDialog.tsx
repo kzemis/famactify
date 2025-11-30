@@ -11,8 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, MapPin, Clock, Trash2, Plus, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Calendar, MapPin, Clock, Trash2, Plus, Loader2, Mail, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Event {
   id: string;
@@ -47,6 +49,8 @@ export const EditTripDialog = ({
   const [newActivity, setNewActivity] = useState({ name: "", timeFrom: "", timeTo: "" });
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<string[]>([""]);
+  const [isSendingInvites, setIsSendingInvites] = useState(false);
   const { toast } = useToast();
 
   const deleteEvent = (index: number) => {
@@ -102,6 +106,82 @@ export const EditTripDialog = ({
     });
   };
 
+  const addFamilyMember = () => {
+    setFamilyMembers([...familyMembers, ""]);
+  };
+
+  const removeFamilyMember = (index: number) => {
+    setFamilyMembers(familyMembers.filter((_, i) => i !== index));
+  };
+
+  const updateFamilyMember = (index: number, value: string) => {
+    const updated = [...familyMembers];
+    updated[index] = value;
+    setFamilyMembers(updated);
+  };
+
+  const handleSendInvites = async () => {
+    const validEmails = familyMembers.filter(m => m.trim());
+    
+    if (validEmails.length === 0) {
+      toast({
+        title: "No email addresses",
+        description: "Please add at least one family member email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingInvites(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const email of validEmails) {
+      try {
+        const { data, error } = await supabase.functions.invoke('send-calendar-invite', {
+          body: {
+            recipientEmail: email,
+            tripName: editedName.trim() || undefined,
+            tripId: tripId,
+            events: editedEvents.map(event => ({
+              title: event.title,
+              date: event.date,
+              time: event.time,
+              location: event.location,
+              description: event.description,
+            })),
+          },
+        });
+
+        if (error) throw error;
+        
+        if (data?.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Failed to send invite to ${email}:`, error);
+        failCount++;
+      }
+    }
+
+    setIsSendingInvites(false);
+
+    if (successCount > 0) {
+      toast({
+        title: "Calendar invites sent!",
+        description: `Successfully sent ${successCount} invite${successCount > 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      });
+    } else {
+      toast({
+        title: "Failed to send invites",
+        description: "Please check the email addresses and try again",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSave = async () => {
     if (!editedName.trim()) {
       toast({
@@ -125,11 +205,11 @@ export const EditTripDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Trip</DialogTitle>
+          <DialogTitle>Edit Trip & Send Invites</DialogTitle>
           <DialogDescription>
-            Modify your trip name, activities, and times
+            Modify your trip details and invite family members
           </DialogDescription>
         </DialogHeader>
 
@@ -266,9 +346,68 @@ export const EditTripDialog = ({
               )}
             </div>
           </div>
+
+          <Separator className="my-6" />
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Send Calendar Invites</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Share this trip with family members via email
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {familyMembers.map((member, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="family@example.com"
+                    value={member}
+                    onChange={(e) => updateFamilyMember(index, e.target.value)}
+                  />
+                  {familyMembers.length > 1 && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeFamilyMember(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                onClick={addFamilyMember}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Family Member
+              </Button>
+            </div>
+
+            <Button
+              onClick={handleSendInvites}
+              className="w-full"
+              disabled={!familyMembers.some(m => m.trim()) || isSendingInvites}
+            >
+              {isSendingInvites ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Sending Invites...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-5 w-5 mr-2" />
+                  Send Calendar Invites
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-6">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

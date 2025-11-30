@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Trash2, Eye, Mail, Share2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
@@ -16,6 +16,7 @@ interface SavedTrip {
   total_events: number;
   created_at: string;
   recipients: string[] | null;
+  share_token: string | null;
   confirmations?: {
     total: number;
     confirmed: number;
@@ -25,6 +26,7 @@ interface SavedTrip {
 const SavedTrips = () => {
   const [trips, setTrips] = useState<SavedTrip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedTripId, setCopiedTripId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -41,7 +43,7 @@ const SavedTrips = () => {
 
     const { data, error } = await supabase
       .from("saved_trips")
-      .select("*")
+      .select("id, name, events, total_cost, total_events, created_at, recipients, share_token")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -109,6 +111,38 @@ const SavedTrips = () => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const copyShareLink = async (trip: SavedTrip) => {
+    if (!trip.share_token) {
+      toast({
+        title: "Error",
+        description: "This trip doesn't have a share link yet.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/trip/${trip.share_token}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedTripId(trip.id);
+      toast({
+        title: "Link copied!",
+        description: "Share this link with anyone to let them view your trip.",
+      });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedTripId(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -185,6 +219,18 @@ const SavedTrips = () => {
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       View Trip
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => copyShareLink(trip)}
+                      title="Copy shareable link"
+                    >
+                      {copiedTripId === trip.id ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
                     </Button>
                     <Button
                       variant="destructive"

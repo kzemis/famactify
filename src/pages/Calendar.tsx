@@ -134,10 +134,111 @@ const Calendar = () => {
   };
 
   const handleDownloadICS = () => {
-    toast({
-      title: "Download started",
-      description: "Your calendar file is being downloaded",
-    });
+    try {
+      // Generate ICS file content
+      const icsContent = generateICS(events);
+      
+      // Create blob and download
+      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'famactify-itinerary.ics');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download complete",
+        description: "Your calendar file has been downloaded",
+      });
+    } catch (error) {
+      console.error("Failed to download ICS:", error);
+      toast({
+        title: "Download failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateICS = (events: any[]) => {
+    const icsEvents = events.map(event => {
+      // Parse date and time
+      const dateStr = event.date;
+      const timeStr = event.time;
+      
+      // Extract start time (e.g., "10:00 AM" from "10:00 AM - 11:00 AM")
+      const startTime = timeStr.split('-')[0]?.trim() || '12:00 PM';
+      const endTime = timeStr.split('-')[1]?.trim() || '1:00 PM';
+      
+      // Create date objects
+      const startDateTime = parseDateTimeToICS(dateStr, startTime);
+      const endDateTime = parseDateTimeToICS(dateStr, endTime);
+      
+      // Generate unique ID
+      const uid = `${event.id || Math.random().toString(36).substring(7)}@famactify.app`;
+      
+      return `BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DTSTART:${startDateTime}
+DTEND:${endDateTime}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description || ''}
+LOCATION:${event.location || ''}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT`;
+    }).join('\n');
+
+    return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//FamActify//Family Activities Calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+${icsEvents}
+END:VCALENDAR`;
+  };
+
+  const parseDateTimeToICS = (dateStr: string, timeStr: string) => {
+    try {
+      // Parse date (e.g., "11/30/2025" or "2025-11-30")
+      const dateParts = dateStr.includes('/') 
+        ? dateStr.split('/') 
+        : dateStr.split('-');
+      
+      let year, month, day;
+      if (dateStr.includes('/')) {
+        // Format: MM/DD/YYYY
+        [month, day, year] = dateParts;
+      } else {
+        // Format: YYYY-MM-DD
+        [year, month, day] = dateParts;
+      }
+      
+      // Parse time (e.g., "10:00 AM")
+      const timeParts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!timeParts) return new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      
+      let hours = parseInt(timeParts[1]);
+      const minutes = parseInt(timeParts[2]);
+      const period = timeParts[3].toUpperCase();
+      
+      // Convert to 24-hour format
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      
+      // Create date object
+      const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, minutes);
+      
+      // Return in ICS format (YYYYMMDDTHHMMSSZ)
+      return dateObj.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    } catch (error) {
+      console.error("Failed to parse date/time:", error);
+      return new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    }
   };
 
   const handleSaveTrip = async () => {

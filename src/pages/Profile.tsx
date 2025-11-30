@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
+import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -113,13 +114,13 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden flex flex-col">
       <AppHeader />
       <div 
         className="absolute inset-0 opacity-10 bg-gradient-to-br from-primary/5 via-background to-accent/5"
       />
       
-      <div className="relative max-w-2xl mx-auto p-4 pt-8">
+      <div className="relative flex-1 max-w-2xl mx-auto p-4 pt-8 w-full">
         <Card className="shadow-xl">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -198,6 +199,7 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 };

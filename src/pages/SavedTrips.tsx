@@ -6,6 +6,7 @@ import { Calendar, MapPin, DollarSign, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
+import Footer from "@/components/Footer";
 
 interface SavedTrip {
   id: string;
@@ -91,9 +92,9 @@ const SavedTrips = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex flex-col">
       <AppHeader />
-      <div className="max-w-4xl mx-auto space-y-6 p-4 py-8">
+      <div className="flex-1 max-w-4xl mx-auto space-y-6 p-4 py-8 w-full">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">Saved Trips</h1>
           <p className="text-muted-foreground text-lg">
@@ -170,6 +171,7 @@ const SavedTrips = () => {
           </Button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

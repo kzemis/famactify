@@ -147,7 +147,7 @@ const PitchDeck = () => {
                       className="mx-auto h-48 w-48 rounded-full object-cover mb-2"
                     />
                     <h4 className="text-2xl font-bold text-primary">Kaspars Zemitis</h4>
-                    <p className="text-lg text-muted-foreground">8+ years in ticketing service development</p>
+                    <p className="text-lg text-muted-foreground">8+ years in ticketing service development, specialized in data scraping and data pipeline building</p>
                   </div>
                   <div className="space-y-3 text-center">
                     <img 
@@ -157,7 +157,7 @@ const PitchDeck = () => {
                     />
                     <h4 className="text-2xl font-bold text-primary">Dainis Dulbinskis</h4>
                     <p className="text-lg text-muted-foreground">
-                      2nd time founder, successful launch of marketplace ($250K+ revenue)
+                      2nd time founder, successful launch of marketplace ($250K+ revenue), 12+ years in advertising
                     </p>
                   </div>
                   <div className="space-y-3 text-center">
@@ -167,7 +167,7 @@ const PitchDeck = () => {
                       className="mx-auto h-48 w-48 rounded-full object-cover mb-2"
                     />
                     <h4 className="text-2xl font-bold text-primary">Kirill Luschin</h4>
-                    <p className="text-lg text-muted-foreground">Developer at heart and teenager!</p>
+                    <p className="text-lg text-muted-foreground">CS student, developer at heart and teenager!</p>
                   </div>
                 </div>
               </div>

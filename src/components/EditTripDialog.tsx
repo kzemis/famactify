@@ -10,11 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, MapPin, Clock, Trash2, Plus, Loader2, Mail, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import MapView from "@/components/MapView";
 
 interface Event {
   id: string;
@@ -22,6 +23,8 @@ interface Event {
   date: string;
   time: string;
   location?: string;
+  lat?: number;
+  lon?: number;
   description?: string;
   price?: string;
   image?: string;
@@ -223,6 +226,37 @@ export const EditTripDialog = ({
               placeholder="Enter trip name"
             />
           </div>
+
+          {editedEvents.filter(e => e.lat && e.lon).length > 0 && (
+            <Card className="border-primary/20">
+              <CardHeader className="bg-primary/5 pb-3">
+                <CardTitle className="flex items-center gap-3 text-base">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Trip Map
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <MapView
+                  places={editedEvents
+                    .filter(e => e.lat && e.lon)
+                    .map(e => ({
+                      id: e.id,
+                      name: e.title,
+                      lat: e.lat!,
+                      lon: e.lon!,
+                      activityType: e.description || '',
+                    }))}
+                  path={editedEvents
+                    .filter(e => e.lat && e.lon)
+                    .map(e => ({
+                      id: e.id,
+                      lat: e.lat!,
+                      lon: e.lon!,
+                    }))}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">

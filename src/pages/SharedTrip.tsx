@@ -6,6 +6,7 @@ import { Calendar, MapPin, DollarSign, Clock, Loader2, AlertCircle } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
+import MapView from "@/components/MapView";
 
 interface SharedTripData {
   id: string;
@@ -133,6 +134,40 @@ const SharedTrip = () => {
             </div>
           </CardContent>
         </Card>
+
+        {trip.events.filter(e => e.lat && e.lon).length > 0 && (
+          <Card className="shadow-lg border-primary/20">
+            <CardHeader className="bg-primary/5">
+              <CardTitle className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-primary" />
+                Trip Map
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                See all activities on an interactive map with the planned route
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <MapView
+                places={trip.events
+                  .filter(e => e.lat && e.lon)
+                  .map(e => ({
+                    id: e.id || e.title,
+                    name: e.title,
+                    lat: e.lat!,
+                    lon: e.lon!,
+                    activityType: e.description || '',
+                  }))}
+                path={trip.events
+                  .filter(e => e.lat && e.lon)
+                  .map(e => ({
+                    id: e.id || e.title,
+                    lat: e.lat!,
+                    lon: e.lon!,
+                  }))}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Activities</h2>

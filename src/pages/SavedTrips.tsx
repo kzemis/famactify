@@ -164,12 +164,6 @@ const SavedTrips = () => {
             ))}
           </div>
         )}
-
-        <div className="flex justify-center">
-          <Button variant="outline" onClick={() => navigate("/events")}>
-            Plan New Trip
-          </Button>
-        </div>
       </div>
       <Footer />
     </div>

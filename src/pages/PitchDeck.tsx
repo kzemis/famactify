@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
 import kasparsPhoto from "@/assets/team-kaspars-new.jpg";
 import dainisPhoto from "@/assets/team-dainis.jpg";
+import kirillPhoto from "@/assets/team-kirill.jpg";
 
 const PitchDeck = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -160,9 +161,11 @@ const PitchDeck = () => {
                     </p>
                   </div>
                   <div className="space-y-3 text-center">
-                    <div className="mx-auto h-48 w-48 rounded-full bg-primary/20 flex items-center justify-center mb-2">
-                      <span className="text-5xl font-bold text-primary">KL</span>
-                    </div>
+                    <img 
+                      src={kirillPhoto} 
+                      alt="Kirill Luschin"
+                      className="mx-auto h-48 w-48 rounded-full object-cover mb-2"
+                    />
                     <h4 className="text-2xl font-bold text-primary">Kirill Luschin</h4>
                     <p className="text-lg text-muted-foreground">Developer at heart and teenager!</p>
                   </div>

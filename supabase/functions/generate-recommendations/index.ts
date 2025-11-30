@@ -140,6 +140,12 @@ serve(async (req) => {
     const todayStr = today.toISOString().split('T')[0];
     const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][today.getDay()];
     
+    // Extract user's requested date from answers
+    const userRequestedDate = answers?.date || answers?.Date || answers?.when || answers?.When || null;
+    const dateInstruction = userRequestedDate 
+      ? `\n\n🚨 CRITICAL: The user specifically requested activities for: "${userRequestedDate}"\nYou MUST calculate the exact date from this request and use it (or dates very close to it) for ALL recommendations.\nDO NOT default to tomorrow or next week unless the user's request indicates that.\nParse "${userRequestedDate}" carefully and calculate the exact ISO date (YYYY-MM-DD) from today (${todayStr}).\n`
+      : `\n\nThe user did not specify a date, so you can suggest activities for any upcoming date.\n`;
+    
     const systemPrompt = `You are a family activity recommendation assistant for Latvia. Based on the user's interests and answers to planning questions, recommend 5-10 activities for a SINGLE DAY itinerary from FOUR SOURCES:
 
 1. PROVIDED DATABASE: Activities from our curated database (prioritize these when available)
@@ -158,15 +164,20 @@ RULES:
 8. For activities from your knowledge: provide accurate, real locations with actual addresses in Latvia
 
 CRITICAL DATE FORMAT REQUIREMENT:
-- TODAY IS: ${todayStr} (${dayName})
+- TODAY IS: ${todayStr} (${dayName})${dateInstruction}
 - The "date" field MUST be in ISO format: YYYY-MM-DD (e.g., "2025-12-07")
 - Date calculation rules:
   * "next Saturday" = the Saturday of NEXT week (7 days from the upcoming Saturday, NOT the closest Saturday)
   * "this Saturday" = the closest upcoming Saturday (could be today if today is Saturday)
   * "next week" = 7 days from today
+  * "tomorrow" = ${todayStr} + 1 day
   * Always add 7 days when the user says "next [day]" to ensure it's truly the next occurrence
+  * For specific dates like "December 15" or "March 20", calculate from the current year (2025)
+  * For "this weekend", use the upcoming Saturday/Sunday
+  * For "next month", use dates in the following month
 - Never return natural language dates like "Next Saturday" or "This weekend"
 - Always calculate the exact date from today (${todayStr})
+- RESPECT THE USER'S DATE REQUEST - do not default to tomorrow unless that's what they asked for
 
 EXAMPLES:
 - If today is Saturday 2025-11-29 and user says "next Saturday", return: "2025-12-06"
@@ -207,6 +218,8 @@ IMPORTANT:
 
 User Answers to Planning Questions:
 ${answers ? Object.entries(answers).map(([q, a]) => `${q}: ${a}`).join('\n') : 'No specific answers provided'}
+
+${userRequestedDate ? `\n🚨🚨🚨 IMPORTANT DATE REQUEST 🚨🚨🚨\nThe user wants activities for: "${userRequestedDate}"\nYou MUST parse this date request and use the calculated date for your recommendations.\nDo NOT ignore this and default to tomorrow or any other date.\n` : ''}
 
 Available Activities Database:
 ${JSON.stringify(allActivitiesData, null, 2)}

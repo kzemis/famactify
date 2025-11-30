@@ -25,6 +25,7 @@ const Calendar = () => {
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [showSaveTripDialog, setShowSaveTripDialog] = useState(false);
   const [tripName, setTripName] = useState("");
+  const [tripSaved, setTripSaved] = useState(false);
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -307,6 +308,7 @@ END:VCALENDAR`;
 
       setShowSaveTripDialog(false);
       setTripName("");
+      setTripSaved(true);
     } catch (error: any) {
       console.error("Failed to save trip:", error);
       toast({
@@ -407,7 +409,7 @@ END:VCALENDAR`;
                 )}
               </Button>
 
-              {user && events.length > 0 && (
+              {user && events.length > 0 && !tripSaved && (
                 <Button
                   onClick={handleSaveTrip}
                   variant="secondary"
@@ -416,6 +418,18 @@ END:VCALENDAR`;
                 >
                   <Save className="h-5 w-5 mr-2" />
                   Save My Trip
+                </Button>
+              )}
+
+              {tripSaved && (
+                <Button
+                  onClick={() => navigate("/saved-trips")}
+                  variant="default"
+                  className="w-full"
+                  size="lg"
+                >
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Go to Saved Trips
                 </Button>
               )}
 

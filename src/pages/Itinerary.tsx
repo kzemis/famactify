@@ -299,24 +299,14 @@ const Itinerary = () => {
           )}
         </Card>
 
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-1"
-            onClick={() => navigate("/events")}
-          >
-            Add More Activities
-          </Button>
-          <Button
-            size="lg"
-            className="flex-1"
-            onClick={() => navigate("/calendar")}
-          >
-            <Share2 className="h-5 w-5 mr-2" />
-            Share & Export
-          </Button>
-        </div>
+        <Button
+          size="lg"
+          className="w-full"
+          onClick={() => navigate("/calendar")}
+        >
+          <Share2 className="h-5 w-5 mr-2" />
+          Share & Export
+        </Button>
       </div>
     </div>
   );

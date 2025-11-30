@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import AppHeader from "@/components/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, User, Save, LogOut } from "lucide-react";
-import patternBg from "@/assets/pattern-bg.jpg";
+import { User, Save } from "lucide-react";
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
@@ -104,11 +104,6 @@ const Profile = () => {
     setSaving(false);
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -119,43 +114,12 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 flex h-16 items-center">
-          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            FamActify
-          </span>
-        </div>
-      </header>
+      <AppHeader />
       <div 
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `url(${patternBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+        className="absolute inset-0 opacity-10 bg-gradient-to-br from-primary/5 via-background to-accent/5"
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
       
-      <div className="relative max-w-2xl mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleSignOut}
-            className="gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-        </div>
-
+      <div className="relative max-w-2xl mx-auto p-4 pt-8">
         <Card className="shadow-xl">
           <CardHeader>
             <div className="flex items-center gap-3">

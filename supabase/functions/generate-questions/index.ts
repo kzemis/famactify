@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { interests } = await req.json();
+    const { interests, maxQuestions = 4 } = await req.json();
     
     if (!interests) {
       return new Response(
@@ -21,16 +21,17 @@ serve(async (req) => {
     }
 
     console.log('Generating questions for interests:', interests);
+    console.log('Max questions requested:', maxQuestions);
 
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     if (!ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are a family activity planning assistant for Latvia. Based on the user's interests, generate exactly 4 personalized questions to gather information for planning a ONE-DAY family activity.
+    const systemPrompt = `You are a family activity planning assistant for Latvia. Based on the user's interests, generate exactly ${maxQuestions} personalized questions to gather information for planning a ONE-DAY family activity.
 
 RULES:
-1. Generate exactly 4 questions
+1. Generate exactly ${maxQuestions} questions
 2. Each question should be specific and relevant to their stated interests
 3. Questions should help gather practical planning information (location in Latvia, specific date, budget in EUR, group size, preferences, etc.)
 4. Make questions conversational and friendly

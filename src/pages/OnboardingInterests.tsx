@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +13,7 @@ import Footer from "@/components/Footer";
 
 const OnboardingInterests = () => {
   const [interests, setInterests] = useState("");
+  const [maxQuestions, setMaxQuestions] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -26,7 +29,7 @@ const OnboardingInterests = () => {
 
       // Call the edge function to generate personalized questions
       const { data, error } = await supabase.functions.invoke('generate-questions', {
-        body: { interests }
+        body: { interests, maxQuestions }
       });
 
       if (error) throw error;
@@ -72,6 +75,23 @@ const OnboardingInterests = () => {
             onChange={(e) => setInterests(e.target.value)}
             className="min-h-[200px] text-lg"
           />
+          <div className="space-y-3">
+            <Label className="text-base font-medium">
+              I am willing to answer max {maxQuestions} question{maxQuestions !== 1 ? 's' : ''}
+            </Label>
+            <Slider
+              value={[maxQuestions]}
+              onValueChange={(value) => setMaxQuestions(value[0])}
+              min={1}
+              max={10}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>1 question</span>
+              <span>10 questions</span>
+            </div>
+          </div>
           <div className="bg-accent rounded-lg p-4">
             <p className="text-sm text-accent-foreground">
               <strong>Pro tip:</strong> The more details you share, the better we can personalize your recommendations!

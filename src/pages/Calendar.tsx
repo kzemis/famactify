@@ -77,6 +77,9 @@ const Calendar = () => {
     let successCount = 0;
     let failCount = 0;
 
+    // Get current saved trip ID from session if available
+    const savedTripId = sessionStorage.getItem("currentTripId");
+
     // Send emails to each family member
     for (const email of validEmails) {
       try {
@@ -84,6 +87,7 @@ const Calendar = () => {
           body: {
             recipientEmail: email,
             tripName: inviteTripName.trim() || undefined,
+            tripId: savedTripId || undefined,
             events: events.map(event => ({
               title: event.title,
               date: event.date,
@@ -276,7 +280,7 @@ END:VCALENDAR`;
         return sum + price;
       }, 0);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("saved_trips")
         .insert({
           user_id: user.id,
@@ -285,9 +289,16 @@ END:VCALENDAR`;
           total_events: events.length,
           total_cost: totalCost,
           recipients: familyMembers.filter(email => email.trim() !== ""),
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Store the trip ID for calendar invites to reference
+      if (data) {
+        sessionStorage.setItem("currentTripId", data.id);
+      }
 
       toast({
         title: "Trip saved!",

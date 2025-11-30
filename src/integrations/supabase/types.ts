@@ -218,6 +218,41 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_confirmations: {
+        Row: {
+          confirmed: boolean
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          recipient_email: string
+          trip_id: string
+        }
+        Insert: {
+          confirmed?: boolean
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          recipient_email: string
+          trip_id: string
+        }
+        Update: {
+          confirmed?: boolean
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          recipient_email?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_confirmations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

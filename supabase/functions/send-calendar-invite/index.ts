@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 // Note: Resend will be available after deployment
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -20,6 +21,7 @@ interface InviteRequest {
   recipientEmail: string;
   recipientName?: string;
   tripName?: string;
+  tripId?: string;
   events: CalendarEvent[];
 }
 
@@ -100,13 +102,41 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { recipientEmail, recipientName, tripName, events }: InviteRequest = await req.json();
+    const { recipientEmail, recipientName, tripName, tripId, events }: InviteRequest = await req.json();
 
     console.log(`Sending calendar invite to ${recipientEmail} with ${events.length} events`);
+
+    // Create Supabase client with service role to insert confirmation records
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Create confirmation record if tripId is provided
+    if (tripId) {
+      const { error: confirmError } = await supabase
+        .from("trip_confirmations")
+        .insert({
+          trip_id: tripId,
+          recipient_email: recipientEmail,
+          confirmed: false,
+        });
+
+      if (confirmError) {
+        console.error("Error creating confirmation record:", confirmError);
+      } else {
+        console.log("Confirmation record created for", recipientEmail);
+      }
+    }
 
     const emailSubject = tripName 
       ? `You're invited! ${tripName} - Family Itinerary from FamActify`
       : "You're invited! Family Itinerary from FamActify";
+
+    // Generate confirmation link
+    const confirmationUrl = tripId 
+      ? `https://famactify.app/confirm?tripId=${tripId}&email=${encodeURIComponent(recipientEmail)}`
+      : null;
 
     const eventsHtml = events.map(event => `
       <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
@@ -169,6 +199,18 @@ const handler = async (req: Request): Promise<Response> => {
                   💡 Tip: Add these events to your calendar app to get reminders!
                 </p>
               </div>
+
+              ${confirmationUrl ? `
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${confirmationUrl}" 
+                   style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                  ✓ Confirm I'm Going
+                </a>
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                  Click to let the organizer know you'll be there!
+                </p>
+              </div>
+              ` : ''}
 
               <p style="color: #666; font-size: 14px; line-height: 1.6; margin-top: 30px;">
                 Looking forward to spending quality time together!

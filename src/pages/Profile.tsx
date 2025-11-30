@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Save } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,7 @@ const Profile = () => {
     family_size: "",
     children_ages: "",
     bio: "",
+    discoverable: false,
   });
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
@@ -57,6 +59,7 @@ const Profile = () => {
           family_size: data.family_size?.toString() || "",
           children_ages: data.children_ages || "",
           bio: data.bio || "",
+          discoverable: data.discoverable || false,
         });
       }
 
@@ -85,6 +88,7 @@ const Profile = () => {
         family_size: profile.family_size ? parseInt(profile.family_size) : null,
         children_ages: profile.children_ages || null,
         bio: profile.bio || null,
+        discoverable: profile.discoverable,
       }, {
         onConflict: 'user_id'
       });
@@ -188,7 +192,23 @@ const Profile = () => {
               />
             </div>
 
-            <Button 
+            <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="discoverable" className="text-base font-semibold">
+                  Discoverable Profile
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow other users to find and invite you when planning trips
+                </p>
+              </div>
+              <Switch
+                id="discoverable"
+                checked={profile.discoverable}
+                onCheckedChange={(checked) => setProfile({ ...profile, discoverable: checked })}
+              />
+            </div>
+
+            <Button
               onClick={handleSave} 
               className="w-full gap-2"
               disabled={saving}

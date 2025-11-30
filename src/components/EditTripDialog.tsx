@@ -54,6 +54,7 @@ export const EditTripDialog = ({
   const [isSaving, setIsSaving] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<string[]>([""]);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const { toast } = useToast();
 
   const deleteEvent = (index: number) => {
@@ -228,34 +229,46 @@ export const EditTripDialog = ({
           </div>
 
           {editedEvents.filter(e => e.lat && e.lon).length > 0 && (
-            <Card className="border-primary/20">
-              <CardHeader className="bg-primary/5 pb-3">
-                <CardTitle className="flex items-center gap-3 text-base">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  Trip Map
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <MapView
-                  places={editedEvents
-                    .filter(e => e.lat && e.lon)
-                    .map(e => ({
-                      id: e.id,
-                      name: e.title,
-                      lat: e.lat!,
-                      lon: e.lon!,
-                      activityType: e.description || '',
-                    }))}
-                  path={editedEvents
-                    .filter(e => e.lat && e.lon)
-                    .map(e => ({
-                      id: e.id,
-                      lat: e.lat!,
-                      lon: e.lon!,
-                    }))}
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowMap(!showMap)}
+                className="w-full"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                {showMap ? "Hide Map" : "Show on the map"}
+              </Button>
+              {showMap && (
+                <Card className="border-primary/20">
+                  <CardHeader className="bg-primary/5 pb-3">
+                    <CardTitle className="flex items-center gap-3 text-base">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Trip Map
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <MapView
+                      places={editedEvents
+                        .filter(e => e.lat && e.lon)
+                        .map(e => ({
+                          id: e.id,
+                          name: e.title,
+                          lat: e.lat!,
+                          lon: e.lon!,
+                          activityType: e.description || '',
+                        }))}
+                      path={editedEvents
+                        .filter(e => e.lat && e.lon)
+                        .map(e => ({
+                          id: e.id,
+                          lat: e.lat!,
+                          lon: e.lon!,
+                        }))}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           <div className="space-y-4">

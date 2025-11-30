@@ -23,6 +23,7 @@ const SharedTrip = () => {
   const [trip, setTrip] = useState<SharedTripData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     const fetchSharedTrip = async () => {
@@ -136,37 +137,49 @@ const SharedTrip = () => {
         </Card>
 
         {trip.events.filter(e => e.lat && e.lon).length > 0 && (
-          <Card className="shadow-lg border-primary/20">
-            <CardHeader className="bg-primary/5">
-              <CardTitle className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-primary" />
-                Trip Map
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                See all activities on an interactive map with the planned route
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <MapView
-                places={trip.events
-                  .filter(e => e.lat && e.lon)
-                  .map(e => ({
-                    id: e.id || e.title,
-                    name: e.title,
-                    lat: e.lat!,
-                    lon: e.lon!,
-                    activityType: e.description || '',
-                  }))}
-                path={trip.events
-                  .filter(e => e.lat && e.lon)
-                  .map(e => ({
-                    id: e.id || e.title,
-                    lat: e.lat!,
-                    lon: e.lon!,
-                  }))}
-              />
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowMap(!showMap)}
+              className="w-full"
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              {showMap ? "Hide Map" : "Show on the map"}
+            </Button>
+            {showMap && (
+              <Card className="shadow-lg border-primary/20">
+                <CardHeader className="bg-primary/5">
+                  <CardTitle className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Trip Map
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    See all activities on an interactive map with the planned route
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <MapView
+                    places={trip.events
+                      .filter(e => e.lat && e.lon)
+                      .map(e => ({
+                        id: e.id || e.title,
+                        name: e.title,
+                        lat: e.lat!,
+                        lon: e.lon!,
+                        activityType: e.description || '',
+                      }))}
+                    path={trip.events
+                      .filter(e => e.lat && e.lon)
+                      .map(e => ({
+                        id: e.id || e.title,
+                        lat: e.lat!,
+                        lon: e.lon!,
+                      }))}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         <div className="space-y-4">

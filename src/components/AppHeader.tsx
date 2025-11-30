@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Presentation, User } from "lucide-react";
+import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -61,15 +61,6 @@ const AppHeader = () => {
         </span>
         
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate("/pitch-deck")}
-            className="hover:text-primary"
-            aria-label="View Pitch Deck"
-          >
-            <Presentation className="h-5 w-5" />
-          </Button>
           <Button variant="outline" onClick={() => navigate("/community")}>
             Contribute
           </Button>

@@ -26,6 +26,7 @@ import CommunityActivities from "./pages/CommunityActivities";
 import ConfirmAttendance from "./pages/ConfirmAttendance";
 import SharedTrip from "./pages/SharedTrip";
 import TestAuth from "./pages/TestAuth";
+import EventsCalendar from "./pages/EventsCalendar";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/confirm" element={<ConfirmAttendance />} />
           <Route path="/trip/:shareToken" element={<SharedTrip />} />
           <Route path="/test-auth" element={<TestAuth />} />
+          <Route path="/events-calendar" element={<EventsCalendar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

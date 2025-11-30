@@ -393,7 +393,7 @@ END:VCALENDAR`;
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-lg font-semibold">Family Members</Label>
+                  <Label className="text-lg font-semibold">Members</Label>
                   <p className="text-sm text-muted-foreground">
                     Enter email addresses to send calendar invites
                   </p>
@@ -469,7 +469,7 @@ END:VCALENDAR`;
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Family Member
+                Add Member
               </Button>
             </div>
 

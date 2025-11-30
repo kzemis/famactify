@@ -93,11 +93,6 @@ const OnboardingInterests = () => {
               <span>10 questions</span>
             </div>
           </div>
-          <div className="bg-accent rounded-lg p-4">
-            <p className="text-sm text-accent-foreground">
-              <strong>Pro tip:</strong> The more details you share, the better we can personalize your recommendations!
-            </p>
-          </div>
           <Button
             onClick={handleContinue}
             disabled={!interests.trim() || isLoading}

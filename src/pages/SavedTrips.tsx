@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, DollarSign, Trash2, Mail, Share2, Check, Edit } from "lucide-react";
+import { Calendar, Trash2, Mail, Share2, Check, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
@@ -223,14 +223,6 @@ const SavedTrips = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span>{trip.total_events} events</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      <span>${trip.total_cost} estimated</span>
-                    </div>
                     {trip.recipients && trip.recipients.length > 0 && (
                       <div className="flex items-center gap-2 text-sm w-full">
                         <Mail className="h-4 w-4 text-primary" />

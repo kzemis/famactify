@@ -257,11 +257,50 @@ export type Database = {
             referencedRelation: "saved_trips"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trip_confirmations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "shared_trips_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      shared_trips_view: {
+        Row: {
+          created_at: string | null
+          events: Json | null
+          id: string | null
+          name: string | null
+          share_token: string | null
+          total_cost: number | null
+          total_events: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          events?: Json | null
+          id?: string | null
+          name?: string | null
+          share_token?: string | null
+          total_cost?: number | null
+          total_events?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          events?: Json | null
+          id?: string | null
+          name?: string | null
+          share_token?: string | null
+          total_cost?: number | null
+          total_events?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

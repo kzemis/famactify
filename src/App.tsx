@@ -24,6 +24,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Contribute from "./pages/Contribute";
 import CommunityActivities from "./pages/CommunityActivities";
 import ConfirmAttendance from "./pages/ConfirmAttendance";
+import SharedTrip from "./pages/SharedTrip";
 import TestAuth from "./pages/TestAuth";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -58,6 +59,7 @@ const App = () => (
           <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
           <Route path="/community" element={<CommunityActivities />} />
           <Route path="/confirm" element={<ConfirmAttendance />} />
+          <Route path="/trip/:shareToken" element={<SharedTrip />} />
           <Route path="/test-auth" element={<TestAuth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

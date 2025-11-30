@@ -189,6 +189,7 @@ export type Database = {
           id: string
           name: string
           recipients: string[] | null
+          share_token: string | null
           total_cost: number | null
           total_events: number | null
           updated_at: string
@@ -200,6 +201,7 @@ export type Database = {
           id?: string
           name: string
           recipients?: string[] | null
+          share_token?: string | null
           total_cost?: number | null
           total_events?: number | null
           updated_at?: string
@@ -211,6 +213,7 @@ export type Database = {
           id?: string
           name?: string
           recipients?: string[] | null
+          share_token?: string | null
           total_cost?: number | null
           total_events?: number | null
           updated_at?: string

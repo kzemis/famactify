@@ -64,6 +64,10 @@ const AppHeader = () => {
           <Button onClick={() => navigate("/onboarding/interests")}>
             Plan
           </Button>
+          
+          <Button variant="outline" onClick={() => navigate("/contribute")}>
+            Contribute
+          </Button>
 
           {user && (
             <DropdownMenu>

@@ -6,9 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MapPin, Locate, Upload, X, Camera } from 'lucide-react';
+import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
 const ENVIRONMENTS = ['inside', 'outside', 'both'];
@@ -28,6 +36,11 @@ export default function Contribute() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [autoFillUrl, setAutoFillUrl] = useState('');
+  const [autoFillImages, setAutoFillImages] = useState<File[]>([]);
+  const [parsing, setParsing] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const autoFillImageInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -324,6 +337,81 @@ export default function Contribute() {
     );
   };
 
+  const handleAutoFillImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setAutoFillImages(files);
+    }
+  };
+
+  const handleAutoFill = async () => {
+    if (!autoFillUrl && autoFillImages.length === 0) {
+      toast.error('Please provide a URL or select images');
+      return;
+    }
+
+    setParsing(true);
+    try {
+      let imageUrls: string[] = [];
+
+      // Upload images to get URLs for AI processing
+      if (autoFillImages.length > 0) {
+        for (const file of autoFillImages) {
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+          imageUrls.push(await base64Promise);
+        }
+      }
+
+      const response = await supabase.functions.invoke('parse-activity-info', {
+        body: {
+          url: autoFillUrl || null,
+          images: imageUrls.length > 0 ? imageUrls : null,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to parse information');
+      }
+
+      const parsedData = response.data?.data;
+      if (!parsedData) {
+        throw new Error('No data received from parser');
+      }
+
+      // Update form with parsed data
+      setFormData(prev => ({
+        ...prev,
+        name: parsedData.name || prev.name,
+        description: parsedData.description || prev.description,
+        activityType: parsedData.activityType || prev.activityType,
+        ageBuckets: parsedData.ageBuckets || prev.ageBuckets,
+        minPrice: parsedData.minPrice !== null ? parsedData.minPrice.toString() : prev.minPrice,
+        maxPrice: parsedData.maxPrice !== null ? parsedData.maxPrice.toString() : prev.maxPrice,
+        address: parsedData.address || prev.address,
+        environment: parsedData.environment || prev.environment,
+        wheelchair: parsedData.wheelchair ?? prev.wheelchair,
+        stroller: parsedData.stroller ?? prev.stroller,
+        restrooms: parsedData.restrooms ?? prev.restrooms,
+        changingTable: parsedData.changingTable ?? prev.changingTable,
+        urlmoreinfo: parsedData.urlmoreinfo || autoFillUrl || prev.urlmoreinfo,
+      }));
+
+      toast.success('Information parsed successfully! Please review and adjust as needed.');
+      setDialogOpen(false);
+      setAutoFillUrl('');
+      setAutoFillImages([]);
+    } catch (error: any) {
+      console.error('Auto-fill error:', error);
+      toast.error(error.message || 'Failed to parse information');
+    } finally {
+      setParsing(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -332,10 +420,86 @@ export default function Contribute() {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Contribute an Activity</h1>
-          <p className="text-muted-foreground">
-            Help grow our database of family-friendly activities. Share a spot, event, or activity that families will love.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Contribute an Activity</h1>
+              <p className="text-muted-foreground">
+                Help grow our database of family-friendly activities. Share a spot, event, or activity that families will love.
+              </p>
+            </div>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="lg">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Auto-Fill
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Auto-Fill from URL or Photos</DialogTitle>
+                  <DialogDescription>
+                    Provide a website link or upload photos, and AI will extract activity information for you.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="autofill-url">Website URL</Label>
+                    <div className="relative mt-2">
+                      <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="autofill-url"
+                        type="url"
+                        placeholder="https://example.com/activity"
+                        value={autoFillUrl}
+                        onChange={(e) => setAutoFillUrl(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Upload Photos</Label>
+                    <Input
+                      ref={autoFillImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleAutoFillImageSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => autoFillImageInputRef.current?.click()}
+                      className="w-full mt-2"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {autoFillImages.length > 0 
+                        ? `${autoFillImages.length} photo${autoFillImages.length > 1 ? 's' : ''} selected` 
+                        : 'Select Photos'}
+                    </Button>
+                  </div>
+
+                  <Button 
+                    onClick={handleAutoFill} 
+                    disabled={parsing || (!autoFillUrl && autoFillImages.length === 0)}
+                    className="w-full"
+                  >
+                    {parsing ? 'Parsing...' : 'Parse Information'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

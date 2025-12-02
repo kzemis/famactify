@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare, User, LogOut } from "lucide-react";
+import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare, User, LogOut, CalendarPlus, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
@@ -126,13 +126,15 @@ const Landing = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary">FamActify</span>
-          <div className="flex items-center gap-4">
-            <Button onClick={() => navigate("/onboarding/interests")}>
-              {t.common.plan}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button onClick={() => navigate("/onboarding/interests")} size="icon" className="sm:w-auto sm:px-4">
+              <CalendarPlus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t.common.plan}</span>
             </Button>
             
-            <Button variant="outline" onClick={() => navigate("/contribute")}>
-              {t.common.contribute}
+            <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t.common.contribute}</span>
             </Button>
 
             <LanguageSwitcher />
@@ -173,10 +175,11 @@ const Landing = () => {
               <Button 
                 variant="default" 
                 onClick={handleGoogleSignIn}
-                className="gap-2"
+                size="icon"
+                className="sm:w-auto sm:px-4"
               >
-                <User className="h-4 w-4" />
-                {t.common.signIn}
+                <User className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t.common.signIn}</span>
               </Button>
             )}
           </div>

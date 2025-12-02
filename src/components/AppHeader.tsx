@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User } from "lucide-react";
+import { User, CalendarPlus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -63,13 +63,15 @@ const AppHeader = () => {
           FamActify
         </span>
         
-        <div className="flex items-center gap-4">
-          <Button onClick={() => navigate("/onboarding/interests")}>
-            {t.common.plan}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button onClick={() => navigate("/onboarding/interests")} size="icon" className="sm:w-auto sm:px-4">
+            <CalendarPlus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t.common.plan}</span>
           </Button>
           
-          <Button variant="outline" onClick={() => navigate("/contribute")}>
-            {t.common.contribute}
+          <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t.common.contribute}</span>
           </Button>
 
           <LanguageSwitcher />

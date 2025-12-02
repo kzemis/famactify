@@ -5,10 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,8 +21,8 @@ const Footer = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
+        title: t.footer.invalidEmail,
+        description: t.footer.invalidEmailDesc,
         variant: "destructive",
       });
       return;
@@ -37,8 +39,8 @@ const Footer = () => {
         if (error.code === "23505") {
           // Unique constraint violation - email already subscribed
           toast({
-            title: "Already Subscribed",
-            description: "This email is already subscribed to our newsletter.",
+            title: t.footer.alreadySubscribed,
+            description: t.footer.alreadySubscribedDesc,
             variant: "destructive",
           });
         } else {
@@ -46,16 +48,16 @@ const Footer = () => {
         }
       } else {
         toast({
-          title: "Success!",
-          description: "Thank you for subscribing to our newsletter.",
+          title: t.footer.subscribeSuccess,
+          description: t.footer.subscribeSuccessDesc,
         });
         setEmail("");
       }
     } catch (error) {
       console.error("Error subscribing to newsletter:", error);
       toast({
-        title: "Error",
-        description: "Failed to subscribe. Please try again later.",
+        title: t.footer.subscribeError,
+        description: t.footer.subscribeErrorDesc,
         variant: "destructive",
       });
     } finally {
@@ -65,19 +67,19 @@ const Footer = () => {
 
   const footerLinks = {
     product: [
-      { label: "Activity Planner", href: "/onboarding/interests" },
-      { label: "Community Activities", href: "/community" },
-      { label: "Contribute Activity", href: "/contribute" },
-      { label: "My Planned Trips", href: "/saved-trips" },
+      { label: t.footer.activityPlanner, href: "/onboarding/interests" },
+      { label: t.footer.communityActivities, href: "/community" },
+      { label: t.footer.contributeActivity, href: "/contribute" },
+      { label: t.footer.myPlannedTrips, href: "/saved-trips" },
     ],
     support: [
-      { label: "Contact Us", href: "/contact" },
-      { label: "FAQs", href: "/faq" },
-      { label: "Presentation", href: "/pitch-deck" },
+      { label: t.footer.contactUs, href: "/contact" },
+      { label: t.footer.faqs, href: "/faq" },
+      { label: t.footer.presentation, href: "/pitch-deck" },
     ],
     legal: [
-      { label: "Privacy Policy", href: "/privacy" },
-      { label: "Terms of Service", href: "/terms" },
+      { label: t.footer.privacyPolicy, href: "/privacy" },
+      { label: t.footer.termsOfService, href: "/terms" },
     ],
   };
 
@@ -86,14 +88,14 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         {/* Newsletter Section */}
         <div className="mb-12 max-w-md mx-auto text-center">
-          <h3 className="text-xl font-semibold text-foreground mb-2">Stay Updated</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-2">{t.footer.stayUpdated}</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Subscribe to get the latest family activity ideas and tips
+            {t.footer.newsletterDescription}
           </p>
           <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
             <Input
               type="email"
-              placeholder="Enter your email"
+              placeholder={t.footer.emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}
@@ -104,7 +106,7 @@ const Footer = () => {
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "Subscribe"
+                t.footer.subscribe
               )}
             </Button>
           </form>
@@ -112,10 +114,10 @@ const Footer = () => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Product</h4>
+            <h4 className="font-semibold text-foreground mb-4">{t.footer.product}</h4>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
-                <li key={link.label}>
+                <li key={link.href}>
                   <Link
                     to={link.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
@@ -127,10 +129,10 @@ const Footer = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Support</h4>
+            <h4 className="font-semibold text-foreground mb-4">{t.footer.support}</h4>
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
-                <li key={link.label}>
+                <li key={link.href}>
                   <Link
                     to={link.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
@@ -142,10 +144,10 @@ const Footer = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Legal</h4>
+            <h4 className="font-semibold text-foreground mb-4">{t.footer.legal}</h4>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
-                <li key={link.label}>
+                <li key={link.href}>
                   <Link
                     to={link.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer relative z-10"
@@ -163,10 +165,10 @@ const Footer = () => {
             <span className="text-xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer">FamActify</span>
           </Link>
           <p className="text-sm text-muted-foreground">
-            Made for happy families
+            {t.footer.tagline}
           </p>
           <p className="text-sm text-muted-foreground">
-            © {currentYear} FamActify. All rights reserved.
+            © {currentYear} FamActify. {t.footer.allRightsReserved}
           </p>
         </div>
       </div>

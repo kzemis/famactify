@@ -424,18 +424,27 @@ export default function Contribute() {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
 
         <div className="mb-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{t.contribute.title}</h1>
-              <p className="text-muted-foreground">
-                {t.contribute.subtitle}
-              </p>
-            </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <h1 className="text-3xl font-bold mb-2">{t.contribute.title}</h1>
+          <p className="text-muted-foreground mb-4">
+            {t.contribute.subtitle}
+          </p>
+          
+          {/* Auto-fill buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (open) {
+                setAutoFillUrl('');
+                setAutoFillImages([]);
+              }
+            }}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="lg">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {t.contribute.autoFill}
+                <Button variant="outline" onClick={() => {
+                  setAutoFillUrl('');
+                  setAutoFillImages([]);
+                }}>
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  {t.contribute.autoFillFromLink}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -460,59 +469,10 @@ export default function Contribute() {
                       />
                     </div>
                   </div>
-                  
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">{t.contribute.or}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>{t.contribute.uploadPhotos}</Label>
-                    <Input
-                      ref={autoFillImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleAutoFillImageSelect}
-                      className="hidden"
-                    />
-                    <Input
-                      ref={autoFillCameraInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleAutoFillImageSelect}
-                      className="hidden"
-                    />
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => autoFillImageInputRef.current?.click()}
-                        className="flex-1"
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {autoFillImages.length > 0 
-                          ? `${autoFillImages.length} ${t.contribute.photosSelected}` 
-                          : t.contribute.selectPhotos}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => autoFillCameraInputRef.current?.click()}
-                      >
-                        <Camera className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
 
                   <Button 
                     onClick={handleAutoFill} 
-                    disabled={parsing || (!autoFillUrl && autoFillImages.length === 0)}
+                    disabled={parsing || !autoFillUrl}
                     className="w-full"
                   >
                     {parsing ? t.contribute.parsing : t.contribute.parseInfo}
@@ -520,7 +480,64 @@ export default function Contribute() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            <Input
+              ref={autoFillImageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleAutoFillImageSelect}
+              className="hidden"
+            />
+            <Input
+              ref={autoFillCameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleAutoFillImageSelect}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => autoFillImageInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {t.contribute.autoFillFromPhoto}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => autoFillCameraInputRef.current?.click()}
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              {t.contribute.takePhoto}
+            </Button>
           </div>
+          
+          {/* Show selected auto-fill images and parse button */}
+          {autoFillImages.length > 0 && (
+            <div className="mt-4 p-4 border rounded-lg bg-card">
+              <p className="text-sm text-muted-foreground mb-2">
+                {autoFillImages.length} {t.contribute.photosSelected}
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleAutoFill} 
+                  disabled={parsing}
+                  size="sm"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {parsing ? t.contribute.parsing : t.contribute.parseInfo}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setAutoFillImages([])}
+                >
+                  {t.common.cancel}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

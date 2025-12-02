@@ -17,33 +17,75 @@ export const translations = {
     // Header
     header: {
       profile: "Profile",
+      profileSettings: "Profile Settings",
       settings: "Settings",
-      savedTrips: "View Saved Trips",
+      savedTrips: "Saved Trips",
       sharedTrips: "View Shared Trips",
     },
     
     // Landing page
     landing: {
-      heroTitle: "Plan Perfect Family Activities in Seconds",
-      heroSubtitle: "Stop spending hours researching. Our AI finds and plans the best activities for your family based on your preferences, location, and schedule.",
+      makingFamilyTimeEasy: "Making Family Time Easy",
+      heroTitle: "Plan Your Family Holidays with",
+      heroSubtitle: "Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.",
+      getStartedFree: "Get Started Free",
       startFree: "Start Free",
-      howItWorks: "How It Works",
-      features: "Features",
-      pricing: "Pricing",
-      faq: "FAQ",
+      getStarted: "Get Started",
+      whyParentsLove: "Why Busy Parents Love FamActify",
+      whyParentsLoveSubtitle: "We understand the challenge of planning quality family time. That's why we built the ultimate solution.",
+      whyChoose: "Why Choose FamActify?",
+      whyChooseSubtitle: "See how we compare to other ways of planning family activities",
+      choosePlan: "Choose Your Plan",
+      choosePlanSubtitle: "Start free, upgrade when you're ready",
+      aiDiscovery: "AI-Powered Discovery",
+      aiDiscoveryDesc: "Get personalized event recommendations based on your family's unique interests",
+      smartPlanning: "Smart Planning",
+      smartPlanningDesc: "Automatically organize activities to avoid conflicts and maximize fun",
+      familyFriendly: "Family-Friendly",
+      familyFriendlyDesc: "Share itineraries with all family members in just one tap",
+      localEvents: "Local Events",
+      localEventsDesc: "Discover amazing activities happening in your area right now",
+      manualSearch: "Manual Search",
+      bestChoice: "Best Choice",
+      hoursOfBrowsing: "Hours of browsing multiple websites",
+      noPersonalization: "No personalization for your family",
+      manualScheduling: "Manual scheduling and conflict checking",
+      outdatedInfo: "Outdated or incomplete information",
+      realLocalEvents: "Real local events updated in real-time",
+      personalizedInterests: "Personalized to your family's interests",
+      autoItineraries: "Auto-generated conflict-free itineraries",
+      saveShareExport: "Save, share, and export to calendar",
+      genericSuggestions: "Generic suggestions, not local events",
+      noRealTimeAvail: "No real-time availability or pricing",
+      cannotSaveShare: "Cannot save or share itineraries",
+      noCalendarIntegration: "No calendar integration",
+      free: "Free",
+      forever: "forever",
+      perMonth: "per month",
+      plan1TripFree: "Plan 1 trip for free",
+      basicPlanningFeatures: "Basic planning features",
+      tryBeforeYouBuy: "Try before you buy",
+      family: "Family",
+      planUpTo4Trips: "Plan up to 4 trips per month",
+      createWishlists: "Create wishlists with relatives",
+      calendarIntegration: "Calendar integration",
+      customerSupport: "Customer support",
     },
     
     // Contribute page
     contribute: {
       title: "Contribute an Activity",
-      subtitle: "Help other families discover amazing activities by sharing your favorite spots!",
+      subtitle: "Help grow our database of family-friendly activities. Share a spot, event, or activity that families will love.",
       autoFill: "Auto-Fill",
       autoFillTitle: "Auto-Fill from URL or Photos",
-      autoFillDescription: "Paste a URL or upload photos and we'll try to extract activity information automatically.",
+      autoFillDescription: "Provide a website link or upload photos, and AI will extract activity information for you.",
+      websiteUrl: "Website URL",
       enterUrl: "Enter URL",
+      or: "Or",
       uploadPhotos: "Upload or Take Photos",
       selectPhotos: "Select Photos",
       photosSelected: "photo(s) selected",
+      takePhoto: "Take Photo",
       parseInfo: "Parse Information",
       parsing: "Parsing...",
       basicInfo: "Basic Information",
@@ -52,7 +94,7 @@ export const translations = {
       description: "Description",
       descriptionPlaceholder: "Describe the activity, what makes it special for families...",
       category: "Category",
-      selectCategory: "Select a category",
+      selectCategory: "Select categories",
       ageGroups: "Suitable Age Groups",
       addMoreDetails: "Add More Details",
       location: "Location",
@@ -78,11 +120,10 @@ export const translations = {
       moreInfo: "More Info URL",
       photos: "Photos",
       uploadImages: "Upload Images",
-      takePhoto: "Take Photo",
       imagesSelected: "images selected",
       submitActivity: "Submit Activity",
       submitting: "Submitting...",
-      successMessage: "Activity submitted successfully! Thank you for contributing.",
+      successMessage: "Activity submitted successfully! Thank you for your contribution.",
       errorMessage: "Failed to submit activity. Please try again.",
     },
     
@@ -129,6 +170,7 @@ export const translations = {
     // Header
     header: {
       profile: "Profils",
+      profileSettings: "Profila iestatījumi",
       settings: "Iestatījumi",
       savedTrips: "Saglabātie ceļojumi",
       sharedTrips: "Kopīgotie ceļojumi",
@@ -136,26 +178,67 @@ export const translations = {
     
     // Landing page
     landing: {
-      heroTitle: "Plānojiet ideālas ģimenes aktivitātes sekundēs",
-      heroSubtitle: "Pārtrauciet tērēt stundas meklējot. Mūsu AI atrod un plāno labākās aktivitātes jūsu ģimenei, pamatojoties uz jūsu vēlmēm, atrašanās vietu un grafiku.",
+      makingFamilyTimeEasy: "Ģimenes laika vienkāršošana",
+      heroTitle: "Plānojiet ģimenes brīvdienas ar",
+      heroSubtitle: "Pārtrauciet tērēt stundas, meklējot ģimenes aktivitātes. Ļaujiet AI atrast ideālus pasākumus, kas atbilst jūsu interesēm, automātiski plānot jūsu dienas un radīt neaizmirstamas atmiņas.",
+      getStartedFree: "Sākt bez maksas",
       startFree: "Sākt bez maksas",
-      howItWorks: "Kā tas darbojas",
-      features: "Funkcijas",
-      pricing: "Cenas",
-      faq: "BUJ",
+      getStarted: "Sākt",
+      whyParentsLove: "Kāpēc aizņemti vecāki mīl FamActify",
+      whyParentsLoveSubtitle: "Mēs saprotam izaicinājumu plānot kvalitatīvu ģimenes laiku. Tāpēc mēs izveidojām labāko risinājumu.",
+      whyChoose: "Kāpēc izvēlēties FamActify?",
+      whyChooseSubtitle: "Skatiet, kā mēs salīdzinām ar citiem ģimenes aktivitāšu plānošanas veidiem",
+      choosePlan: "Izvēlieties savu plānu",
+      choosePlanSubtitle: "Sāciet bez maksas, uzlabojiet, kad esat gatavi",
+      aiDiscovery: "AI atklāšana",
+      aiDiscoveryDesc: "Saņemiet personalizētus pasākumu ieteikumus, kas balstīti uz jūsu ģimenes unikālajām interesēm",
+      smartPlanning: "Vieda plānošana",
+      smartPlanningDesc: "Automātiski organizējiet aktivitātes, lai izvairītos no konfliktiem un maksimāli izbaudītu",
+      familyFriendly: "Ģimenēm draudzīgs",
+      familyFriendlyDesc: "Dalieties ar maršrutiem ar visiem ģimenes locekļiem ar vienu pieskārienu",
+      localEvents: "Vietējie pasākumi",
+      localEventsDesc: "Atklājiet pārsteidzošas aktivitātes, kas notiek jūsu apkaimē tieši tagad",
+      manualSearch: "Manuāla meklēšana",
+      bestChoice: "Labākā izvēle",
+      hoursOfBrowsing: "Stundas pārlūkojot vairākas vietnes",
+      noPersonalization: "Nav personalizācijas jūsu ģimenei",
+      manualScheduling: "Manuāla plānošana un konfliktu pārbaude",
+      outdatedInfo: "Novecojusi vai nepilnīga informācija",
+      realLocalEvents: "Reāli vietējie pasākumi, kas tiek atjaunināti reāllaikā",
+      personalizedInterests: "Personalizēts pēc jūsu ģimenes interesēm",
+      autoItineraries: "Automātiski ģenerēti maršruti bez konfliktiem",
+      saveShareExport: "Saglabājiet, dalieties un eksportējiet uz kalendāru",
+      genericSuggestions: "Vispārīgi ieteikumi, nevis vietējie pasākumi",
+      noRealTimeAvail: "Nav reāllaika pieejamības vai cenu",
+      cannotSaveShare: "Nevar saglabāt vai dalīties ar maršrutiem",
+      noCalendarIntegration: "Nav kalendāra integrācijas",
+      free: "Bezmaksas",
+      forever: "uz visiem laikiem",
+      perMonth: "mēnesī",
+      plan1TripFree: "Plānojiet 1 ceļojumu bez maksas",
+      basicPlanningFeatures: "Pamata plānošanas funkcijas",
+      tryBeforeYouBuy: "Izmēģiniet pirms pirkšanas",
+      family: "Ģimene",
+      planUpTo4Trips: "Plānojiet līdz 4 ceļojumiem mēnesī",
+      createWishlists: "Veidojiet vēlmju sarakstus ar radiniekiem",
+      calendarIntegration: "Kalendāra integrācija",
+      customerSupport: "Klientu atbalsts",
     },
     
     // Contribute page
     contribute: {
       title: "Pievienot aktivitāti",
-      subtitle: "Palīdziet citām ģimenēm atklāt lieliskas aktivitātes, daloties ar savām iecienītākajām vietām!",
+      subtitle: "Palīdziet papildināt mūsu ģimenēm draudzīgo aktivitāšu datubāzi. Dalieties ar vietu, pasākumu vai aktivitāti, kas ģimenēm patiks.",
       autoFill: "Auto-aizpilde",
       autoFillTitle: "Auto-aizpilde no URL vai fotoattēliem",
-      autoFillDescription: "Ielīmējiet URL vai augšupielādējiet fotoattēlus, un mēs mēģināsim automātiski iegūt aktivitātes informāciju.",
+      autoFillDescription: "Norādiet vietnes saiti vai augšupielādējiet fotoattēlus, un AI izvilks aktivitātes informāciju jūsu vietā.",
+      websiteUrl: "Vietnes URL",
       enterUrl: "Ievadiet URL",
+      or: "Vai",
       uploadPhotos: "Augšupielādēt vai uzņemt fotoattēlus",
       selectPhotos: "Izvēlēties fotoattēlus",
       photosSelected: "fotoattēls(-i) izvēlēts(-i)",
+      takePhoto: "Uzņemt fotoattēlu",
       parseInfo: "Parsēt informāciju",
       parsing: "Parsē...",
       basicInfo: "Pamatinformācija",
@@ -164,7 +247,7 @@ export const translations = {
       description: "Apraksts",
       descriptionPlaceholder: "Aprakstiet aktivitāti, kas to padara īpašu ģimenēm...",
       category: "Kategorija",
-      selectCategory: "Izvēlieties kategoriju",
+      selectCategory: "Izvēlieties kategorijas",
       ageGroups: "Piemērotas vecuma grupas",
       addMoreDetails: "Pievienot vairāk detaļu",
       location: "Atrašanās vieta",
@@ -190,7 +273,6 @@ export const translations = {
       moreInfo: "Vairāk info URL",
       photos: "Fotoattēli",
       uploadImages: "Augšupielādēt attēlus",
-      takePhoto: "Uzņemt fotoattēlu",
       imagesSelected: "attēli izvēlēti",
       submitActivity: "Iesniegt aktivitāti",
       submitting: "Iesniedz...",
@@ -226,104 +308,5 @@ export const translations = {
 
 export type Language = keyof typeof translations;
 
-// Define the structure explicitly for type safety
-export interface TranslationKeys {
-  common: {
-    signIn: string;
-    signOut: string;
-    plan: string;
-    contribute: string;
-    save: string;
-    cancel: string;
-    submit: string;
-    loading: string;
-    success: string;
-    error: string;
-  };
-  header: {
-    profile: string;
-    settings: string;
-    savedTrips: string;
-    sharedTrips: string;
-  };
-  landing: {
-    heroTitle: string;
-    heroSubtitle: string;
-    startFree: string;
-    howItWorks: string;
-    features: string;
-    pricing: string;
-    faq: string;
-  };
-  contribute: {
-    title: string;
-    subtitle: string;
-    autoFill: string;
-    autoFillTitle: string;
-    autoFillDescription: string;
-    enterUrl: string;
-    uploadPhotos: string;
-    selectPhotos: string;
-    photosSelected: string;
-    parseInfo: string;
-    parsing: string;
-    basicInfo: string;
-    activityName: string;
-    activityNamePlaceholder: string;
-    description: string;
-    descriptionPlaceholder: string;
-    category: string;
-    selectCategory: string;
-    ageGroups: string;
-    addMoreDetails: string;
-    location: string;
-    address: string;
-    addressPlaceholder: string;
-    coordinates: string;
-    useMyLocation: string;
-    environment: string;
-    selectEnvironment: string;
-    indoor: string;
-    outdoor: string;
-    both: string;
-    accessibility: string;
-    wheelchairAccessible: string;
-    strollerFriendly: string;
-    facilities: string;
-    restrooms: string;
-    changingTable: string;
-    pricing: string;
-    minPrice: string;
-    maxPrice: string;
-    duration: string;
-    moreInfo: string;
-    photos: string;
-    uploadImages: string;
-    takePhoto: string;
-    imagesSelected: string;
-    submitActivity: string;
-    submitting: string;
-    successMessage: string;
-    errorMessage: string;
-  };
-  faq: {
-    title: string;
-    subtitle: string;
-    stillQuestions: string;
-    contactUs: string;
-  };
-  footer: {
-    product: string;
-    company: string;
-    legal: string;
-    aboutUs: string;
-    careers: string;
-    contact: string;
-    termsOfService: string;
-    privacyPolicy: string;
-    tagline: string;
-    newsletter: string;
-    emailPlaceholder: string;
-    subscribe: string;
-  };
-}
+// Use type inference from the actual translations object
+export type TranslationKeys = typeof translations['en'];

@@ -16,10 +16,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -40,13 +43,13 @@ const Landing = () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
-        title: "Error",
+        title: t.common.error,
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Signed out",
+        title: t.common.signOut,
         description: "You have been signed out successfully",
       });
     }
@@ -62,7 +65,7 @@ const Landing = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: t.common.error,
         description: error.message,
         variant: "destructive",
       });
@@ -72,46 +75,46 @@ const Landing = () => {
   const features = [
     {
       icon: <Sparkles className="h-6 w-6" />,
-      title: "AI-Powered Discovery",
-      description: "Get personalized event recommendations based on your family's unique interests"
+      title: t.landing.aiDiscovery,
+      description: t.landing.aiDiscoveryDesc
     },
     {
       icon: <Calendar className="h-6 w-6" />,
-      title: "Smart Planning",
-      description: "Automatically organize activities to avoid conflicts and maximize fun"
+      title: t.landing.smartPlanning,
+      description: t.landing.smartPlanningDesc
     },
     {
       icon: <Users className="h-6 w-6" />,
-      title: "Family-Friendly",
-      description: "Share itineraries with all family members in just one tap"
+      title: t.landing.familyFriendly,
+      description: t.landing.familyFriendlyDesc
     },
     {
       icon: <Heart className="h-6 w-6" />,
-      title: "Local Events",
-      description: "Discover amazing activities happening in your area right now"
+      title: t.landing.localEvents,
+      description: t.landing.localEventsDesc
     }
   ];
 
   const plans = [
     {
-      name: "Free",
+      name: t.landing.free,
       price: "€0",
-      period: "forever",
+      period: t.landing.forever,
       features: [
-        "Plan 1 trip for free",
-        "Basic planning features",
-        "Try before you buy"
+        t.landing.plan1TripFree,
+        t.landing.basicPlanningFeatures,
+        t.landing.tryBeforeYouBuy
       ]
     },
     {
-      name: "Family",
+      name: t.landing.family,
       price: "€3.99",
-      period: "per month",
+      period: t.landing.perMonth,
       features: [
-        "Plan up to 4 trips per month",
-        "Create wishlists with relatives",
-        "Calendar integration",
-        "Customer support"
+        t.landing.planUpTo4Trips,
+        t.landing.createWishlists,
+        t.landing.calendarIntegration,
+        t.landing.customerSupport
       ],
       popular: true
     }
@@ -125,8 +128,14 @@ const Landing = () => {
           <span className="text-2xl font-bold text-primary">FamActify</span>
           <div className="flex items-center gap-4">
             <Button onClick={() => navigate("/onboarding/interests")}>
-              Plan
+              {t.common.plan}
             </Button>
+            
+            <Button variant="outline" onClick={() => navigate("/contribute")}>
+              {t.common.contribute}
+            </Button>
+
+            <LanguageSwitcher />
 
             {user ? (
               <DropdownMenu>
@@ -149,14 +158,14 @@ const Landing = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    Profile Settings
+                    {t.header.profileSettings}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/saved-trips")}>
-                    Saved Trips
+                    {t.header.savedTrips}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                    Sign Out
+                    {t.common.signOut}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -167,7 +176,7 @@ const Landing = () => {
                 className="gap-2"
               >
                 <User className="h-4 w-4" />
-                Sign In
+                {t.common.signIn}
               </Button>
             )}
           </div>
@@ -181,21 +190,21 @@ const Landing = () => {
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
             <div className="space-y-8">
               <div className="inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                Making Family Time Easy
+                {t.landing.makingFamilyTimeEasy}
               </div>
               <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-                Plan Your Family Holidays with{" "}
+                {t.landing.heroTitle}{" "}
                 <span className="text-primary">FamActify</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl">
-                Stop spending hours searching for family activities. Let AI discover perfect events that match your interests, automatically plan your days, and create unforgettable memories.
+                {t.landing.heroSubtitle}
               </p>
               <Button 
                 size="lg" 
                 onClick={() => navigate("/onboarding/interests")}
                 className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
               >
-                Get Started Free
+                {t.landing.getStartedFree}
               </Button>
             </div>
             <div className="relative hidden lg:block">
@@ -214,9 +223,9 @@ const Landing = () => {
       <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Busy Parents Love FamActify</h2>
+            <h2 className="text-4xl font-bold mb-4">{t.landing.whyParentsLove}</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              We understand the challenge of planning quality family time. That's why we built the ultimate solution.
+              {t.landing.whyParentsLoveSubtitle}
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
@@ -237,9 +246,9 @@ const Landing = () => {
       <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose FamActify?</h2>
+            <h2 className="text-4xl font-bold mb-4">{t.landing.whyChoose}</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              See how we compare to other ways of planning family activities
+              {t.landing.whyChooseSubtitle}
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-start">
@@ -249,24 +258,24 @@ const Landing = () => {
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                   <Search className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold">Manual Search</h3>
+                <h3 className="text-xl font-semibold">{t.landing.manualSearch}</h3>
               </div>
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">Hours of browsing multiple websites</span>
+                  <span className="text-muted-foreground">{t.landing.hoursOfBrowsing}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">No personalization for your family</span>
+                  <span className="text-muted-foreground">{t.landing.noPersonalization}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">Manual scheduling and conflict checking</span>
+                  <span className="text-muted-foreground">{t.landing.manualScheduling}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">Outdated or incomplete information</span>
+                  <span className="text-muted-foreground">{t.landing.outdatedInfo}</span>
                 </li>
               </ul>
             </Card>
@@ -274,7 +283,7 @@ const Landing = () => {
             {/* FamActify - Best Choice */}
             <Card className="p-8 border-primary border-2 shadow-2xl relative scale-105 -my-4">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-                Best Choice
+                {t.landing.bestChoice}
               </div>
               <div className="text-center mb-6">
                 <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -285,19 +294,19 @@ const Landing = () => {
               <ul className="space-y-4 text-base">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>Real local events updated in real-time</span>
+                  <span>{t.landing.realLocalEvents}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>Personalized to your family's interests</span>
+                  <span>{t.landing.personalizedInterests}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>Auto-generated conflict-free itineraries</span>
+                  <span>{t.landing.autoItineraries}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>Save, share, and export to calendar</span>
+                  <span>{t.landing.saveShareExport}</span>
                 </li>
               </ul>
             </Card>
@@ -313,19 +322,19 @@ const Landing = () => {
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">Generic suggestions, not local events</span>
+                  <span className="text-muted-foreground">{t.landing.genericSuggestions}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">No real-time availability or pricing</span>
+                  <span className="text-muted-foreground">{t.landing.noRealTimeAvail}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">Cannot save or share itineraries</span>
+                  <span className="text-muted-foreground">{t.landing.cannotSaveShare}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <X className="h-5 w-5 text-destructive flex-shrink-0" />
-                  <span className="text-muted-foreground">No calendar integration</span>
+                  <span className="text-muted-foreground">{t.landing.noCalendarIntegration}</span>
                 </li>
               </ul>
             </Card>
@@ -337,9 +346,9 @@ const Landing = () => {
       <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Choose Your Plan</h2>
+            <h2 className="text-4xl font-bold mb-4">{t.landing.choosePlan}</h2>
             <p className="text-xl text-muted-foreground">
-              Start free, upgrade when you're ready
+              {t.landing.choosePlanSubtitle}
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-center">
@@ -368,7 +377,7 @@ const Landing = () => {
                   variant={plan.popular ? "default" : "outline"}
                   onClick={() => navigate("/onboarding/interests")}
                 >
-                  {plan.price === "€0" ? "Start Free" : "Get Started"}
+                  {plan.price === "€0" ? t.landing.startFree : t.landing.getStarted}
                 </Button>
               </Card>
             ))}

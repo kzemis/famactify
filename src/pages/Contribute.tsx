@@ -41,6 +41,7 @@ export default function Contribute() {
   const [parsing, setParsing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const autoFillImageInputRef = useRef<HTMLInputElement>(null);
+  const autoFillCameraInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -467,7 +468,7 @@ export default function Contribute() {
                   </div>
 
                   <div>
-                    <Label>Upload Photos</Label>
+                    <Label>Upload or Take Photos</Label>
                     <Input
                       ref={autoFillImageInputRef}
                       type="file"
@@ -476,17 +477,34 @@ export default function Contribute() {
                       onChange={handleAutoFillImageSelect}
                       className="hidden"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => autoFillImageInputRef.current?.click()}
-                      className="w-full mt-2"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {autoFillImages.length > 0 
-                        ? `${autoFillImages.length} photo${autoFillImages.length > 1 ? 's' : ''} selected` 
-                        : 'Select Photos'}
-                    </Button>
+                    <Input
+                      ref={autoFillCameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleAutoFillImageSelect}
+                      className="hidden"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => autoFillImageInputRef.current?.click()}
+                        className="flex-1"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {autoFillImages.length > 0 
+                          ? `${autoFillImages.length} photo${autoFillImages.length > 1 ? 's' : ''} selected` 
+                          : 'Select Photos'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => autoFillCameraInputRef.current?.click()}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <Button 

@@ -13,10 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const AppHeader = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -62,12 +65,14 @@ const AppHeader = () => {
         
         <div className="flex items-center gap-4">
           <Button onClick={() => navigate("/onboarding/interests")}>
-            Plan
+            {t.common.plan}
           </Button>
           
           <Button variant="outline" onClick={() => navigate("/contribute")}>
-            Contribute
+            {t.common.contribute}
           </Button>
+
+          <LanguageSwitcher />
 
           {user && (
             <DropdownMenu>
@@ -90,14 +95,14 @@ const AppHeader = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
-                  Profile Settings
+                  {t.header.profile}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/saved-trips")}>
-                  Saved Trips
+                  {t.header.savedTrips}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  Sign Out
+                  {t.common.signOut}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

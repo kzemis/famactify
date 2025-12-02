@@ -202,13 +202,23 @@ const Landing = () => {
               <p className="text-xl text-muted-foreground max-w-2xl">
                 {t.landing.heroSubtitle}
               </p>
-              <Button 
-                size="lg" 
-                onClick={() => navigate("/onboarding/interests")}
-                className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
-              >
-                {t.landing.getStartedFree}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate("/onboarding/interests")}
+                  className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                >
+                  {t.landing.getStartedFree}
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => navigate("/contribute")}
+                  className="text-lg px-8 py-6 rounded-2xl"
+                >
+                  {t.common.contribute}
+                </Button>
+              </div>
             </div>
             <div className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 rounded-3xl blur-3xl" />

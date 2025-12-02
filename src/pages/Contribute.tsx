@@ -6,7 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles, ImageIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import {
@@ -497,20 +503,24 @@ export default function Contribute() {
               onChange={handleAutoFillImageSelect}
               className="hidden"
             />
-            <Button 
-              variant="outline" 
-              onClick={() => autoFillImageInputRef.current?.click()}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {t.contribute.autoFillFromPhoto}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => autoFillCameraInputRef.current?.click()}
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {t.contribute.takePhoto}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  {t.contribute.autoFillFromPhoto}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => autoFillImageInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  {t.contribute.fromDisk || 'From disk'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => autoFillCameraInputRef.current?.click()}>
+                  <Camera className="w-4 h-4 mr-2" />
+                  {t.contribute.takePhotoCamera || 'Take a photo'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
           {/* Show selected auto-fill images and parse button */}

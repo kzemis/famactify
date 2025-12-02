@@ -17,6 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useLanguage } from '@/i18n/LanguageContext';
+
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
 const ENVIRONMENTS = ['inside', 'outside', 'both'];
@@ -29,6 +31,7 @@ function slugify(name: string): string {
 
 export default function Contribute() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -280,7 +283,7 @@ export default function Contribute() {
         return;
       }
 
-      toast.success('Activity submitted successfully! Thank you for your contribution.');
+      toast.success(t.contribute.successMessage);
       
       // Reset form
       setFormData({
@@ -401,7 +404,7 @@ export default function Contribute() {
         urlmoreinfo: parsedData.urlmoreinfo || autoFillUrl || prev.urlmoreinfo,
       }));
 
-      toast.success('Information parsed successfully! Please review and adjust as needed.');
+      toast.success(t.contribute.successMessage);
       setDialogOpen(false);
       setAutoFillUrl('');
       setAutoFillImages([]);
@@ -423,28 +426,28 @@ export default function Contribute() {
         <div className="mb-8">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Contribute an Activity</h1>
+              <h1 className="text-3xl font-bold mb-2">{t.contribute.title}</h1>
               <p className="text-muted-foreground">
-                Help grow our database of family-friendly activities. Share a spot, event, or activity that families will love.
+                {t.contribute.subtitle}
               </p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="lg">
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Auto-Fill
+                  {t.contribute.autoFill}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Auto-Fill from URL or Photos</DialogTitle>
+                  <DialogTitle>{t.contribute.autoFillTitle}</DialogTitle>
                   <DialogDescription>
-                    Provide a website link or upload photos, and AI will extract activity information for you.
+                    {t.contribute.autoFillDescription}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div>
-                    <Label htmlFor="autofill-url">Website URL</Label>
+                    <Label htmlFor="autofill-url">{t.contribute.websiteUrl}</Label>
                     <div className="relative mt-2">
                       <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -463,12 +466,12 @@ export default function Contribute() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">Or</span>
+                      <span className="bg-background px-2 text-muted-foreground">{t.contribute.or}</span>
                     </div>
                   </div>
 
                   <div>
-                    <Label>Upload or Take Photos</Label>
+                    <Label>{t.contribute.uploadPhotos}</Label>
                     <Input
                       ref={autoFillImageInputRef}
                       type="file"
@@ -494,8 +497,8 @@ export default function Contribute() {
                       >
                         <Upload className="w-4 h-4 mr-2" />
                         {autoFillImages.length > 0 
-                          ? `${autoFillImages.length} photo${autoFillImages.length > 1 ? 's' : ''} selected` 
-                          : 'Select Photos'}
+                          ? `${autoFillImages.length} ${t.contribute.photosSelected}` 
+                          : t.contribute.selectPhotos}
                       </Button>
                       <Button
                         type="button"
@@ -512,7 +515,7 @@ export default function Contribute() {
                     disabled={parsing || (!autoFillUrl && autoFillImages.length === 0)}
                     className="w-full"
                   >
-                    {parsing ? 'Parsing...' : 'Parse Information'}
+                    {parsing ? t.contribute.parsing : t.contribute.parseInfo}
                   </Button>
                 </div>
               </DialogContent>
@@ -523,32 +526,32 @@ export default function Contribute() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
-            <h2 className="text-xl font-semibold">Basic Information</h2>
+            <h2 className="text-xl font-semibold">{t.contribute.basicInfo}</h2>
             
             <div>
-              <Label htmlFor="name">Activity Name *</Label>
+              <Label htmlFor="name">{t.contribute.activityName} *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Central Park Playground"
+                placeholder={t.contribute.activityNamePlaceholder}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t.contribute.description}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe what makes this activity special..."
+                placeholder={t.contribute.descriptionPlaceholder}
                 rows={4}
               />
             </div>
 
             <div>
-              <Label>Activity Type *</Label>
+              <Label>{t.contribute.category} *</Label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {ACTIVITY_TYPES.map(type => (
                   <Button
@@ -565,14 +568,14 @@ export default function Contribute() {
             </div>
 
             <div>
-              <Label htmlFor="address">Address *</Label>
+              <Label htmlFor="address">{t.contribute.address} *</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Full address"
+                  placeholder={t.contribute.addressPlaceholder}
                   className="pl-10"
                   required
                 />
@@ -586,18 +589,18 @@ export default function Contribute() {
                   disabled={locating}
                 >
                   <Locate className="w-4 h-4 mr-2" />
-                  {locating ? 'Getting location...' : 'Use My Location'}
+                  {locating ? t.common.loading : t.contribute.useMyLocation}
                 </Button>
               </div>
               {formData.lat && formData.lon && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Coordinates: {formData.lat.toFixed(6)}, {formData.lon.toFixed(6)}
+                  {t.contribute.coordinates}: {formData.lat.toFixed(6)}, {formData.lon.toFixed(6)}
                 </p>
               )}
             </div>
 
             <div>
-              <Label>Environment</Label>
+              <Label>{t.contribute.environment}</Label>
               <div className="flex gap-2 mt-2">
                 {ENVIRONMENTS.map(env => (
                   <Button
@@ -607,7 +610,7 @@ export default function Contribute() {
                     size="sm"
                     onClick={() => setFormData(prev => ({ ...prev, environment: env }))}
                   >
-                    {env}
+                    {env === 'inside' ? t.contribute.indoor : env === 'outside' ? t.contribute.outdoor : t.contribute.both}
                   </Button>
                 ))}
               </div>
@@ -616,10 +619,10 @@ export default function Contribute() {
 
           {/* Additional Details */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
-            <h2 className="text-xl font-semibold">Additional Details</h2>
+            <h2 className="text-xl font-semibold">{t.contribute.addMoreDetails}</h2>
 
             <div>
-              <Label>Suitable Age Groups</Label>
+              <Label>{t.contribute.ageGroups}</Label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {AGE_BUCKETS.map(age => (
                   <Button
@@ -629,7 +632,7 @@ export default function Contribute() {
                     size="sm"
                     onClick={() => toggleArrayField('ageBuckets', age)}
                   >
-                    {age} years
+                    {age}
                   </Button>
                 ))}
               </div>
@@ -637,7 +640,7 @@ export default function Contribute() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="minPrice">Min Price (€)</Label>
+                <Label htmlFor="minPrice">{t.contribute.minPrice}</Label>
                 <Input
                   id="minPrice"
                   type="number"
@@ -648,7 +651,7 @@ export default function Contribute() {
                 />
               </div>
               <div>
-                <Label htmlFor="maxPrice">Max Price (€)</Label>
+                <Label htmlFor="maxPrice">{t.contribute.maxPrice}</Label>
                 <Input
                   id="maxPrice"
                   type="number"
@@ -661,7 +664,7 @@ export default function Contribute() {
             </div>
 
             <div>
-              <Label className="mb-2 block">Accessibility & Facilities</Label>
+              <Label className="mb-2 block">{t.contribute.accessibility} & {t.contribute.facilities}</Label>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -670,7 +673,7 @@ export default function Contribute() {
                     onChange={(e) => setFormData(prev => ({ ...prev, wheelchair: e.target.checked }))}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm">Wheelchair Accessible</span>
+                  <span className="text-sm">{t.contribute.wheelchairAccessible}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -679,7 +682,7 @@ export default function Contribute() {
                     onChange={(e) => setFormData(prev => ({ ...prev, stroller: e.target.checked }))}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm">Stroller Friendly</span>
+                  <span className="text-sm">{t.contribute.strollerFriendly}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -688,7 +691,7 @@ export default function Contribute() {
                     onChange={(e) => setFormData(prev => ({ ...prev, restrooms: e.target.checked }))}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm">Restrooms Available</span>
+                  <span className="text-sm">{t.contribute.restrooms}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -697,7 +700,7 @@ export default function Contribute() {
                     onChange={(e) => setFormData(prev => ({ ...prev, changingTable: e.target.checked }))}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm">Changing Table</span>
+                  <span className="text-sm">{t.contribute.changingTable}</span>
                 </label>
               </div>
             </div>
@@ -714,7 +717,7 @@ export default function Contribute() {
             </div>
 
             <div>
-              <Label>Upload Photos (up to 5)</Label>
+              <Label>{t.contribute.photos} (max 5)</Label>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Input
@@ -742,7 +745,7 @@ export default function Contribute() {
                     disabled={uploading || imageFiles.length >= 5}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Upload Photos
+                    {t.contribute.uploadImages}
                   </Button>
                   <Button
                     type="button"
@@ -751,11 +754,11 @@ export default function Contribute() {
                     disabled={uploading || imageFiles.length >= 5}
                   >
                     <Camera className="w-4 h-4 mr-2" />
-                    Take Photo
+                    {t.contribute.takePhoto}
                   </Button>
                   {imageFiles.length > 0 && (
                     <span className="text-sm text-muted-foreground">
-                      {imageFiles.length} photo{imageFiles.length > 1 ? 's' : ''} selected
+                      {imageFiles.length} {t.contribute.imagesSelected}
                     </span>
                   )}
                 </div>
@@ -781,14 +784,11 @@ export default function Contribute() {
                     ))}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Take photos with camera or upload from gallery. Max 5 images, 5MB each.
-                </p>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="urlmoreinfo">More Info URL</Label>
+              <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
               <Input
                 id="urlmoreinfo"
                 type="url"
@@ -805,7 +805,7 @@ export default function Contribute() {
             className="w-full"
             size="lg"
           >
-            {submitting ? 'Submitting...' : uploading ? 'Uploading image...' : 'Submit Activity'}
+            {submitting ? t.contribute.submitting : uploading ? t.common.loading : t.contribute.submitActivity}
           </Button>
         </form>
       </main>

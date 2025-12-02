@@ -95,7 +95,7 @@ const AppHeader = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
-                  {t.header.profile}
+                  {t.header.profileSettings}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/saved-trips")}>
                   {t.header.savedTrips}

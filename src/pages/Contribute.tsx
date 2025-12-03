@@ -66,6 +66,9 @@ export default function Contribute() {
     stroller: false,
     restrooms: false,
     changingTable: false,
+    kidsActivityKit: false,
+    kidsCorner: false,
+    playroom: false,
     imageurlthumb: '',
     urlmoreinfo: '',
   });
@@ -229,6 +232,11 @@ export default function Contribute() {
           restrooms: formData.restrooms || null,
           changingTable: formData.changingTable || null
         },
+        kidAmenities: {
+          kidsActivityKit: formData.kidsActivityKit || null,
+          kidsCorner: formData.kidsCorner || null,
+          playroom: formData.playroom || null
+        },
         schedule: {
           openingHours: null
         },
@@ -266,6 +274,9 @@ export default function Contribute() {
         accessibility_stroller: formData.stroller || null,
         facilities_restrooms: formData.restrooms || null,
         facilities_changingtable: formData.changingTable || null,
+        foodvenue_kidamenities: formData.kidsActivityKit || null,
+        foodvenue_kidcorner: formData.kidsCorner || null,
+        foodvenue_kidmenu: formData.playroom || null,
         schedule_openinghours: null,
         duration_minutes: null,
         imageurlthumb: imageUrl || null,
@@ -307,6 +318,9 @@ export default function Contribute() {
         stroller: false,
         restrooms: false,
         changingTable: false,
+        kidsActivityKit: false,
+        kidsCorner: false,
+        playroom: false,
         imageurlthumb: '',
         urlmoreinfo: '',
       });
@@ -728,6 +742,48 @@ export default function Contribute() {
                     className="w-4 h-4"
                   />
                   <span className="text-sm">{t.contribute.changingTable}</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-2 block">{t.contribute.kidAmenities}</Label>
+              <div className="space-y-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.kidsActivityKit}
+                    onChange={(e) => setFormData(prev => ({ ...prev, kidsActivityKit: e.target.checked }))}
+                    className="w-4 h-4 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{t.contribute.kidsActivityKit}</span>
+                    <p className="text-xs text-muted-foreground">{t.contribute.kidsActivityKitDesc}</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.kidsCorner}
+                    onChange={(e) => setFormData(prev => ({ ...prev, kidsCorner: e.target.checked }))}
+                    className="w-4 h-4 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{t.contribute.kidsCorner}</span>
+                    <p className="text-xs text-muted-foreground">{t.contribute.kidsCornerDesc}</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.playroom}
+                    onChange={(e) => setFormData(prev => ({ ...prev, playroom: e.target.checked }))}
+                    className="w-4 h-4 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{t.contribute.playroom}</span>
+                    <p className="text-xs text-muted-foreground">{t.contribute.playroomDesc}</p>
+                  </div>
                 </label>
               </div>
             </div>

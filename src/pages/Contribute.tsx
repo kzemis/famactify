@@ -844,7 +844,110 @@ export default function Contribute() {
               />
             </div>
 
-            {/* Save Button in Main Section */}
+            {/* Detailed Section (Collapsible) - Before Save Button */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between" type="button">
+                  {t.contribute.detailedInfo}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4 space-y-4 p-6 border rounded-lg bg-card">
+                {/* Category */}
+                <div>
+                  <Label>{t.contribute.category}</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {ACTIVITY_TYPES.map(type => (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={formData.activityType.includes(type) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleArrayField('activityType', type)}
+                      >
+                        {type}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Environment */}
+                <div>
+                  <Label>{t.contribute.environment}</Label>
+                  <div className="flex gap-2 mt-2">
+                    {ENVIRONMENTS.map(env => (
+                      <Button
+                        key={env}
+                        type="button"
+                        variant={formData.environment === env ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, environment: env }))}
+                      >
+                        {env === 'inside' ? t.contribute.indoor : env === 'outside' ? t.contribute.outdoor : t.contribute.both}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Age Groups */}
+                <div>
+                  <Label>{t.contribute.ageGroups}</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {AGE_BUCKETS.map(age => (
+                      <Button
+                        key={age}
+                        type="button"
+                        variant={formData.ageBuckets.includes(age) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleArrayField('ageBuckets', age)}
+                      >
+                        {age}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prices */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="minPrice">{t.contribute.minPrice}</Label>
+                    <Input
+                      id="minPrice"
+                      type="number"
+                      step="0.01"
+                      value={formData.minPrice}
+                      onChange={(e) => setFormData(prev => ({ ...prev, minPrice: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="maxPrice">{t.contribute.maxPrice}</Label>
+                    <Input
+                      id="maxPrice"
+                      type="number"
+                      step="0.01"
+                      value={formData.maxPrice}
+                      onChange={(e) => setFormData(prev => ({ ...prev, maxPrice: e.target.value }))}
+                      placeholder="10.00"
+                    />
+                  </div>
+                </div>
+
+                {/* More Info URL */}
+                <div>
+                  <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
+                  <Input
+                    id="urlmoreinfo"
+                    type="url"
+                    value={formData.urlmoreinfo}
+                    onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
+                    placeholder="https://example.com"
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Save Button after Detailed Section */}
             <Button 
               type="submit" 
               className="w-full"
@@ -853,109 +956,6 @@ export default function Contribute() {
               {submitting ? t.contribute.submitting : t.contribute.submitActivity}
             </Button>
           </div>
-
-          {/* Detailed Section (Collapsible) */}
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                {t.contribute.detailedInfo}
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-4 space-y-4 p-6 border rounded-lg bg-card">
-              {/* Category */}
-              <div>
-                <Label>{t.contribute.category}</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {ACTIVITY_TYPES.map(type => (
-                    <Button
-                      key={type}
-                      type="button"
-                      variant={formData.activityType.includes(type) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleArrayField('activityType', type)}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Environment */}
-              <div>
-                <Label>{t.contribute.environment}</Label>
-                <div className="flex gap-2 mt-2">
-                  {ENVIRONMENTS.map(env => (
-                    <Button
-                      key={env}
-                      type="button"
-                      variant={formData.environment === env ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, environment: env }))}
-                    >
-                      {env === 'inside' ? t.contribute.indoor : env === 'outside' ? t.contribute.outdoor : t.contribute.both}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Age Groups */}
-              <div>
-                <Label>{t.contribute.ageGroups}</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {AGE_BUCKETS.map(age => (
-                    <Button
-                      key={age}
-                      type="button"
-                      variant={formData.ageBuckets.includes(age) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleArrayField('ageBuckets', age)}
-                    >
-                      {age}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Prices */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="minPrice">{t.contribute.minPrice}</Label>
-                  <Input
-                    id="minPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.minPrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, minPrice: e.target.value }))}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="maxPrice">{t.contribute.maxPrice}</Label>
-                  <Input
-                    id="maxPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.maxPrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, maxPrice: e.target.value }))}
-                    placeholder="10.00"
-                  />
-                </div>
-              </div>
-
-              {/* More Info URL */}
-              <div>
-                <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
-                <Input
-                  id="urlmoreinfo"
-                  type="url"
-                  value={formData.urlmoreinfo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
-                  placeholder="https://example.com"
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
         </form>
       </main>
 

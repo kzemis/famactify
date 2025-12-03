@@ -583,24 +583,24 @@ export default function Contribute() {
               />
             </div>
 
+            {/* Address + Get my location in one row */}
             <div>
               <Label htmlFor="address">{t.contribute.address} *</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder={t.contribute.addressPlaceholder}
-                  className="pl-10"
-                  required
-                />
-              </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 items-start">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder={t.contribute.addressPlaceholder}
+                    className="pl-10"
+                    required
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={handleUseMyLocation}
                   disabled={locating}
                 >
@@ -615,86 +615,65 @@ export default function Contribute() {
               )}
             </div>
 
+            {/* More Info URL + Add Photo in one row */}
             <div>
               <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
-              <Input
-                id="urlmoreinfo"
-                type="url"
-                value={formData.urlmoreinfo}
-                onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
-                placeholder="https://example.com"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">{t.contribute.description}</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder={t.contribute.descriptionPlaceholder}
-                rows={4}
-              />
-            </div>
-          </div>
-
-          {/* Section 2: Photos */}
-          <div className="space-y-4 p-6 border rounded-lg bg-card">
-            <h2 className="text-xl font-semibold">{t.contribute.photos}</h2>
-            
-            <div className="space-y-3">
-              <Input
-                ref={fileInputRef}
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              <Input
-                ref={cameraInputRef}
-                id="camera-capture"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={uploading || imageFiles.length >= 5}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t.contribute.addPhoto}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    {t.contribute.uploadFromDevice}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
-                    <Camera className="w-4 h-4 mr-2" />
-                    {t.contribute.takePhoto}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPhotoLinkDialogOpen(true)}>
-                    <LinkIcon className="w-4 h-4 mr-2" />
-                    {t.contribute.photoLink}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <p className="text-sm text-muted-foreground">
-                {t.contribute.maxPhotos}
-              </p>
-
+              <div className="flex gap-2 items-start">
+                <Input
+                  id="urlmoreinfo"
+                  type="url"
+                  value={formData.urlmoreinfo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
+                  placeholder="https://example.com"
+                  className="flex-1"
+                />
+                <Input
+                  ref={fileInputRef}
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <Input
+                  ref={cameraInputRef}
+                  id="camera-capture"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading || imagePreviews.length >= 5}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {t.contribute.addPhoto}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {t.contribute.uploadFromDevice}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
+                      <Camera className="w-4 h-4 mr-2" />
+                      {t.contribute.takePhoto}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPhotoLinkDialogOpen(true)}>
+                      <LinkIcon className="w-4 h-4 mr-2" />
+                      {t.contribute.photoLink}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative">
                       <img 
@@ -715,6 +694,9 @@ export default function Contribute() {
                   ))}
                 </div>
               )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.contribute.maxPhotos}
+              </p>
             </div>
 
             {/* Photo Link Dialog */}
@@ -747,9 +729,20 @@ export default function Contribute() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            <div>
+              <Label htmlFor="description">{t.contribute.description}</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder={t.contribute.descriptionPlaceholder}
+                rows={4}
+              />
+            </div>
           </div>
 
-          {/* Section 3: Category & Details */}
+          {/* Section 2: Category & Details */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
             <h2 className="text-xl font-semibold">{t.contribute.categoryAndDetails}</h2>
 
@@ -788,97 +781,95 @@ export default function Contribute() {
             </div>
           </div>
 
-          {/* Section 4: Accessibility, Facilities & Kid Amenities */}
+          {/* Section 3: Accessibility & Kid Amenities - Two Columns */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
             <h2 className="text-xl font-semibold">{t.contribute.accessibilityAndFacilities}</h2>
 
-            <div>
-              <Label className="mb-2 block">{t.contribute.accessibility}</Label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.wheelchair}
-                    onChange={(e) => setFormData(prev => ({ ...prev, wheelchair: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{t.contribute.wheelchairAccessible}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.stroller}
-                    onChange={(e) => setFormData(prev => ({ ...prev, stroller: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{t.contribute.strollerFriendly}</span>
-                </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column: Kid Amenities */}
+              <div>
+                <Label className="mb-2 block">{t.contribute.kidAmenities}</Label>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.kidsActivityKit}
+                      onChange={(e) => setFormData(prev => ({ ...prev, kidsActivityKit: e.target.checked }))}
+                      className="w-4 h-4 mt-0.5"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">{t.contribute.kidsActivityKit}</span>
+                      <p className="text-xs text-muted-foreground">{t.contribute.kidsActivityKitDesc}</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.kidsCorner}
+                      onChange={(e) => setFormData(prev => ({ ...prev, kidsCorner: e.target.checked }))}
+                      className="w-4 h-4 mt-0.5"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">{t.contribute.kidsCorner}</span>
+                      <p className="text-xs text-muted-foreground">{t.contribute.kidsCornerDesc}</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.playroom}
+                      onChange={(e) => setFormData(prev => ({ ...prev, playroom: e.target.checked }))}
+                      className="w-4 h-4 mt-0.5"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">{t.contribute.playroom}</span>
+                      <p className="text-xs text-muted-foreground">{t.contribute.playroomDesc}</p>
+                    </div>
+                  </label>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label className="mb-2 block">{t.contribute.facilities}</Label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.restrooms}
-                    onChange={(e) => setFormData(prev => ({ ...prev, restrooms: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{t.contribute.restrooms}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.changingTable}
-                    onChange={(e) => setFormData(prev => ({ ...prev, changingTable: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{t.contribute.changingTable}</span>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2 block">{t.contribute.kidAmenities}</Label>
-              <div className="space-y-3">
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.kidsActivityKit}
-                    onChange={(e) => setFormData(prev => ({ ...prev, kidsActivityKit: e.target.checked }))}
-                    className="w-4 h-4 mt-0.5"
-                  />
-                  <div>
-                    <span className="text-sm font-medium">{t.contribute.kidsActivityKit}</span>
-                    <p className="text-xs text-muted-foreground">{t.contribute.kidsActivityKitDesc}</p>
-                  </div>
-                </label>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.kidsCorner}
-                    onChange={(e) => setFormData(prev => ({ ...prev, kidsCorner: e.target.checked }))}
-                    className="w-4 h-4 mt-0.5"
-                  />
-                  <div>
-                    <span className="text-sm font-medium">{t.contribute.kidsCorner}</span>
-                    <p className="text-xs text-muted-foreground">{t.contribute.kidsCornerDesc}</p>
-                  </div>
-                </label>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.playroom}
-                    onChange={(e) => setFormData(prev => ({ ...prev, playroom: e.target.checked }))}
-                    className="w-4 h-4 mt-0.5"
-                  />
-                  <div>
-                    <span className="text-sm font-medium">{t.contribute.playroom}</span>
-                    <p className="text-xs text-muted-foreground">{t.contribute.playroomDesc}</p>
-                  </div>
-                </label>
+              {/* Right Column: Accessibility & Facilities */}
+              <div>
+                <Label className="mb-2 block">{t.contribute.accessibilityFacilities}</Label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.wheelchair}
+                      onChange={(e) => setFormData(prev => ({ ...prev, wheelchair: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">{t.contribute.wheelchairAccessible}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.stroller}
+                      onChange={(e) => setFormData(prev => ({ ...prev, stroller: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">{t.contribute.strollerFriendly}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.restrooms}
+                      onChange={(e) => setFormData(prev => ({ ...prev, restrooms: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">{t.contribute.restrooms}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.changingTable}
+                      onChange={(e) => setFormData(prev => ({ ...prev, changingTable: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">{t.contribute.changingTable}</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>

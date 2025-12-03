@@ -119,6 +119,66 @@ export type Database = {
         }
         Relationships: []
       }
+      activityspots_genai: {
+        Row: {
+          activity_type: string[]
+          age_buckets: string[]
+          created_at: string
+          description: string
+          id: string
+          imageurlthumb: string | null
+          json: Json
+          location_address: string | null
+          location_environment: string | null
+          location_lat: number | null
+          location_lon: number | null
+          max_price: number | null
+          min_price: number | null
+          name: string
+          source: string | null
+          updated_at: string
+          urlmoreinfo: string | null
+        }
+        Insert: {
+          activity_type?: string[]
+          age_buckets?: string[]
+          created_at?: string
+          description?: string
+          id: string
+          imageurlthumb?: string | null
+          json: Json
+          location_address?: string | null
+          location_environment?: string | null
+          location_lat?: number | null
+          location_lon?: number | null
+          max_price?: number | null
+          min_price?: number | null
+          name: string
+          source?: string | null
+          updated_at?: string
+          urlmoreinfo?: string | null
+        }
+        Update: {
+          activity_type?: string[]
+          age_buckets?: string[]
+          created_at?: string
+          description?: string
+          id?: string
+          imageurlthumb?: string | null
+          json?: Json
+          location_address?: string | null
+          location_environment?: string | null
+          location_lat?: number | null
+          location_lon?: number | null
+          max_price?: number | null
+          min_price?: number | null
+          name?: string
+          source?: string | null
+          updated_at?: string
+          urlmoreinfo?: string | null
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           created_at: string

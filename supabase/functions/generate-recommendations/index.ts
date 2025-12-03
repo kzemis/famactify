@@ -288,6 +288,46 @@ Generate personalized activity recommendations based on this information.`;
       throw new Error('Invalid response format from AI');
     }
 
+    // Save AI-generated activities to activityspots_genai table for manual review
+    const aiGeneratedActivities = recommendations.recommendations.filter(
+      (rec: any) => rec.id && (rec.id.startsWith('claude-') || rec.id.startsWith('ai-') || !rec.image)
+    );
+
+    if (aiGeneratedActivities.length > 0) {
+      console.log('Saving AI-generated activities to database:', aiGeneratedActivities.length);
+      
+      for (const activity of aiGeneratedActivities) {
+        try {
+          const row = {
+            id: activity.id,
+            name: activity.title || activity.name,
+            description: activity.description || activity.matchReason || '',
+            activity_type: [],
+            age_buckets: [],
+            location_address: activity.location || null,
+            location_lat: activity.lat || null,
+            location_lon: activity.lon || null,
+            imageurlthumb: activity.image || null,
+            urlmoreinfo: null,
+            source: 'genAI',
+            json: activity
+          };
+
+          const { error: insertError } = await supabase
+            .from('activityspots_genai')
+            .upsert(row, { onConflict: 'id' });
+
+          if (insertError) {
+            console.error('Failed to save AI activity:', activity.id, insertError);
+          } else {
+            console.log('Saved AI activity:', activity.id);
+          }
+        } catch (err) {
+          console.error('Error saving AI activity:', activity.id, err);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify(recommendations),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

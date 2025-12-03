@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles, ImageIcon, Plus, Map, ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -77,6 +78,7 @@ export default function Contribute() {
     playroom: false,
     imageurlthumb: '',
     urlmoreinfo: '',
+    durationMinutes: 60,
   });
 
   const toggleArrayField = (field: 'activityType' | 'ageBuckets', value: string) => {
@@ -338,6 +340,7 @@ export default function Contribute() {
         playroom: false,
         imageurlthumb: '',
         urlmoreinfo: '',
+        durationMinutes: 60,
       });
       setImageFiles([]);
       setImagePreviews([]);
@@ -832,14 +835,32 @@ export default function Contribute() {
               </div>
             </div>
 
-            {/* Description (3 lines) */}
+            {/* Duration Slider */}
             <div>
-              <Label htmlFor="description">{t.contribute.description}</Label>
+              <Label>{t.contribute.duration}</Label>
+              <div className="flex items-center gap-4 mt-2">
+                <Slider
+                  value={[formData.durationMinutes]}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, durationMinutes: value[0] }))}
+                  min={15}
+                  max={480}
+                  step={15}
+                  className="flex-1"
+                />
+                <span className="text-sm text-muted-foreground min-w-[80px]">
+                  {formData.durationMinutes} {t.contribute.durationMinutes}
+                </span>
+              </div>
+            </div>
+
+            {/* Notes (3 lines) */}
+            <div>
+              <Label htmlFor="description">{t.contribute.notes}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder={t.contribute.descriptionPlaceholder}
+                placeholder={t.contribute.notesPlaceholder}
                 rows={3}
               />
             </div>

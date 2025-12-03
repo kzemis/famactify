@@ -75,7 +75,7 @@ export const translations = {
     // Contribute page
     contribute: {
       title: "Contribute an Activity",
-      subtitle: "Share any information you have — we'll add more!",
+      subtitle: "Fill in what you know — we'll add the rest!",
       autoFill: "Auto-Fill",
       autoFillFromLink: "Auto-Fill from Link",
       autoFillFromPhoto: "Auto-Fill from Photo",
@@ -95,8 +95,11 @@ export const translations = {
       basicInfo: "Basic Information",
       activityName: "Activity Name",
       activityNamePlaceholder: "e.g., Mežaparks Adventure Park",
+      notes: "Notes",
+      notesPlaceholder: "Add any notes",
       description: "Description",
       descriptionPlaceholder: "Describe the activity, what makes it special for families...",
+      durationMinutes: "minutes",
       category: "Category",
       selectCategory: "Select categories",
       ageGroups: "Suitable Age Groups",
@@ -266,7 +269,7 @@ export const translations = {
     // Contribute page
     contribute: {
       title: "Pievienot aktivitāti",
-      subtitle: "Dalieties ar jebkādu informāciju — mēs papildināsim pārējo!",
+      subtitle: "Aizpildi cik zini - mēs papildināsim pārējo!",
       autoFill: "Auto-aizpilde",
       autoFillFromLink: "Auto-aizpilde no saites",
       autoFillFromPhoto: "Auto-aizpilde no foto",
@@ -286,8 +289,11 @@ export const translations = {
       basicInfo: "Pamatinformācija",
       activityName: "Aktivitātes nosaukums",
       activityNamePlaceholder: "piem., Mežaparka piedzīvojumu parks",
+      notes: "Piezīmes",
+      notesPlaceholder: "Pievienojiet jebkādas piezīmes",
       description: "Apraksts",
       descriptionPlaceholder: "Aprakstiet aktivitāti, kas to padara īpašu ģimenēm...",
+      durationMinutes: "minūtes",
       category: "Kategorija",
       selectCategory: "Izvēlieties kategorijas",
       ageGroups: "Piemērotas vecuma grupas",

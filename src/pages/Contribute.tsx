@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles, ImageIcon } from 'lucide-react';
+import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles, ImageIcon, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +49,7 @@ export default function Contribute() {
   const [autoFillImages, setAutoFillImages] = useState<File[]>([]);
   const [parsing, setParsing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [photoLinkDialogOpen, setPhotoLinkDialogOpen] = useState(false);
   const autoFillImageInputRef = useRef<HTMLInputElement>(null);
   const autoFillCameraInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -86,13 +87,11 @@ export default function Contribute() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Validate total number of images (max 5)
     if (imageFiles.length + files.length > 5) {
       toast.error('You can upload maximum 5 images');
       return;
     }
 
-    // Validate each file
     const validFiles: File[] = [];
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
@@ -110,10 +109,8 @@ export default function Contribute() {
 
     if (validFiles.length === 0) return;
 
-    // Add to existing files
     setImageFiles(prev => [...prev, ...validFiles]);
     
-    // Create previews for new files
     validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -122,13 +119,19 @@ export default function Contribute() {
       reader.readAsDataURL(file);
     });
 
-    // Reset input
     e.target.value = '';
   };
 
   const removeImage = (index: number) => {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addPhotoFromLink = () => {
+    if (formData.imageurlthumb && !imagePreviews.includes(formData.imageurlthumb)) {
+      setImagePreviews(prev => [...prev, formData.imageurlthumb]);
+    }
+    setPhotoLinkDialogOpen(false);
   };
 
   const uploadImages = async (): Promise<string[]> => {
@@ -199,14 +202,17 @@ export default function Contribute() {
     try {
       setSubmitting(true);
 
-      // Upload images if selected
       let imageUrls: string[] = [];
       if (imageFiles.length > 0) {
         imageUrls = await uploadImages();
       }
 
-      // Use first image as thumbnail for backward compatibility
-      const imageUrl = imageUrls.length > 0 ? imageUrls[0] : formData.imageurlthumb;
+      // Add photo link URL if provided
+      if (formData.imageurlthumb && !imageUrls.includes(formData.imageurlthumb)) {
+        imageUrls.push(formData.imageurlthumb);
+      }
+
+      const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
 
       const id = slugify(formData.name);
       
@@ -252,7 +258,7 @@ export default function Contribute() {
           startTime: null,
           endTime: null
         },
-        imageurlthumb: imageUrl || null,
+        imageurlthumb: imageUrl,
         images: imageUrls.length > 0 ? imageUrls : null,
         urlmoreinfo: formData.urlmoreinfo || null,
         schemaVersion: '1.0.0'
@@ -279,7 +285,7 @@ export default function Contribute() {
         foodvenue_kidmenu: formData.playroom || null,
         schedule_openinghours: null,
         duration_minutes: null,
-        imageurlthumb: imageUrl || null,
+        imageurlthumb: imageUrl,
         urlmoreinfo: formData.urlmoreinfo || null,
         trail_lengthkm: null,
         trail_durationminutes: null,
@@ -302,7 +308,6 @@ export default function Contribute() {
 
       toast.success(t.contribute.successMessage);
       
-      // Reset form
       setFormData({
         name: '',
         description: '',
@@ -378,7 +383,6 @@ export default function Contribute() {
     try {
       let imageUrls: string[] = [];
 
-      // Upload images to get URLs for AI processing
       if (autoFillImages.length > 0) {
         for (const file of autoFillImages) {
           const reader = new FileReader();
@@ -406,7 +410,6 @@ export default function Contribute() {
         throw new Error('No data received from parser');
       }
 
-      // Update form with parsed data
       setFormData(prev => ({
         ...prev,
         name: parsedData.name || prev.name,
@@ -565,7 +568,7 @@ export default function Contribute() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
+          {/* Section 1: Basic Information */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
             <h2 className="text-xl font-semibold">{t.contribute.basicInfo}</h2>
             
@@ -578,34 +581,6 @@ export default function Contribute() {
                 placeholder={t.contribute.activityNamePlaceholder}
                 required
               />
-            </div>
-
-            <div>
-              <Label htmlFor="description">{t.contribute.description}</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder={t.contribute.descriptionPlaceholder}
-                rows={4}
-              />
-            </div>
-
-            <div>
-              <Label>{t.contribute.category} *</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {ACTIVITY_TYPES.map(type => (
-                  <Button
-                    key={type}
-                    type="button"
-                    variant={formData.activityType.includes(type) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleArrayField('activityType', type)}
-                  >
-                    {type}
-                  </Button>
-                ))}
-              </div>
             </div>
 
             <div>
@@ -641,6 +616,161 @@ export default function Contribute() {
             </div>
 
             <div>
+              <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
+              <Input
+                id="urlmoreinfo"
+                type="url"
+                value={formData.urlmoreinfo}
+                onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
+                placeholder="https://example.com"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">{t.contribute.description}</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder={t.contribute.descriptionPlaceholder}
+                rows={4}
+              />
+            </div>
+          </div>
+
+          {/* Section 2: Photos */}
+          <div className="space-y-4 p-6 border rounded-lg bg-card">
+            <h2 className="text-xl font-semibold">{t.contribute.photos}</h2>
+            
+            <div className="space-y-3">
+              <Input
+                ref={fileInputRef}
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <Input
+                ref={cameraInputRef}
+                id="camera-capture"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploading || imageFiles.length >= 5}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t.contribute.addPhoto}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    {t.contribute.uploadFromDevice}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
+                    <Camera className="w-4 h-4 mr-2" />
+                    {t.contribute.takePhoto}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPhotoLinkDialogOpen(true)}>
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    {t.contribute.photoLink}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <p className="text-sm text-muted-foreground">
+                {t.contribute.maxPhotos}
+              </p>
+
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img 
+                        src={preview} 
+                        alt={`Preview ${index + 1}`} 
+                        className="w-full h-32 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 w-6 h-6"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Photo Link Dialog */}
+            <Dialog open={photoLinkDialogOpen} onOpenChange={setPhotoLinkDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{t.contribute.photoLink}</DialogTitle>
+                  <DialogDescription>
+                    {t.contribute.photoLinkDescription}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="photo-url">{t.contribute.imageUrl}</Label>
+                    <Input
+                      id="photo-url"
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      value={formData.imageurlthumb}
+                      onChange={(e) => setFormData(prev => ({ ...prev, imageurlthumb: e.target.value }))}
+                    />
+                  </div>
+                  <Button 
+                    onClick={addPhotoFromLink}
+                    disabled={!formData.imageurlthumb}
+                    className="w-full"
+                  >
+                    {t.contribute.addPhotoFromLink}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Section 3: Category & Details */}
+          <div className="space-y-4 p-6 border rounded-lg bg-card">
+            <h2 className="text-xl font-semibold">{t.contribute.categoryAndDetails}</h2>
+
+            <div>
+              <Label>{t.contribute.category} *</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {ACTIVITY_TYPES.map(type => (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={formData.activityType.includes(type) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleArrayField('activityType', type)}
+                  >
+                    {type}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <Label>{t.contribute.environment}</Label>
               <div className="flex gap-2 mt-2">
                 {ENVIRONMENTS.map(env => (
@@ -658,54 +788,12 @@ export default function Contribute() {
             </div>
           </div>
 
-          {/* Additional Details */}
+          {/* Section 4: Accessibility, Facilities & Kid Amenities */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
-            <h2 className="text-xl font-semibold">{t.contribute.addMoreDetails}</h2>
+            <h2 className="text-xl font-semibold">{t.contribute.accessibilityAndFacilities}</h2>
 
             <div>
-              <Label>{t.contribute.ageGroups}</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {AGE_BUCKETS.map(age => (
-                  <Button
-                    key={age}
-                    type="button"
-                    variant={formData.ageBuckets.includes(age) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleArrayField('ageBuckets', age)}
-                  >
-                    {age}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="minPrice">{t.contribute.minPrice}</Label>
-                <Input
-                  id="minPrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.minPrice}
-                  onChange={(e) => setFormData(prev => ({ ...prev, minPrice: e.target.value }))}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label htmlFor="maxPrice">{t.contribute.maxPrice}</Label>
-                <Input
-                  id="maxPrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.maxPrice}
-                  onChange={(e) => setFormData(prev => ({ ...prev, maxPrice: e.target.value }))}
-                  placeholder="10.00"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2 block">{t.contribute.accessibility} & {t.contribute.facilities}</Label>
+              <Label className="mb-2 block">{t.contribute.accessibility}</Label>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -725,6 +813,12 @@ export default function Contribute() {
                   />
                   <span className="text-sm">{t.contribute.strollerFriendly}</span>
                 </label>
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-2 block">{t.contribute.facilities}</Label>
+              <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -787,98 +881,52 @@ export default function Contribute() {
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* Section 5: Age Groups & Pricing (at the end) */}
+          <div className="space-y-4 p-6 border rounded-lg bg-card">
+            <h2 className="text-xl font-semibold">{t.contribute.ageGroupsAndPricing}</h2>
 
             <div>
-              <Label htmlFor="imageurlthumb">Image URL (optional)</Label>
-              <Input
-                id="imageurlthumb"
-                type="url"
-                value={formData.imageurlthumb}
-                onChange={(e) => setFormData(prev => ({ ...prev, imageurlthumb: e.target.value }))}
-                placeholder="https://example.com/image.jpg"
-              />
-            </div>
-
-            <div>
-              <Label>{t.contribute.photos} (max 5)</Label>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Input
-                    ref={fileInputRef}
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                  <Input
-                    ref={cameraInputRef}
-                    id="camera-capture"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
+              <Label>{t.contribute.ageGroups}</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {AGE_BUCKETS.map(age => (
                   <Button
+                    key={age}
                     type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || imageFiles.length >= 5}
+                    variant={formData.ageBuckets.includes(age) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleArrayField('ageBuckets', age)}
                   >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {t.contribute.uploadImages}
+                    {age}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => cameraInputRef.current?.click()}
-                    disabled={uploading || imageFiles.length >= 5}
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    {t.contribute.takePhoto}
-                  </Button>
-                  {imageFiles.length > 0 && (
-                    <span className="text-sm text-muted-foreground">
-                      {imageFiles.length} {t.contribute.imagesSelected}
-                    </span>
-                  )}
-                </div>
-                {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative">
-                        <img 
-                          src={preview} 
-                          alt={`Preview ${index + 1}`} 
-                          className="w-full h-32 object-cover rounded-lg border"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 w-6 h-6"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
-              <Input
-                id="urlmoreinfo"
-                type="url"
-                value={formData.urlmoreinfo}
-                onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
-                placeholder="https://example.com"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minPrice">{t.contribute.minPrice}</Label>
+                <Input
+                  id="minPrice"
+                  type="number"
+                  step="0.01"
+                  value={formData.minPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, minPrice: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxPrice">{t.contribute.maxPrice}</Label>
+                <Input
+                  id="maxPrice"
+                  type="number"
+                  step="0.01"
+                  value={formData.maxPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, maxPrice: e.target.value }))}
+                  placeholder="10.00"
+                />
+              </div>
             </div>
           </div>
 

@@ -269,6 +269,10 @@ export default function Contribute() {
         schemaVersion: '1.0.0'
       };
 
+      // Determine source based on auth status
+      const { data: { session } } = await supabase.auth.getSession();
+      const source = session?.user ? 'user' : 'anonymous';
+
       const row = {
         id,
         name: formData.name,
@@ -298,6 +302,7 @@ export default function Contribute() {
         event_starttime: null,
         event_endtime: null,
         schema_version: '1.0.0',
+        source,
         json
       };
 

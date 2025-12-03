@@ -42,6 +42,7 @@ export type Database = {
           name: string
           schedule_openinghours: Json | null
           schema_version: string | null
+          source: string | null
           trail_durationminutes: number | null
           trail_lengthkm: number | null
           trail_routetype: string | null
@@ -75,6 +76,7 @@ export type Database = {
           name: string
           schedule_openinghours?: Json | null
           schema_version?: string | null
+          source?: string | null
           trail_durationminutes?: number | null
           trail_lengthkm?: number | null
           trail_routetype?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           name?: string
           schedule_openinghours?: Json | null
           schema_version?: string | null
+          source?: string | null
           trail_durationminutes?: number | null
           trail_lengthkm?: number | null
           trail_routetype?: string | null

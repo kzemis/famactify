@@ -29,6 +29,10 @@ interface ActivitySpot {
   accessibility_wheelchair: boolean | null;
   accessibility_stroller: boolean | null;
   facilities_restrooms: boolean | null;
+  foodvenue_kidamenities: boolean | null;
+  foodvenue_kidcorner: boolean | null;
+  foodvenue_kidmenu: boolean | null;
+  source: string | null;
   created_at: string;
   json: any;
 }
@@ -341,6 +345,24 @@ export default function CommunityActivities() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Users className="w-4 h-4" />
                       <span>{activity.age_buckets.join(', ')} years</span>
+                    </div>
+                  )}
+
+                  {/* Kid Amenities */}
+                  {(activity.foodvenue_kidamenities || activity.foodvenue_kidcorner || activity.foodvenue_kidmenu) && (
+                    <div className="space-y-1">
+                      <span className="text-xs font-medium text-muted-foreground">Bērnu ērtības:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {activity.foodvenue_kidamenities && (
+                          <Badge variant="outline" className="text-xs">🎨 Activity Kit</Badge>
+                        )}
+                        {activity.foodvenue_kidcorner && (
+                          <Badge variant="outline" className="text-xs">🧸 Kids Corner</Badge>
+                        )}
+                        {activity.foodvenue_kidmenu && (
+                          <Badge variant="outline" className="text-xs">🎪 Playroom</Badge>
+                        )}
+                      </div>
                     </div>
                   )}
 

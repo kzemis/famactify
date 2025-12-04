@@ -28,6 +28,7 @@ import ConfirmAttendance from "./pages/ConfirmAttendance";
 import SharedTrip from "./pages/SharedTrip";
 import TestAuth from "./pages/TestAuth";
 import EventsCalendar from "./pages/EventsCalendar";
+import CatComparison from "./pages/CatComparison";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/trip/:shareToken" element={<SharedTrip />} />
           <Route path="/test-auth" element={<TestAuth />} />
           <Route path="/events-calendar" element={<EventsCalendar />} />
+          <Route path="/cats" element={<CatComparison />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

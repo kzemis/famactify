@@ -23,9 +23,9 @@ serve(async (req) => {
     console.log('Generating questions for interests:', interests);
     console.log('Max questions requested:', maxQuestions);
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     const systemPrompt = `You are a family activity planning assistant for Latvia. Based on the user's interests, generate exactly ${maxQuestions} personalized questions to gather information for planning a ONE-DAY family activity.
@@ -59,18 +59,16 @@ IMPORTANT: Return ONLY the JSON object, no additional text or markdown.`;
 
 Generate personalized questions to help plan their family activities.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        system: systemPrompt,
+        model: 'google/gemini-2.5-flash',
         messages: [
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
       }),
@@ -96,9 +94,9 @@ Generate personalized questions to help plan their family activities.`;
     }
 
     const data = await response.json();
-    const aiResponse = data.content?.[0]?.text;
+    const aiResponse = data.choices?.[0]?.message?.content;
     
-    console.log('Raw Claude AI response:', aiResponse);
+    console.log('Raw AI response:', aiResponse);
 
     // Extract JSON from response (handle markdown code blocks if present)
     let jsonStr = aiResponse.trim();

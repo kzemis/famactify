@@ -23,9 +23,9 @@ serve(async (req) => {
 
     console.log('Generating recommendations for:', { answers, interests });
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // Initialize Supabase client
@@ -226,18 +226,16 @@ ${JSON.stringify(allActivitiesData, null, 2)}
 
 Generate personalized activity recommendations based on this information.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        system: systemPrompt,
+        model: 'google/gemini-2.5-flash',
         messages: [
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
       }),
@@ -263,9 +261,9 @@ Generate personalized activity recommendations based on this information.`;
     }
 
     const data = await response.json();
-    const aiResponse = data.content?.[0]?.text;
+    const aiResponse = data.choices?.[0]?.message?.content;
     
-    console.log('Raw Claude AI response:', aiResponse);
+    console.log('Raw AI response:', aiResponse);
 
     // Extract JSON from response (handle markdown code blocks if present)
     let jsonStr = aiResponse.trim();

@@ -24,6 +24,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Contribute from "./pages/Contribute";
 import CommunityActivities from "./pages/CommunityActivities";
+import GeneratedActivities from "./pages/GeneratedActivities";
 import ConfirmAttendance from "./pages/ConfirmAttendance";
 import SharedTrip from "./pages/SharedTrip";
 import TestAuth from "./pages/TestAuth";
@@ -62,6 +63,7 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
           <Route path="/community" element={<CommunityActivities />} />
+          <Route path="/generated-activities" element={<GeneratedActivities />} />
           <Route path="/confirm" element={<ConfirmAttendance />} />
           <Route path="/trip/:shareToken" element={<SharedTrip />} />
           <Route path="/test-auth" element={<TestAuth />} />

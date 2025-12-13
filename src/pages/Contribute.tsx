@@ -653,7 +653,7 @@ export default function Contribute() {
                     onOpenChange={setMapOpen}
                     lat={formData.lat}
                     lon={formData.lon}
-                    onPick={(lat, lon) => setFormData(prev => ({ ...prev, lat, lon }))}
+                    onPick={(lat, lon, address) => setFormData(prev => ({ ...prev, lat, lon, address: address || prev.address }))}
                     title={t.contribute.openMap}
                     description={'Click on the map to set the exact location.'}
                     nameForMarker={formData.name || 'Selected location'}

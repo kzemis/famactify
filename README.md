@@ -15,45 +15,17 @@ Both functions use a shared utility at `supabase/functions/_lib/ai.ts` to:
 ## Environment Variables
 Set these in Supabase (Project → Functions → Environment Variables):
 
-- `AI_PROVIDER` — `lovable` (default) or `openai`
-- For Lovable:
-  - `LOVABLE_API_KEY`
-- For OpenAI:
+- OpenAI:
   - `OPENAI_API_KEY`
   - `OPENAI_MODEL` (optional; defaults to `gpt-4o-mini`)
 - Supabase service config for recommendations:
   - `SUPABASE_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`
 
-Never expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend. Keep it in server-side env only.
-
-## Deploy Functions
-After editing or changing env vars:
-
-```sh
-supabase functions deploy generate-questions
-supabase functions deploy generate-recommendations
-```
-
-## Local Testing (curl)
-Questions:
-```sh
-curl -X POST \
-  "https://<your-project-ref>.functions.supabase.co/generate-questions" \
-  -H "Content-Type: application/json" \
-  -d '{"interests":"outdoors, museums, animals", "maxQuestions":4}'
-```
-
-Recommendations:
-```sh
-curl -X POST \
-  "https://<your-project-ref>.functions.supabase.co/generate-recommendations" \
-  -H "Content-Type: application/json" \
-  -d '{"interests":"Riga, budget-friendly, kids", "answers":{"date":"next Saturday","location":"Riga"}}'
-```
+Never expose `SUPABASE_SERVICE_ROLE_KEY` or `OPENAI_API_KEY` to the frontend. Keep them in server-side env only.
 
 ## AI Provider Health Check
-Deploy the health check function to verify connectivity and model readiness:
+Deploy the health check function to verify OpenAI connectivity and model readiness:
 
 ```sh
 supabase functions deploy ai-health

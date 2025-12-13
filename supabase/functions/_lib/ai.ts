@@ -1,5 +1,5 @@
 // Shared AI provider utility for Supabase Edge Functions (Deno)
-// Provides a single fetchChatCompletion that supports Lovable and OpenAI.
+// Provides a single fetchChatCompletion that supports OpenAI.
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
@@ -10,43 +10,24 @@ export interface ChatRequest {
 }
 
 export async function fetchChatCompletion(req: ChatRequest): Promise<string> {
-  const AI_PROVIDER = (Deno.env.get('AI_PROVIDER') || 'lovable').toLowerCase();
   const temperature = req.temperature ?? 0.7;
 
-  let response: Response;
-  if (AI_PROVIDER === 'openai') {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
-    const OPENAI_MODEL = req.openAImodel || Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
+  const OPENAI_MODEL = req.openAImodel || Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
 
-    response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: req.messages,
-        temperature,
-      }),
-    });
-  } else {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
-
-    response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: req.messages,
-      }),
-    });
-  }
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages: req.messages,
+      temperature,
+    }),
+  });
 
   if (!response.ok) {
     const status = response.status;
@@ -69,4 +50,3 @@ export function extractJsonBlock(text: string): string {
   if (jsonStr.endsWith('```')) jsonStr = jsonStr.slice(0, -3);
   return jsonStr.trim();
 }
-

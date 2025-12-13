@@ -12,7 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    const AI_PROVIDER = (Deno.env.get('AI_PROVIDER') || 'lovable').toLowerCase();
     const start = Date.now();
 
     let aiText = '';
@@ -28,7 +27,7 @@ serve(async (req) => {
       const msg = e instanceof Error ? e.message : String(e);
       const status = msg.includes('Rate limit') ? 429 : msg.includes('requires payment') ? 402 : 500;
       return new Response(
-        JSON.stringify({ ok: false, provider: AI_PROVIDER, error: msg }),
+        JSON.stringify({ ok: false, provider: 'openai', error: msg }),
         { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -37,7 +36,7 @@ serve(async (req) => {
     const ok = typeof aiText === 'string' && aiText.toUpperCase().includes('OK');
 
     return new Response(
-      JSON.stringify({ ok, provider: AI_PROVIDER, latencyMs: durationMs }),
+      JSON.stringify({ ok, provider: 'openai', latencyMs: durationMs }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -47,4 +46,3 @@ serve(async (req) => {
     );
   }
 });
-

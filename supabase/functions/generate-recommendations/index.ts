@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { fetchChatCompletion, extractJsonBlock } from "../_lib/ai.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -226,57 +227,26 @@ ${JSON.stringify(allActivitiesData, null, 2)}
 
 Generate personalized activity recommendations based on this information.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-      }),
-    });
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ];
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI service requires payment. Please add credits to your workspace.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+    let aiText: string;
+    try {
+      aiText = await fetchChatCompletion({ messages });
+    } catch (e: any) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const status = msg.includes('Rate limit') ? 429 : msg.includes('requires payment') ? 402 : 500;
+      return new Response(
+        JSON.stringify({ error: msg }),
+        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content;
-    
-    console.log('Raw AI response:', aiResponse);
+    console.log('Raw AI response:', aiText);
 
-    // Extract JSON from response (handle markdown code blocks if present)
-    let jsonStr = aiResponse.trim();
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.slice(7);
-    } else if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.slice(3);
-    }
-    if (jsonStr.endsWith('```')) {
-      jsonStr = jsonStr.slice(0, -3);
-    }
-    jsonStr = jsonStr.trim();
-
+    const jsonStr = extractJsonBlock(aiText);
     const recommendations = JSON.parse(jsonStr);
     
     console.log('Parsed recommendations:', recommendations);

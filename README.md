@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# FamActify AI Provider Switching
 
-## Project info
+This project supports switching AI providers (Lovable or OpenAI ChatGPT) for Supabase Edge Functions.
 
-**URL**: https://lovable.dev/projects/e13a6674-c9a6-4c7e-a776-c7300d278a56
+## Functions using AI
+- `supabase/functions/generate-questions/` — generates onboarding/planning questions
+- `supabase/functions/generate-recommendations/` — generates day trip activity recommendations
 
-## How can I edit this code?
+Both functions use a shared utility at `supabase/functions/_lib/ai.ts` to:
+- Choose provider via `AI_PROVIDER` env var
+- Call the appropriate API
+- Normalize responses
+- Extract JSON blocks safely
 
-There are several ways of editing your application.
+## Environment Variables
+Set these in Supabase (Project → Functions → Environment Variables):
 
-**Use Lovable**
+- `AI_PROVIDER` — `lovable` (default) or `openai`
+- For Lovable:
+  - `LOVABLE_API_KEY`
+- For OpenAI:
+  - `OPENAI_API_KEY`
+  - `OPENAI_MODEL` (optional; defaults to `gpt-4o-mini`)
+- Supabase service config for recommendations:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e13a6674-c9a6-4c7e-a776-c7300d278a56) and start prompting.
+Never expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend. Keep it in server-side env only.
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Deploy Functions
+After editing or changing env vars:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+supabase functions deploy generate-questions
+supabase functions deploy generate-recommendations
 ```
 
-**Edit a file directly in GitHub**
+## Local Testing (curl)
+Questions:
+```sh
+curl -X POST \
+  "https://<your-project-ref>.functions.supabase.co/generate-questions" \
+  -H "Content-Type: application/json" \
+  -d '{"interests":"outdoors, museums, animals", "maxQuestions":4}'
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Recommendations:
+```sh
+curl -X POST \
+  "https://<your-project-ref>.functions.supabase.co/generate-recommendations" \
+  -H "Content-Type: application/json" \
+  -d '{"interests":"Riga, budget-friendly, kids", "answers":{"date":"next Saturday","location":"Riga"}}'
+```
 
-**Use GitHub Codespaces**
+## AI Provider Health Check
+Deploy the health check function to verify connectivity and model readiness:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```sh
+supabase functions deploy ai-health
+```
 
-## What technologies are used for this project?
+Call it:
+```sh
+curl -s "https://<your-project-ref>.functions.supabase.co/ai-health" | jq
+```
 
-This project is built with:
+It returns:
+```json
+{
+  "ok": true,
+  "provider": "openai",
+  "latencyMs": 512
+}
+```
+If `ok` is false, check env vars and provider status.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Vercel Frontend
+For proper OAuth redirects and production URLs:
+- Set `VITE_PUBLIC_SITE_URL` to your Vercel domain
+- Ensure Supabase Auth "Site URL" and "Redirect URLs" match your domain
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/e13a6674-c9a6-4c7e-a776-c7300d278a56) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Notes
+- Supabase Edge Functions run on Deno; IDE TypeScript may flag imports like `https://deno.land/...` or `Deno.env`. These are correct for runtime.
+- The JSON-only contract is enforced; errors from providers are returned with appropriate HTTP status codes.

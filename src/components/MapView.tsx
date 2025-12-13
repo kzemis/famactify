@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet default icon paths for Vite
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -31,6 +32,7 @@ interface MapViewProps {
   path?: PathItem[];
   onSelect?: (id: string) => void;
   getMarkerIcon?: (place: Place) => L.Icon;
+  onMapClick?: (lat: number, lon: number) => void;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -39,6 +41,7 @@ const MapView: React.FC<MapViewProps> = ({
   path,
   onSelect,
   getMarkerIcon,
+  onMapClick,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
@@ -57,6 +60,12 @@ const MapView: React.FC<MapViewProps> = ({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
+    if (onMapClick) {
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      });
+    }
+
     markersLayerRef.current = L.layerGroup().addTo(map);
     pathLayerRef.current = L.layerGroup().addTo(map);
     leafletRef.current = map;
@@ -65,6 +74,7 @@ const MapView: React.FC<MapViewProps> = ({
       map.remove();
       leafletRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update markers

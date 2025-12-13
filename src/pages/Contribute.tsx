@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles, ImageIcon, Plus, Map, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Locate, Upload, X, Camera, Link as LinkIcon, Sparkles, ImageIcon, Plus, Map, ChevronDown } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useLanguage } from '@/i18n/LanguageContext';
+import MapPicker from '@/components/MapPicker';
 
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
@@ -42,7 +42,6 @@ function slugify(name: string): string {
 }
 
 export default function Contribute() {
-  const navigate = useNavigate();
   const { t } = useLanguage();
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -56,6 +55,7 @@ export default function Contribute() {
   const [parsing, setParsing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [photoLinkDialogOpen, setPhotoLinkDialogOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const autoFillImageInputRef = useRef<HTMLInputElement>(null);
   const autoFillCameraInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -625,7 +625,7 @@ export default function Contribute() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleUseMyLocation}
+                onClick={() => setMapOpen(true)}
                 disabled={locating}
               >
                 <Map className="w-4 h-4 mr-2" />
@@ -637,6 +637,38 @@ export default function Contribute() {
                 {t.contribute.coordinates}: {formData.lat.toFixed(6)}, {formData.lon.toFixed(6)}
               </p>
             )}
+
+            {/* Map picker dialog */}
+            <Dialog open={mapOpen} onOpenChange={setMapOpen}>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>{t.contribute.openMap}</DialogTitle>
+                  <DialogDescription>
+                    {t.contribute.mapPickerDescription || 'Click on the map to set the exact location.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="mt-2">
+                  <MapPicker
+                    open={mapOpen}
+                    onOpenChange={setMapOpen}
+                    lat={formData.lat}
+                    lon={formData.lon}
+                    onPick={(lat, lon) => setFormData(prev => ({ ...prev, lat, lon }))}
+                    title={t.contribute.openMap}
+                    description={'Click on the map to set the exact location.'}
+                    nameForMarker={formData.name || 'Selected location'}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" type="button" onClick={() => setMapOpen(false)}>
+                    {t.common.close || 'Close'}
+                  </Button>
+                  <Button type="button" onClick={() => setMapOpen(false)}>
+                    {t.common.save || 'Save'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Add Photo button */}
             <div>

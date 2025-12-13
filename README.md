@@ -51,6 +51,27 @@ For proper OAuth redirects and production URLs:
 - Set `VITE_PUBLIC_SITE_URL` to your Vercel domain
 - Ensure Supabase Auth "Site URL" and "Redirect URLs" match your domain
 
+## Geocoding (Nominatim) Proxy
+A lightweight Edge Function that proxies OpenStreetMap Nominatim to avoid CORS and add a required User-Agent.
+
+Deploy:
+```sh
+supabase functions deploy nominatim-proxy
+```
+
+Usage (replace <project-ref>):
+- Forward geocoding (search):
+```sh
+curl "https://<project-ref>.functions.supabase.co/nominatim-proxy?q=Riga,%20Latvia&limit=5&countrycodes=lv"
+```
+- Reverse geocoding (lat/lon to address):
+```sh
+curl "https://<project-ref>.functions.supabase.co/nominatim-proxy?lat=56.9496&lon=24.1052&zoom=18"
+```
+
+Optional environment variable:
+- `NOMINATIM_USER_AGENT` — custom User-Agent string to comply with Nominatim usage policy
+
 ## Notes
 - Supabase Edge Functions run on Deno; IDE TypeScript may flag imports like `https://deno.land/...` or `Deno.env`. These are correct for runtime.
 - The JSON-only contract is enforced; errors from providers are returned with appropriate HTTP status codes.

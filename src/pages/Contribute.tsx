@@ -32,7 +32,21 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import MapPicker from '@/components/MapPicker';
 import MapView from '@/components/MapView';
 
-const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
+const ACTIVITY_TYPES = [
+  'caffe/restaurant',
+  'entertainment event',
+  'hiking area',
+  'ice-ring',
+  'museum',
+  'other',
+  'park & garden',
+  'playground',
+  'skiing',
+  'sledding hill',
+  'sport-activity',
+  'swimming',
+  'workshop & education',
+];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
 const ENVIRONMENTS = ['inside', 'outside', 'both'];
 
@@ -57,13 +71,15 @@ export default function Contribute() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [photoLinkDialogOpen, setPhotoLinkDialogOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const autoFillImageInputRef = useRef<HTMLInputElement>(null);
   const autoFillCameraInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     activityType: [] as string[],
-    ageBuckets: [] as string[],
+    ageBuckets: [],
+    ageAllSelected: true,
     minPrice: '',
     maxPrice: '',
     address: '',
@@ -88,6 +104,20 @@ export default function Contribute() {
       [field]: prev[field].includes(value)
         ? prev[field].filter(v => v !== value)
         : [...prev[field], value]
+    }));
+  };
+
+  const selectAllAges = () => {
+    setFormData(prev => ({ ...prev, ageAllSelected: true, ageBuckets: [] }));
+  };
+
+  const toggleSpecificAge = (age: string) => {
+    setFormData(prev => ({
+      ...prev,
+      ageAllSelected: false,
+      ageBuckets: prev.ageBuckets.includes(age)
+        ? prev.ageBuckets.filter(a => a !== age)
+        : [...prev.ageBuckets, age]
     }));
   };
 
@@ -189,7 +219,11 @@ export default function Contribute() {
       return;
     }
     
-    // Activity type is optional; users can submit without selecting categories
+    // Category now mandatory: require at least one activityType
+    if (!formData.activityType || formData.activityType.length === 0) {
+      toast.error(t.contribute.categoryRequired || 'Select at least one category');
+      return;
+    }
 
     // Require either address text or coordinates from map/GPS
     const hasAddressText = !!formData.address && formData.address.trim().length >= 3;
@@ -207,6 +241,9 @@ export default function Contribute() {
       return;
     }
 
+    // Compute age buckets for persistence: if "All" selected, save all buckets
+    const ageBucketsToSave = formData.ageAllSelected ? AGE_BUCKETS : formData.ageBuckets;
+
     try {
       setSubmitting(true);
 
@@ -221,7 +258,6 @@ export default function Contribute() {
       }
 
       const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
-
       const id = slugify(formData.name);
       
       const json = {
@@ -229,7 +265,7 @@ export default function Contribute() {
         name: formData.name,
         description: formData.description || '',
         activityType: formData.activityType,
-        ageBuckets: formData.ageBuckets,
+        ageBuckets: ageBucketsToSave,
         minPrice: minP,
         maxPrice: maxP,
         location: {
@@ -281,7 +317,7 @@ export default function Contribute() {
         name: formData.name,
         description: formData.description || '',
         activity_type: formData.activityType,
-        age_buckets: formData.ageBuckets,
+        age_buckets: ageBucketsToSave,
         min_price: minP,
         max_price: maxP,
         location_address: formData.address,
@@ -326,6 +362,7 @@ export default function Contribute() {
         description: '',
         activityType: [],
         ageBuckets: [],
+        ageAllSelected: true,
         minPrice: '',
         maxPrice: '',
         address: '',
@@ -461,63 +498,42 @@ export default function Contribute() {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t.contribute.title}</h1>
+          <h1 className="text-3xl font-bold mb-2">Contribyte - activity, spot or event</h1>
           <p className="text-muted-foreground mb-4">
             {t.contribute.subtitle}
           </p>
           
-          {/* Auto-fill buttons */}
-          <div className="flex flex-wrap gap-2">
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (open) {
-                setAutoFillUrl('');
-                setAutoFillImages([]);
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => {
+          {/* AI autofill consolidated button (right-aligned) */}
+          <div className="flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="inline-flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  <span>AI autofill</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground">Beta</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => {
+                  setDialogOpen(true);
                   setAutoFillUrl('');
                   setAutoFillImages([]);
                 }}>
                   <LinkIcon className="w-4 h-4 mr-2" />
                   {t.contribute.autoFillFromLink}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{t.contribute.autoFillTitle}</DialogTitle>
-                  <DialogDescription>
-                    {t.contribute.autoFillDescription}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="autofill-url">{t.contribute.websiteUrl}</Label>
-                    <div className="relative mt-2">
-                      <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="autofill-url"
-                        type="url"
-                        placeholder="https://example.com/activity"
-                        value={autoFillUrl}
-                        onChange={(e) => setAutoFillUrl(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => autoFillImageInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  {t.contribute.fromDisk || 'From disk'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => autoFillCameraInputRef.current?.click()}>
+                  <Camera className="w-4 h-4 mr-2" />
+                  {t.contribute.takePhotoCamera || 'Take a photo'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-                  <Button 
-                    onClick={handleAutoFill} 
-                    disabled={parsing || !autoFillUrl}
-                    className="w-full"
-                  >
-                    {parsing ? t.contribute.parsing : t.contribute.parseInfo}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
+            {/* Hidden inputs for photo sources */}
             <Input
               ref={autoFillImageInputRef}
               type="file"
@@ -534,51 +550,49 @@ export default function Contribute() {
               onChange={handleAutoFillImageSelect}
               className="hidden"
             />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  {t.contribute.autoFillFromPhoto}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => autoFillImageInputRef.current?.click()}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  {t.contribute.fromDisk || 'From disk'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => autoFillCameraInputRef.current?.click()}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  {t.contribute.takePhotoCamera || 'Take a photo'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
-          
-          {/* Show selected auto-fill images and parse button */}
-          {autoFillImages.length > 0 && (
-            <div className="mt-4 p-4 border rounded-lg bg-card">
-              <p className="text-sm text-muted-foreground mb-2">
-                {autoFillImages.length} {t.contribute.photosSelected}
-              </p>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleAutoFill} 
-                  disabled={parsing}
-                  size="sm"
+
+          {/* Link dialog preserved for AI autofill -> from link */}
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (open) {
+              setAutoFillUrl('');
+              setAutoFillImages([]);
+            }
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{t.contribute.autoFillTitle}</DialogTitle>
+                <DialogDescription>
+                  {t.contribute.autoFillDescription}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="autofill-url">{t.contribute.websiteUrl}</Label>
+                  <div className="relative mt-2">
+                    <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="autofill-url"
+                      type="url"
+                      placeholder="https://example.com/activity"
+                      value={autoFillUrl}
+                      onChange={(e) => setAutoFillUrl(e.target.value)}
+                      className="pl-10 placeholder:italic placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleAutoFill}
+                  disabled={parsing || !autoFillUrl}
+                  className="w-full"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
                   {parsing ? t.contribute.parsing : t.contribute.parseInfo}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAutoFillImages([])}
-                >
-                  {t.common.cancel}
-                </Button>
               </div>
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -592,8 +606,71 @@ export default function Contribute() {
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder={t.contribute.activityNamePlaceholder}
+                className="placeholder:italic placeholder:text-muted-foreground"
                 required
               />
+            </div>
+
+            {/* Category as input that opens multi-select dialog */}
+            <div>
+              <Label htmlFor="category-input">{t.contribute.category} *</Label>
+              <div className="relative">
+                <Input
+                  id="category-input"
+                  readOnly
+                  value={formData.activityType.length > 0 ? formData.activityType.join(', ') : ''}
+                  placeholder={t.contribute.categoryPlaceholder || 'Select one or more categories'}
+                  onClick={() => setCategoryDialogOpen(true)}
+                  className="cursor-pointer placeholder:italic placeholder:text-muted-foreground"
+                />
+                {formData.activityType.length === 0 && (
+                  <p className="text-xs text-destructive mt-1">{t.contribute.categoryRequired || 'Select at least one category'}</p>
+                )}
+              </div>
+              <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogDescription>{t.contribute.categoryDialogDescription || 'Choose one or more categories'}</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {ACTIVITY_TYPES.map(type => (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={formData.activityType.includes(type) ? 'default' : 'outline'}
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            activityType: prev.activityType.includes(type)
+                              ? prev.activityType.filter(t => t !== type)
+                              : [...prev.activityType, type]
+                          }));
+                        }}
+                        className="justify-start px-3 py-2 text-sm whitespace-nowrap"
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" type="button" onClick={() => setCategoryDialogOpen(false)}>
+                      {t.common.cancel || 'Cancel'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (formData.activityType.length === 0) {
+                          toast.error(t.contribute.categoryRequired || 'Select at least one category');
+                          return;
+                        }
+                        setCategoryDialogOpen(false);
+                      }}
+                    >
+                      {t.common.save || 'Save'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Address input */}
@@ -606,7 +683,7 @@ export default function Contribute() {
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   placeholder={t.contribute.addressPlaceholder}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 placeholder:italic placeholder:text-muted-foreground"
                 />
                 {/* GPS icon button inside the input (right side) */}
                 <button
@@ -768,6 +845,7 @@ export default function Contribute() {
                       placeholder="https://example.com/image.jpg"
                       value={formData.imageurlthumb}
                       onChange={(e) => setFormData(prev => ({ ...prev, imageurlthumb: e.target.value }))}
+                      className="placeholder:italic placeholder:text-muted-foreground"
                     />
                   </div>
                   <Button 
@@ -781,157 +859,125 @@ export default function Contribute() {
               </DialogContent>
             </Dialog>
 
-            {/* Accessibility & Kid Amenities - Two Columns */}
-            <div className="pt-4">
-              <h3 className="text-lg font-medium mb-3">{t.contribute.accessibilityAndFacilities}</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column: Kid Amenities */}
-                <div>
-                  <Label className="mb-2 block">{t.contribute.kidAmenities}</Label>
-                  <div className="space-y-3">
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.kidsActivityKit}
-                        onChange={(e) => setFormData(prev => ({ ...prev, kidsActivityKit: e.target.checked }))}
-                        className="w-4 h-4 mt-0.5"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">{t.contribute.kidsActivityKit}</span>
-                        <p className="text-xs text-muted-foreground">{t.contribute.kidsActivityKitDesc}</p>
-                      </div>
-                    </label>
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.kidsCorner}
-                        onChange={(e) => setFormData(prev => ({ ...prev, kidsCorner: e.target.checked }))}
-                        className="w-4 h-4 mt-0.5"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">{t.contribute.kidsCorner}</span>
-                        <p className="text-xs text-muted-foreground">{t.contribute.kidsCornerDesc}</p>
-                      </div>
-                    </label>
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.playroom}
-                        onChange={(e) => setFormData(prev => ({ ...prev, playroom: e.target.checked }))}
-                        className="w-4 h-4 mt-0.5"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">{t.contribute.playroom}</span>
-                        <p className="text-xs text-muted-foreground">{t.contribute.playroomDesc}</p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Right Column: Accessibility & Facilities */}
-                <div>
-                  <Label className="mb-2 block">{t.contribute.accessibilityFacilities}</Label>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.wheelchair}
-                        onChange={(e) => setFormData(prev => ({ ...prev, wheelchair: e.target.checked }))}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">{t.contribute.wheelchairAccessible}</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.stroller}
-                        onChange={(e) => setFormData(prev => ({ ...prev, stroller: e.target.checked }))}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">{t.contribute.strollerFriendly}</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.restrooms}
-                        onChange={(e) => setFormData(prev => ({ ...prev, restrooms: e.target.checked }))}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">{t.contribute.restrooms}</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.changingTable}
-                        onChange={(e) => setFormData(prev => ({ ...prev, changingTable: e.target.checked }))}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">{t.contribute.changingTable}</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Duration Slider */}
-            <div>
-              <Label>{t.contribute.duration}</Label>
-              <div className="flex items-center gap-4 mt-2">
-                <Slider
-                  value={[formData.durationMinutes]}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, durationMinutes: value[0] }))}
-                  min={15}
-                  max={480}
-                  step={15}
-                  className="flex-1"
-                />
-                <span className="text-sm text-muted-foreground min-w-[80px]">
-                  {formData.durationMinutes} {t.contribute.durationMinutes}
-                </span>
-              </div>
-            </div>
-
-            {/* Notes (3 lines) */}
-            <div>
-              <Label htmlFor="description">{t.contribute.notes}</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder={t.contribute.notesPlaceholder}
-                rows={3}
-              />
-            </div>
-
             {/* Detailed Section (Collapsible) - Before Save Button */}
             <Collapsible>
               <CollapsibleTrigger asChild>
                 <Button variant="outline" className="w-full justify-between" type="button">
-                  {t.contribute.detailedInfo}
+                  {t.contribute.addMoreDetails || 'Add more details'}
                   <ChevronDown className="w-4 h-4" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-4 space-y-4 p-6 border rounded-lg bg-card">
-                {/* Category */}
+                <p className="text-sm text-muted-foreground">
+                  {t.contribute.addMoreDetailsDesc || 'Add kid-friendliness, accessibility info, duration, and other info.'}
+                </p>
+
+                {/* More info site (first) */}
                 <div>
-                  <Label>{t.contribute.category}</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {ACTIVITY_TYPES.map(type => (
-                      <Button
-                        key={type}
-                        type="button"
-                        variant={formData.activityType.includes(type) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleArrayField('activityType', type)}
-                      >
-                        {type}
-                      </Button>
-                    ))}
+                  <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
+                  <Input
+                    id="urlmoreinfo"
+                    type="url"
+                    value={formData.urlmoreinfo}
+                    onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
+                    placeholder="https://example.com"
+                    className="placeholder:italic placeholder:text-muted-foreground"
+                  />
+                </div>
+
+                {/* Accessibility & Kid Amenities (second) */}
+                <div className="pt-2">
+                  {/* Removed big section heading for a cleaner look */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left Column: Kid Amenities */}
+                    <div>
+                      <Label className="mb-2 block">{t.contribute.kidAmenities}</Label>
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.kidsActivityKit}
+                            onChange={(e) => setFormData(prev => ({ ...prev, kidsActivityKit: e.target.checked }))}
+                            className="w-4 h-4 mt-0.5"
+                          />
+                          <div>
+                            <span className="text-sm font-medium">{t.contribute.kidsActivityKit}</span>
+                            <p className="text-xs text-muted-foreground">{t.contribute.kidsActivityKitDesc}</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.kidsCorner}
+                            onChange={(e) => setFormData(prev => ({ ...prev, kidsCorner: e.target.checked }))}
+                            className="w-4 h-4 mt-0.5"
+                          />
+                          <div>
+                            <span className="text-sm font-medium">{t.contribute.kidsCorner}</span>
+                            <p className="text-xs text-muted-foreground">{t.contribute.kidsCornerDesc}</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.playroom}
+                            onChange={(e) => setFormData(prev => ({ ...prev, playroom: e.target.checked }))}
+                            className="w-4 h-4 mt-0.5"
+                          />
+                          <div>
+                            <span className="text-sm font-medium">{t.contribute.playroom}</span>
+                            <p className="text-xs text-muted-foreground">{t.contribute.playroomDesc}</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Accessibility & Facilities */}
+                    <div>
+                      <Label className="mb-2 block">{t.contribute.accessibilityFacilities}</Label>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.wheelchair}
+                            onChange={(e) => setFormData(prev => ({ ...prev, wheelchair: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">{t.contribute.wheelchairAccessible}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.stroller}
+                            onChange={(e) => setFormData(prev => ({ ...prev, stroller: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">{t.contribute.strollerFriendly}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.restrooms}
+                            onChange={(e) => setFormData(prev => ({ ...prev, restrooms: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">{t.contribute.restrooms}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.changingTable}
+                            onChange={(e) => setFormData(prev => ({ ...prev, changingTable: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">{t.contribute.changingTable}</span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Environment */}
+                {/* Environment (third) */}
                 <div>
                   <Label>{t.contribute.environment}</Label>
                   <div className="flex gap-2 mt-2">
@@ -949,17 +995,55 @@ export default function Contribute() {
                   </div>
                 </div>
 
-                {/* Age Groups */}
+                {/* Duration (fourth) */}
+                <div>
+                  <Label>{t.contribute.duration}</Label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Slider
+                      value={[formData.durationMinutes]}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, durationMinutes: value[0] }))}
+                      min={15}
+                      max={480}
+                      step={15}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground min-w-[80px]">
+                      {formData.durationMinutes} {t.contribute.durationMinutes}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notes (fifth) */}
+                <div>
+                  <Label htmlFor="description">{t.contribute.notes}</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder={t.contribute.notesPlaceholder}
+                    rows={3}
+                  />
+                </div>
+
+                {/* Age groups with "All" (sixth) */}
                 <div>
                   <Label>{t.contribute.ageGroups}</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant={formData.ageAllSelected ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={selectAllAges}
+                    >
+                      {t.contribute.all || 'All'}
+                    </Button>
                     {AGE_BUCKETS.map(age => (
                       <Button
                         key={age}
                         type="button"
-                        variant={formData.ageBuckets.includes(age) ? "default" : "outline"}
+                        variant={!formData.ageAllSelected && formData.ageBuckets.includes(age) ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => toggleArrayField('ageBuckets', age)}
+                        onClick={() => toggleSpecificAge(age)}
                       >
                         {age}
                       </Button>
@@ -967,48 +1051,39 @@ export default function Contribute() {
                   </div>
                 </div>
 
-                {/* Prices */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="minPrice">{t.contribute.minPrice}</Label>
-                    <Input
-                      id="minPrice"
-                      type="number"
-                      step="0.01"
-                      value={formData.minPrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, minPrice: e.target.value }))}
-                      placeholder="0.00"
+                {/* Price range slider (seventh) */}
+                <div>
+                  <Label>{t.contribute.priceRange || 'Price range'}</Label>
+                  <div className="mt-2">
+                    <Slider
+                      value={[
+                        formData.minPrice ? parseFloat(formData.minPrice) : 0,
+                        formData.maxPrice ? parseFloat(formData.maxPrice) : 0,
+                      ]}
+                      onValueChange={(vals) => {
+                        const [min, max] = vals as number[];
+                        setFormData(prev => ({
+                          ...prev,
+                          minPrice: String(min),
+                          maxPrice: String(max),
+                        }));
+                      }}
+                      min={0}
+                      max={200}
+                      step={1}
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="maxPrice">{t.contribute.maxPrice}</Label>
-                    <Input
-                      id="maxPrice"
-                      type="number"
-                      step="0.01"
-                      value={formData.maxPrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, maxPrice: e.target.value }))}
-                      placeholder="10.00"
-                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>{formData.minPrice || '0'}</span>
+                      <span>{formData.maxPrice || '0'}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* More Info URL */}
-                <div>
-                  <Label htmlFor="urlmoreinfo">{t.contribute.moreInfo}</Label>
-                  <Input
-                    id="urlmoreinfo"
-                    type="url"
-                    value={formData.urlmoreinfo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, urlmoreinfo: e.target.value }))}
-                    placeholder="https://example.com"
-                  />
-                </div>
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Save Button after Detailed Section */}
-            <Button 
+            {/* Save Button after Add more details */}
+            <Button
               type="submit" 
               className="w-full"
               disabled={submitting || uploading}

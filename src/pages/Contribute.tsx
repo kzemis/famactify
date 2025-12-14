@@ -185,18 +185,23 @@ export default function Contribute() {
         const filePath = `${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('activity-images')
-          .upload(filePath, file);
+          .from('famactify-images')
+          .upload(filePath, file, { contentType: file.type, upsert: true });
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
-          toast.error(`Failed to upload ${file.name}`);
+          toast.error(`Failed to upload ${file.name}: ${uploadError.message}`);
           continue;
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('activity-images')
+        const { data: publicData } = supabase.storage
+          .from('famactify-images')
           .getPublicUrl(filePath);
+        const publicUrl = publicData?.publicUrl;
+        if (!publicUrl) {
+          toast.error('Public URL not available. Ensure bucket is public.');
+          continue;
+        }
 
         uploadedUrls.push(publicUrl);
       }

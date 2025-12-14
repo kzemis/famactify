@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User, Plus } from "lucide-react";
+import { User, Plus, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -66,17 +66,19 @@ const AppHeader = () => {
         
         {/* Right side controls + Activities */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="default" onClick={() => navigate('/community')}>
-            Activities
+          {/* Activities: list icon on mobile, labeled on larger screens */}
+          <Button variant="default" onClick={() => navigate('/community')} size="icon" className="sm:w-auto sm:px-4">
+            <Map className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Activities</span>
           </Button>
 
+          {/* Contribute: plus icon remains */}
           <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">{t.common.contribute}</span>
           </Button>
 
-          <LanguageSwitcher />
-
+           <LanguageSwitcher />
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

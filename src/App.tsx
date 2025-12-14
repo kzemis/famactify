@@ -32,6 +32,7 @@ import EventsCalendar from "./pages/EventsCalendar";
 import CatComparison from "./pages/CatComparison";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import EditActivity from "./pages/EditActivity";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
           <Route path="/community" element={<CommunityActivities />} />
+          <Route path="/community/:id/edit" element={<ProtectedRoute><EditActivity /></ProtectedRoute>} />
           <Route path="/generated-activities" element={<GeneratedActivities />} />
           <Route path="/confirm" element={<ConfirmAttendance />} />
           <Route path="/trip/:shareToken" element={<SharedTrip />} />

@@ -455,12 +455,15 @@ export default function CommunityActivities() {
                       </div>
                     )}
                     <div className="pt-2 flex gap-2">
-                      {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
-                        <Button size="sm" variant="outline" onClick={() => handleShowOnMap(activity)}>
-                          {t.communityActivities?.showOnMap || 'Show on map'}
-                        </Button>
-                      )}
-                    </div>
+                       {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
+                         <Button size="sm" variant="outline" onClick={() => handleShowOnMap(activity)}>
+                           {t.communityActivities?.showOnMap || 'Show on map'}
+                         </Button>
+                       )}
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/community/${activity.id}/edit`)}>
+                        Edit
+                      </Button>
+                     </div>
                   </CardContent>
                 </Card>
               ))}
@@ -472,11 +475,11 @@ export default function CommunityActivities() {
         {viewMode === 'map' && (
           <div className="mt-2">
             <h2 className="text-2xl font-bold mb-4">{t.communityActivities?.mapTitle || 'Activity Locations Map'}</h2>
-            <div className="rounded-lg border">
+            <div className="rounded-lg border overflow-hidden">
               <MapView
                 places={places}
                 center={center}
-                className="h-[360px] md:h-[520px]"
+                className="w-full h-[360px] md:h-[520px] block"
                 overlay={
                   <div className="flex items-center gap-2">
                     {selectedId && (
@@ -523,7 +526,7 @@ export default function CommunityActivities() {
                 <MapView
                   places={[spotModalPlace]}
                   center={spotModalCenter}
-                  className="h-[360px]"
+                  className="h-[450px]"
                 />
               </div>
             )}

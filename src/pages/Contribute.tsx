@@ -598,7 +598,7 @@ export default function Contribute() {
 
             {/* Address input */}
             <div>
-              <Label htmlFor="address">{t.contribute.address} *</Label>
+              <Label htmlFor="address">{t.contribute.address}</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -607,7 +607,6 @@ export default function Contribute() {
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   placeholder={t.contribute.addressPlaceholder}
                   className="pl-10 pr-10"
-                  required
                 />
                 {/* GPS icon button inside the input (right side) */}
                 <button

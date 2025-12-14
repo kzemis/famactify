@@ -175,6 +175,15 @@ const MapView: React.FC<MapViewProps> = ({
     leafletRef.current.fitBounds(polyline.getBounds().pad(0.15));
   }, [path, onSelect]);
 
+  // Recenter map when center prop changes (e.g., after GPS or selecting a point)
+  useEffect(() => {
+    if (leafletRef.current && typeof center?.lat === 'number' && typeof center?.lon === 'number') {
+      leafletRef.current.setView([center.lat, center.lon], leafletRef.current.getZoom() || 12, {
+        animate: true,
+      });
+    }
+  }, [center?.lat, center?.lon]);
+
   return (
     <div className={`relative w-full h-full rounded-lg border border-border overflow-hidden ${className || ''} z-0`}>
       <div ref={mapRef} className="absolute inset-0 z-0" />
@@ -183,11 +192,6 @@ const MapView: React.FC<MapViewProps> = ({
           <div className="absolute bottom-2 right-2 pointer-events-auto">
             {overlay}
           </div>
-        </div>
-      )}
-      {places.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 pointer-events-none z-0">
-          <p className="text-muted-foreground">No mappable activities</p>
         </div>
       )}
     </div>

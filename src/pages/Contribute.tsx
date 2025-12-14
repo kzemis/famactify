@@ -498,106 +498,17 @@ export default function Contribute() {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Contribyte - activity, spot or event</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Contribute - activity, spot or event</h1>
           <p className="text-muted-foreground mb-4">
             {t.contribute.subtitle}
           </p>
-          
-          {/* AI autofill consolidated button (right-aligned) */}
-          <div className="flex items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="inline-flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  <span>AI autofill</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground">Beta</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => {
-                  setDialogOpen(true);
-                  setAutoFillUrl('');
-                  setAutoFillImages([]);
-                }}>
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  {t.contribute.autoFillFromLink}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => autoFillImageInputRef.current?.click()}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  {t.contribute.fromDisk || 'From disk'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => autoFillCameraInputRef.current?.click()}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  {t.contribute.takePhotoCamera || 'Take a photo'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Hidden inputs for photo sources */}
-            <Input
-              ref={autoFillImageInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleAutoFillImageSelect}
-              className="hidden"
-            />
-            <Input
-              ref={autoFillCameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleAutoFillImageSelect}
-              className="hidden"
-            />
-          </div>
-
-          {/* Link dialog preserved for AI autofill -> from link */}
-          <Dialog open={dialogOpen} onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (open) {
-              setAutoFillUrl('');
-              setAutoFillImages([]);
-            }
-          }}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>{t.contribute.autoFillTitle}</DialogTitle>
-                <DialogDescription>
-                  {t.contribute.autoFillDescription}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="autofill-url">{t.contribute.websiteUrl}</Label>
-                  <div className="relative mt-2">
-                    <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="autofill-url"
-                      type="url"
-                      placeholder="https://example.com/activity"
-                      value={autoFillUrl}
-                      onChange={(e) => setAutoFillUrl(e.target.value)}
-                      className="pl-10 placeholder:italic placeholder:text-muted-foreground"
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleAutoFill}
-                  disabled={parsing || !autoFillUrl}
-                  className="w-full"
-                >
-                  {parsing ? t.contribute.parsing : t.contribute.parseInfo}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Main Section */}
           <div className="space-y-4 p-6 border rounded-lg bg-card">
+
+
             {/* Name */}
             <div>
               <Label htmlFor="name">{t.contribute.activityName} *</Label>
@@ -1081,6 +992,55 @@ export default function Contribute() {
 
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Compact AI button moved to bottom of form */}
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="inline-flex items-center gap-1">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">AI autofill</span>
+                    <span className="sm:hidden">AI</span>
+                    <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-muted text-muted-foreground">Beta</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setDialogOpen(true);
+                    setAutoFillUrl('');
+                    setAutoFillImages([]);
+                  }}>
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    {t.contribute.autoFillFromLink}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => autoFillImageInputRef.current?.click()}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    {t.contribute.fromDisk || 'Autofill from image'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => autoFillCameraInputRef.current?.click()}>
+                    <Camera className="w-4 h-4 mr-2" />
+                    {t.contribute.takePhotoCamera || 'Autofill from camera'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* Hidden inputs for photo sources */}
+              <Input
+                ref={autoFillImageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleAutoFillImageSelect}
+                className="hidden"
+              />
+              <Input
+                ref={autoFillCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleAutoFillImageSelect}
+                className="hidden"
+              />
+            </div>
 
             {/* Save Button after Add more details */}
             <Button

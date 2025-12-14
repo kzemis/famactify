@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X, Map as MapIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
+import MapView from '@/components/MapView';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ActivitySpot {
   id: string;
@@ -38,6 +40,7 @@ interface ActivitySpot {
 }
 
 export default function CommunityActivities() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [activities, setActivities] = useState<ActivitySpot[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivitySpot[]>([]);
@@ -48,6 +51,15 @@ export default function CommunityActivities() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [spots, setSpots] = useState<ActivitySpot[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [locating, setLocating] = useState(false);
+  const [spotModalOpen, setSpotModalOpen] = useState(false);
+  const [spotModalCenter, setSpotModalCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
+  const [spotModalPlace, setSpotModalPlace] = useState<{ id: string; name: string; lat: number; lon: number } | undefined>(undefined);
 
   const activityTypes = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
   const ageBuckets = ['0-2', '3-5', '6-8', '9-12', '13+'];
@@ -80,6 +92,36 @@ export default function CommunityActivities() {
   useEffect(() => {
     filterActivities();
   }, [activities, searchQuery, selectedType, selectedAge]);
+
+  useEffect(() => {
+    const fetchSpots = async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase
+        .from('activityspots')
+        .select('id,name,location_lat,location_lon,location_address,imageurlthumb,description')
+        .order('name', { ascending: true });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+      const withCoords = (data || []).filter(s => typeof s.location_lat === 'number' && typeof s.location_lon === 'number');
+      setSpots(withCoords as ActivitySpot[]);
+      // initial center: first spot or default Riga
+      if (withCoords.length > 0) {
+        setCenter({ lat: withCoords[0].location_lat!, lon: withCoords[0].location_lon! });
+      } else {
+        setCenter({ lat: 56.9496, lon: 24.1052 });
+      }
+      setLoading(false);
+    };
+    fetchSpots();
+  }, []);
+
+  const places = useMemo(() => {
+    return spots.map(s => ({ id: s.id, name: s.name, lat: s.location_lat!, lon: s.location_lon! }));
+  }, [spots]);
 
   const fetchActivities = async () => {
     try {
@@ -154,27 +196,45 @@ export default function CommunityActivities() {
     setCurrentImageIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
   };
 
+  const handleShowOnMap = (spot: ActivitySpot) => {
+    if (typeof spot.location_lat === 'number' && typeof spot.location_lon === 'number') {
+      setSelectedId(spot.id);
+      setCenter({ lat: spot.location_lat, lon: spot.location_lon });
+      // Open modal popup for focused map
+      setSpotModalPlace({ id: spot.id, name: spot.name, lat: spot.location_lat, lon: spot.location_lon });
+      setSpotModalCenter({ lat: spot.location_lat, lon: spot.location_lon });
+      setSpotModalOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
       
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Community Activities</h1>
+            <h1 className="text-4xl font-bold mb-2">{t.communityActivities?.title || 'Community Activities'}</h1>
             <p className="text-muted-foreground">
-              Discover family-friendly activities contributed by our community
+              {t.communityActivities?.subtitle || 'Discover family-friendly activities contributed by our community'}
             </p>
           </div>
-          <Button onClick={() => navigate('/contribute')} size="lg">
-            <Plus className="w-4 h-4 mr-2" />
-            Contribute Activity
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View switcher */}
+            <div className="inline-flex rounded-md border bg-card">
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
+              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>Map</Button>
+            </div>
+            <Button onClick={() => navigate('/contribute')} size="lg">
+              <Plus className="w-4 h-4 mr-2" />
+              Contribute Activity
+            </Button>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {/* Filters hidden for now */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input
@@ -212,192 +272,263 @@ export default function CommunityActivities() {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         {/* Results Count */}
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {filteredActivities.length} {filteredActivities.length === 1 ? 'activity' : 'activities'}
         </div>
 
-        {/* Activities Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <div className="h-48 bg-muted" />
-                <CardHeader>
-                  <div className="h-6 bg-muted rounded mb-2" />
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        ) : filteredActivities.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg mb-4">
-              No activities found matching your filters
-            </p>
-            <Button variant="outline" onClick={() => {
-              setSearchQuery('');
-              setSelectedType('all');
-              setSelectedAge('all');
-            }}>
-              Clear Filters
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredActivities.map((activity) => (
-              <Card key={activity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {/* Image or Carousel */}
-                {(() => {
-                  const images = activity.json?.images || [];
-                  const hasMultipleImages = images.length > 1;
-                  const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
+        {/* Grid View */}
+        {viewMode === 'grid' && (
+          loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="h-48 bg-muted" />
+                  <CardHeader>
+                    <div className="h-6 bg-muted rounded mb-2" />
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : filteredActivities.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg mb-4">
+                No activities found matching your filters
+              </p>
+              <Button variant="outline" onClick={() => {
+                setSearchQuery('');
+                setSelectedType('all');
+                setSelectedAge('all');
+              }}>
+                Clear Filters
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredActivities.map((activity) => (
+                <Card key={activity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  {/* Image or Carousel */}
+                  {(() => {
+                    const images = activity.json?.images || [];
+                    const hasMultipleImages = images.length > 1;
+                    const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
 
-                  if (hasMultipleImages) {
-                    return (
-                      <div className="h-48 relative">
-                        <Carousel className="w-full h-full">
-                          <CarouselContent>
-                            {images.map((imageUrl, idx) => (
-                              <CarouselItem key={idx}>
-                                <div 
-                                  className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => openLightbox(images, idx)}
-                                >
-                                  <img 
-                                    src={imageUrl} 
-                                    alt={`${activity.name} - Image ${idx + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <CarouselPrevious className="left-2" />
-                          <CarouselNext className="right-2" />
-                        </Carousel>
-                      </div>
-                    );
-                  } else if (displayImage) {
-                    return (
-                      <div 
-                        className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => openLightbox([displayImage], 0)}
-                      >
-                        <img 
-                          src={displayImage} 
-                          alt={activity.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    );
-                  } else {
-                    return (
-                      <div className="h-48 bg-muted flex items-center justify-center">
-                        <MapPin className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    );
-                  }
-                })()}
+                    if (hasMultipleImages) {
+                      return (
+                        <div className="h-48 relative">
+                          <Carousel className="w-full h-full">
+                            <CarouselContent>
+                              {images.map((imageUrl, idx) => (
+                                <CarouselItem key={idx}>
+                                  <div
+                                    className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => openLightbox(images, idx)}
+                                  >
+                                    <img
+                                      src={imageUrl}
+                                      alt={`${activity.name} - Image ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            <CarouselPrevious className="left-2" />
+                            <CarouselNext className="right-2" />
+                          </Carousel>
+                        </div>
+                      );
+                    } else if (displayImage) {
+                      return (
+                        <div
+                          className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => openLightbox([displayImage], 0)}
+                        >
+                          <img
+                            src={displayImage}
+                            alt={activity.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="h-48 bg-muted flex items-center justify-center">
+                          <MapPin className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                      );
+                    }
+                  })()}
 
-                <CardHeader>
-                  <CardTitle className="line-clamp-2">{activity.name}</CardTitle>
-                  {activity.description && (
-                    <CardDescription className="line-clamp-2">
-                      {activity.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
+                  <CardHeader>
+                    <CardTitle className="line-clamp-2">{activity.name}</CardTitle>
+                    {activity.description && (
+                      <CardDescription className="line-clamp-2">
+                        {activity.description}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
 
-                <CardContent className="space-y-3">
-                  {/* Location */}
-                  {activity.location_address && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <span className="line-clamp-1">{activity.location_address}</span>
+                  <CardContent className="space-y-3">
+                    {/* Location */}
+                    {activity.location_address && (
+                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span className="line-clamp-1">{activity.location_address}</span>
+                      </div>
+                    )}
+
+                    {/* Price */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Euro className="w-4 h-4 text-muted-foreground" />
+                      <span>{getPriceDisplay(activity)}</span>
                     </div>
-                  )}
 
-                  {/* Price */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <Euro className="w-4 h-4 text-muted-foreground" />
-                    <span>{getPriceDisplay(activity)}</span>
+                    {/* Activity Types */}
+                    <div className="flex flex-wrap gap-1">
+                      {activity.activity_type.slice(0, 3).map(type => (
+                        <Badge key={type} variant="secondary" className="text-xs">
+                          {type}
+                        </Badge>
+                      ))}
+                      {activity.activity_type.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{activity.activity_type.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Age Groups */}
+                    {activity.age_buckets.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Users className="w-4 h-4" />
+                        <span>{activity.age_buckets.join(', ')} years</span>
+                      </div>
+                    )}
+
+                    {/* Kid Amenities */}
+                    {(activity.foodvenue_kidamenities || activity.foodvenue_kidcorner || activity.foodvenue_kidmenu) && (
+                      <div className="space-y-1">
+                        <span className="text-xs font-medium text-muted-foreground">Bērnu ērtības:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {activity.foodvenue_kidamenities && (
+                            <Badge variant="outline" className="text-xs">🎨 Activity Kit</Badge>
+                          )}
+                          {activity.foodvenue_kidcorner && (
+                            <Badge variant="outline" className="text-xs">🧸 Kids Corner</Badge>
+                          )}
+                          {activity.foodvenue_kidmenu && (
+                            <Badge variant="outline" className="text-xs">🎪 Playroom</Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Accessibility Icons */}
+                    <div className="flex gap-2 pt-2">
+                      {activity.accessibility_wheelchair && (
+                        <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>
+                      )}
+                      {activity.accessibility_stroller && (
+                        <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>
+                      )}
+                      {activity.facilities_restrooms && (
+                        <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
+                      )}
+                    </div>
+
+                    {/* Official Website Link */}
+                    {activity.urlmoreinfo && (
+                      <div className="pt-2">
+                        <Button
+                          variant="link"
+                          className="h-auto p-0 text-primary"
+                          asChild
+                        >
+                          <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
+                            Visit Official Website →
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                    <div className="pt-2 flex gap-2">
+                      {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
+                        <Button size="sm" variant="outline" onClick={() => handleShowOnMap(activity)}>
+                          {t.communityActivities?.showOnMap || 'Show on map'}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Map View */}
+        {viewMode === 'map' && (
+          <div className="mt-2">
+            <h2 className="text-2xl font-bold mb-4">{t.communityActivities?.mapTitle || 'Activity Locations Map'}</h2>
+            <div className="rounded-lg border">
+              <MapView
+                places={places}
+                center={center}
+                className="h-[360px] md:h-[520px]"
+                overlay={
+                  <div className="flex items-center gap-2">
+                    {selectedId && (
+                      <div className="text-xs bg-background/80 rounded px-2 py-1 border">Showing: {spots.find(s => s.id === selectedId)?.name}</div>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (!('geolocation' in navigator)) {
+                          toast.error('Geolocation not supported');
+                          return;
+                        }
+                        setLocating(true);
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            const { latitude, longitude } = pos.coords;
+                            setCenter({ lat: latitude, lon: longitude });
+                            setLocating(false);
+                          },
+                          (err) => {
+                            toast.error(err.message || 'Failed to get location');
+                            setLocating(false);
+                          },
+                          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        );
+                      }}
+                      disabled={locating}
+                    >
+                      <MapIcon className="w-4 h-4 mr-1" /> GPS
+                    </Button>
                   </div>
-
-                  {/* Activity Types */}
-                  <div className="flex flex-wrap gap-1">
-                    {activity.activity_type.slice(0, 3).map(type => (
-                      <Badge key={type} variant="secondary" className="text-xs">
-                        {type}
-                      </Badge>
-                    ))}
-                    {activity.activity_type.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{activity.activity_type.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Age Groups */}
-                  {activity.age_buckets.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="w-4 h-4" />
-                      <span>{activity.age_buckets.join(', ')} years</span>
-                    </div>
-                  )}
-
-                  {/* Kid Amenities */}
-                  {(activity.foodvenue_kidamenities || activity.foodvenue_kidcorner || activity.foodvenue_kidmenu) && (
-                    <div className="space-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">Bērnu ērtības:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {activity.foodvenue_kidamenities && (
-                          <Badge variant="outline" className="text-xs">🎨 Activity Kit</Badge>
-                        )}
-                        {activity.foodvenue_kidcorner && (
-                          <Badge variant="outline" className="text-xs">🧸 Kids Corner</Badge>
-                        )}
-                        {activity.foodvenue_kidmenu && (
-                          <Badge variant="outline" className="text-xs">🎪 Playroom</Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Accessibility Icons */}
-                  <div className="flex gap-2 pt-2">
-                    {activity.accessibility_wheelchair && (
-                      <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>
-                    )}
-                    {activity.accessibility_stroller && (
-                      <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>
-                    )}
-                    {activity.facilities_restrooms && (
-                      <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
-                    )}
-                  </div>
-
-                  {/* Official Website Link */}
-                  {activity.urlmoreinfo && (
-                    <div className="pt-2">
-                      <Button
-                        variant="link"
-                        className="h-auto p-0 text-primary"
-                        asChild
-                      >
-                        <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
-                          Visit Official Website →
-                        </a>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                }
+              />
+            </div>
           </div>
         )}
+
+        {/* Focused Spot Map Modal */}
+        <Dialog open={spotModalOpen} onOpenChange={setSpotModalOpen}>
+          <DialogContent className="sm:max-w-lg">
+            {spotModalPlace && (
+              <div className="rounded-lg overflow-hidden">
+                <MapView
+                  places={[spotModalPlace]}
+                  center={spotModalCenter}
+                  className="h-[360px]"
+                />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
 
       {/* Lightbox Modal */}

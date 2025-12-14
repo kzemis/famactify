@@ -127,9 +127,9 @@ const Landing = () => {
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <span className="text-2xl font-bold text-primary">FamActify</span>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button onClick={() => navigate("/onboarding/interests")} size="icon" className="sm:w-auto sm:px-4">
-              <CalendarPlus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t.common.plan}</span>
+            {/* Activities button linking to community page */}
+            <Button variant="ghost" onClick={() => navigate("/community")} className="sm:w-auto sm:px-4">
+              Activities
             </Button>
             
             <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
@@ -203,12 +203,13 @@ const Landing = () => {
                 {t.landing.heroSubtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
+                {/* Replace Get Started Free with Activity catalog linking to community */}
+                <Button
                   size="lg" 
-                  onClick={() => navigate("/onboarding/interests")}
+                  onClick={() => navigate("/community")}
                   className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
                 >
-                  {t.landing.getStartedFree}
+                  Activity catalog
                 </Button>
                 <Button 
                   size="lg" 

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User, CalendarPlus, Plus } from "lucide-react";
+import { User, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -56,19 +56,20 @@ const AppHeader = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-        <span 
+        {/* Brand */}
+        <span
           className="text-2xl font-bold text-primary cursor-pointer"
           onClick={() => navigate("/")}
         >
           FamActify
         </span>
         
+        {/* Right side controls + Activities */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <Button onClick={() => navigate("/onboarding/interests")} size="icon" className="sm:w-auto sm:px-4">
-            <CalendarPlus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t.common.plan}</span>
+          <Button variant="default" onClick={() => navigate('/community')}>
+            Activities
           </Button>
-          
+
           <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">{t.common.contribute}</span>

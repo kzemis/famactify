@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Sparkles, Map, Users, Heart } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import Footer from "@/components/Footer";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -55,19 +56,23 @@ const Home = () => {
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-2 gap-4">
           {quickActions.map((action, idx) => (
-            <Card 
-              key={idx} 
+            <Card
+              key={idx}
               className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
               onClick={action.action}
             >
-              <CardContent className={`p-6 bg-gradient-to-br ${action.color} rounded-lg`}>
+              <CardContent
+                className={`p-6 bg-gradient-to-br ${action.color} rounded-lg`}
+              >
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-xl bg-background/80 text-primary">
                     {action.icon}
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-xl font-semibold">{action.title}</h3>
-                    <p className="text-sm text-muted-foreground">{action.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {action.description}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -75,23 +80,18 @@ const Home = () => {
           ))}
         </div>
 
-        {/* Get Started CTA */}
-        <Card className="shadow-xl border-primary/20">
-          <CardHeader className="text-center pb-2">
-            <Heart className="h-12 w-12 mx-auto text-primary mb-2" />
-            <CardTitle className="text-2xl">Start Planning Today</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              Let AI discover perfect activities tailored to your family's interests
-            </p>
-            <Button size="lg" onClick={() => navigate("/onboarding/interests")}>
-              <Sparkles className="h-5 w-5 mr-2" />
-              Get Personalized Recommendations
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Activity Catalog CTA */}
+        <div className="mt-6">
+          <Button
+            size="lg"
+            onClick={() => navigate("/community")}
+            className="w-full"
+          >
+            Activity catalog
+          </Button>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

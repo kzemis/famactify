@@ -705,10 +705,6 @@ export default function Contribute() {
                     <Camera className="w-4 h-4 mr-2" />
                     {t.contribute.takePhoto}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPhotoLinkDialogOpen(true)}>
-                    <LinkIcon className="w-4 h-4 mr-2" />
-                    {t.contribute.photoLink}
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               {imagePreviews.length > 0 && (
@@ -737,38 +733,6 @@ export default function Contribute() {
                 {t.contribute.maxPhotos}
               </p>
             </div>
-
-            {/* Photo Link Dialog */}
-            <Dialog open={photoLinkDialogOpen} onOpenChange={setPhotoLinkDialogOpen}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{t.contribute.photoLink}</DialogTitle>
-                  <DialogDescription>
-                    {t.contribute.photoLinkDescription}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="photo-url">{t.contribute.imageUrl}</Label>
-                    <Input
-                      id="photo-url"
-                      type="url"
-                      placeholder="https://example.com/image.jpg"
-                      value={formData.imageurlthumb}
-                      onChange={(e) => setFormData(prev => ({ ...prev, imageurlthumb: e.target.value }))}
-                      className="placeholder:italic placeholder:text-muted-foreground"
-                    />
-                  </div>
-                  <Button 
-                    onClick={addPhotoFromLink}
-                    disabled={!formData.imageurlthumb}
-                    className="w-full"
-                  >
-                    {t.contribute.addPhotoFromLink}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
 
             {/* Detailed Section (Collapsible) - Before Save Button */}
             <Collapsible>
@@ -993,54 +957,7 @@ export default function Contribute() {
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Compact AI button moved to bottom of form */}
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="inline-flex items-center gap-1">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="hidden sm:inline">AI autofill</span>
-                    <span className="sm:hidden">AI</span>
-                    <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-muted text-muted-foreground">Beta</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => {
-                    setDialogOpen(true);
-                    setAutoFillUrl('');
-                    setAutoFillImages([]);
-                  }}>
-                    <LinkIcon className="w-4 h-4 mr-2" />
-                    {t.contribute.autoFillFromLink}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => autoFillImageInputRef.current?.click()}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    {t.contribute.fromDisk || 'Autofill from image'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => autoFillCameraInputRef.current?.click()}>
-                    <Camera className="w-4 h-4 mr-2" />
-                    {t.contribute.takePhotoCamera || 'Autofill from camera'}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {/* Hidden inputs for photo sources */}
-              <Input
-                ref={autoFillImageInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleAutoFillImageSelect}
-                className="hidden"
-              />
-              <Input
-                ref={autoFillCameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleAutoFillImageSelect}
-                className="hidden"
-              />
-            </div>
+            {/* AI autofill button hidden for now */}
 
             {/* Save Button after Add more details */}
             <Button

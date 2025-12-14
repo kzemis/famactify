@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { useLanguage } from '@/i18n/LanguageContext';
 import MapPicker from '@/components/MapPicker';
+import MapView from '@/components/MapView';
 
 const ACTIVITY_TYPES = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
@@ -188,13 +189,13 @@ export default function Contribute() {
       return;
     }
     
-    if (formData.activityType.length === 0) {
-      toast.error('Please select at least one activity type');
-      return;
-    }
-    
-    if (!formData.address.trim() || formData.address.length < 3) {
-      toast.error('Address is required (min 3 characters)');
+    // Activity type is optional; users can submit without selecting categories
+
+    // Require either address text or coordinates from map/GPS
+    const hasAddressText = !!formData.address && formData.address.trim().length >= 3;
+    const hasCoordinates = typeof formData.lat === 'number' && typeof formData.lon === 'number';
+    if (!hasAddressText && !hasCoordinates) {
+      toast.error('Provide either a valid address (min 3 characters) or set location via Map/GPS');
       return;
     }
 
@@ -605,38 +606,45 @@ export default function Contribute() {
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   placeholder={t.contribute.addressPlaceholder}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
                 />
+                {/* GPS icon button inside the input (right side) */}
+                <button
+                  type="button"
+                  aria-label="Use my location"
+                  onClick={handleUseMyLocation}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-md border bg-background hover:bg-accent text-muted-foreground h-8 w-8"
+                  disabled={locating}
+                >
+                  <Locate className="w-4 h-4" />
+                </button>
               </div>
+              {/* Inline compact map preview with Edit button */}
+              <div className="mt-3">
+                <div className="relative w-full h-48">
+                  <MapView
+                    places={formData.lat && formData.lon ? [{ id: 'picked', name: formData.name || 'Selected location', lat: formData.lat, lon: formData.lon }] : []}
+                    center={formData.lat && formData.lon ? { lat: formData.lat, lon: formData.lon } : undefined}
+                    className="h-48 rounded-lg border border-border"
+                    overlay={
+                      <Button variant="outline" size="sm" type="button" onClick={() => setMapOpen(true)} className="shadow-sm">
+                        {t.contribute.editMapLocation || 'Edit map location'}
+                      </Button>
+                    }
+                  />
+                </div>
+                 {!formData.lat || !formData.lon ? (
+                   <p className="text-xs text-muted-foreground mt-1">
+                     {t.contribute.mapHint || 'Use the GPS button or Edit Map Location to set exact coordinates.'}
+                   </p>
+                 ) : (
+                   <p className="text-xs text-muted-foreground mt-1">
+                     {t.contribute.coordinates}: {formData.lat.toFixed(6)}, {formData.lon.toFixed(6)}
+                   </p>
+                 )}
+               </div>
             </div>
-
-            {/* GPS and Map buttons */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleUseMyLocation}
-                disabled={locating}
-              >
-                <Locate className="w-4 h-4 mr-2" />
-                {locating ? t.common.loading : t.contribute.useMyLocation}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setMapOpen(true)}
-                disabled={locating}
-              >
-                <Map className="w-4 h-4 mr-2" />
-                {t.contribute.openMap}
-              </Button>
-            </div>
-            {formData.lat && formData.lon && (
-              <p className="text-xs text-muted-foreground">
-                {t.contribute.coordinates}: {formData.lat.toFixed(6)}, {formData.lon.toFixed(6)}
-              </p>
-            )}
 
             {/* Map picker dialog */}
             <Dialog open={mapOpen} onOpenChange={setMapOpen}>

@@ -33,6 +33,8 @@ interface MapViewProps {
   onSelect?: (id: string) => void;
   getMarkerIcon?: (place: Place) => L.Icon;
   onMapClick?: (lat: number, lon: number) => void;
+  overlay?: React.ReactNode;
+  className?: string; // optional style override for wrapper
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -42,6 +44,8 @@ const MapView: React.FC<MapViewProps> = ({
   onSelect,
   getMarkerIcon,
   onMapClick,
+  overlay,
+  className,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
@@ -172,10 +176,17 @@ const MapView: React.FC<MapViewProps> = ({
   }, [path, onSelect]);
 
   return (
-    <div className="relative w-full h-[600px] rounded-lg border border-border overflow-hidden">
-      <div ref={mapRef} className="absolute inset-0" />
+    <div className={`relative w-full h-full rounded-lg border border-border overflow-hidden ${className || ''} z-0`}>
+      <div ref={mapRef} className="absolute inset-0 z-0" />
+      {overlay && (
+        <div className="absolute inset-0 z-30 pointer-events-none">
+          <div className="absolute bottom-2 right-2 pointer-events-auto">
+            {overlay}
+          </div>
+        </div>
+      )}
       {places.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 pointer-events-none z-0">
           <p className="text-muted-foreground">No mappable activities</p>
         </div>
       )}

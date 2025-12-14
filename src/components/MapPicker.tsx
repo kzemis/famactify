@@ -72,17 +72,18 @@ const MapPicker: React.FC<MapPickerProps> = ({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className="mt-2">
-          <MapView
-            places={hasSelection ? [{ id: 'picked', name: nameForMarker, lat: tempLat!, lon: tempLon! }] : []}
-            center={hasSelection ? { lat: tempLat!, lon: tempLon! } : undefined}
-            onMapClick={(clat, clon) => {
-              setTempLat(clat);
-              setTempLon(clon);
-              reverseGeocode(clat, clon);
-            }}
-          />
-        </div>
+        <div className="mt-2 h-[450px]">
+           <MapView
+             places={hasSelection ? [{ id: 'picked', name: nameForMarker, lat: tempLat!, lon: tempLon! }] : []}
+             center={hasSelection ? { lat: tempLat!, lon: tempLon! } : undefined}
+             className="h-[450px]"
+             onMapClick={(clat, clon) => {
+               setTempLat(clat);
+               setTempLon(clon);
+               reverseGeocode(clat, clon);
+             }}
+           />
+         </div>
         <div className="mt-2 text-sm text-muted-foreground min-h-[1.25rem]">
           {loadingAddr ? 'Fetching address…' : tempAddress || ''}
         </div>

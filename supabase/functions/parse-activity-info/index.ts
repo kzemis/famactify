@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { fetchChatCompletion, extractJsonBlock } from "../_lib/ai.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,16 +29,13 @@ serve(async (req) => {
       try {
         const response = await fetch(url);
         const html = await response.text();
-        
-        // Extract text content from HTML (basic extraction)
         const textContent = html
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
           .replace(/<[^>]+>/g, ' ')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 10000); // Limit to first 10k chars
-
+          .slice(0, 10000);
         content = `Website content from ${url}:\n${textContent}`;
       } catch (error) {
         console.error('Failed to fetch URL:', error);
@@ -50,37 +48,15 @@ serve(async (req) => {
 
     // Prepare messages with images if provided
     if (images && images.length > 0) {
-      userMessages.push({
-        type: 'text',
-        text: content || 'Extract activity information from these images:'
-      });
-
+      userMessages.push({ role: 'user', content: [{ type: 'text', text: content || 'Extract activity information from these images:' }] });
       for (const imageUrl of images) {
-        userMessages.push({
-          type: 'image_url',
-          image_url: { url: imageUrl }
-        });
+        userMessages.push({ role: 'user', content: [{ type: 'image_url', image_url: { url: imageUrl } }] });
       }
     } else {
-      userMessages.push({
-        type: 'text',
-        text: content
-      });
+      userMessages.push({ role: 'user', content: content });
     }
 
-    // Call Lovable AI to parse the content
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert at extracting structured information about family activities, events, and places from websites and images.
+    const systemPrompt = `You are an expert at extracting structured information about family activities, events, and places from websites and images.
 
 Extract and return ONLY a valid JSON object with these fields (use null for missing data):
 {
@@ -105,47 +81,34 @@ Guidelines:
 - Prices in EUR (convert if needed)
 - Be descriptive but concise in description
 - Return ONLY the JSON object, no other text
-- If information is not found, use null or empty array`
-          },
-          {
-            role: 'user',
-            content: userMessages
-          }
-        ]
-      })
-    });
+- If information is not found, use null or empty array`;
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...(Array.isArray(userMessages) ? userMessages : [{ role: 'user', content: content }])
+    ];
+
+    let aiText: string;
+    try {
+      aiText = await fetchChatCompletion({ messages, openAImodel: Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini' });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const status = msg.includes('Rate limit') ? 429 : msg.includes('requires payment') ? 402 : 500;
       return new Response(
-        JSON.stringify({ error: 'Failed to parse content with AI' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        JSON.stringify({ error: msg }),
+        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content;
+    const jsonStr = extractJsonBlock(aiText);
 
-    if (!aiContent) {
-      return new Response(
-        JSON.stringify({ error: 'No content received from AI' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    // Parse the JSON response from AI
     let parsedData;
     try {
-      // Try to extract JSON if wrapped in markdown code blocks
-      const jsonMatch = aiContent.match(/```json\s*([\s\S]*?)\s*```/) || 
-                       aiContent.match(/```\s*([\s\S]*?)\s*```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : aiContent;
       parsedData = JSON.parse(jsonStr);
     } catch (error) {
-      console.error('Failed to parse AI response as JSON:', aiContent);
+      console.error('Failed to parse AI response as JSON:', aiText);
       return new Response(
-        JSON.stringify({ error: 'Failed to parse AI response', rawContent: aiContent }),
+        JSON.stringify({ error: 'Failed to parse AI response', rawContent: aiText }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }

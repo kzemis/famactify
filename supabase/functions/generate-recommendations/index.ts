@@ -38,14 +38,13 @@ serve(async (req) => {
     console.log('Fetching activities from multiple sources');
     
     // 1. Fetch from JSON files
-    const projectId = supabaseUrl.split('//')[1]?.split('.')[0];
-    const projectUrl = `https://${projectId}.lovableproject.com`;
-    
+    const baseDataUrl = Deno.env.get('PUBLIC_DATA_BASE_URL') || `${supabaseUrl}/storage/v1/object/public`; // fallback if you host JSON in Supabase storage
+
     const dataUrls = [
-      `${projectUrl}/data/activities-trails.json`,
-      `${projectUrl}/data/activities-transformed.json`,
-      `${projectUrl}/data/activities-spots-1.json`,
-      `${projectUrl}/data/activities-bs-transformed.json`
+      `${baseDataUrl}/data/activities-trails.json`,
+      `${baseDataUrl}/data/activities-transformed.json`,
+      `${baseDataUrl}/data/activities-spots-1.json`,
+      `${baseDataUrl}/data/activities-bs-transformed.json`
     ];
     
     // Private Bilesu Serviss API endpoint (not exposed publicly)

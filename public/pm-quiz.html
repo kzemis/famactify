@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>PM Vocabulary Quiz — 200 Terms</title>
+  <style>
+    :root {
+      --accent: #1e40af;
+      --accent-light: #dbeafe;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --orange: #ea580c;
+      --orange-light: #ffedd5;
+      --gray: #6b7280;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100%; overflow-y: auto;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* === NAV === */
+    .nav {
+      background: var(--accent); color: white;
+      padding: 14px 16px; padding-top: max(14px, env(safe-area-inset-top));
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .nav h1 { font-size: 15px; font-weight: 700; flex: 1; text-align: center; }
+    .nav .score { font-size: 13px; opacity: 0.9; min-width: 60px; text-align: right; }
+    .btn-back { background: none; border: none; color: white; font-size: 15px; cursor: pointer; padding: 8px 4px; min-width: 60px; text-align: left; font-weight: 600; }
+
+    /* === MENU === */
+    .menu { max-width: 500px; margin: 0 auto; padding: 16px 16px 40px; }
+    .menu h2 { font-size: 24px; text-align: center; margin-bottom: 4px; }
+    .menu .subtitle { text-align: center; color: var(--gray); margin-bottom: 20px; font-size: 14px; }
+    .mode-card {
+      background: var(--card); border: 2px solid var(--border); border-radius: 14px;
+      padding: 16px 16px 16px 60px; margin-bottom: 12px; cursor: pointer;
+      transition: all 0.15s; position: relative; min-height: 70px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .mode-card:active { border-color: var(--accent); background: var(--accent-light); transform: scale(0.98); }
+    .mode-card h3 { font-size: 16px; margin-bottom: 3px; color: var(--accent); }
+    .mode-card p { font-size: 13px; color: var(--gray); line-height: 1.3; }
+    .mode-card .emoji { font-size: 30px; position: absolute; left: 16px; top: 50%; transform: translateY(-50%); }
+
+    /* Week filter */
+    .week-filter { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 14px; border: 1px solid var(--border); }
+    .week-filter h4 { font-size: 13px; margin-bottom: 8px; color: var(--gray); }
+    .week-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .week-btn {
+      padding: 8px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: white; font-size: 13px; cursor: pointer; transition: all 0.1s;
+      font-weight: 600; min-height: 36px;
+    }
+    .week-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .week-btn:active { transform: scale(0.93); }
+
+    /* Question count selector */
+    .count-row { display: flex; gap: 6px; margin-top: 8px; }
+    .count-btn { flex: 1; padding: 8px; border-radius: 8px; border: 1.5px solid var(--border); background: white; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+    .count-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .count-btn:active { transform: scale(0.93); }
+
+    /* Stats */
+    .stats-bar { display: flex; gap: 8px; justify-content: center; padding: 12px 0 16px; }
+    .stat { text-align: center; flex: 1; }
+    .stat .num { font-size: 22px; font-weight: 700; }
+    .stat .label { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat.correct .num { color: var(--green); }
+    .stat.wrong .num { color: var(--red); }
+    .stat.streak .num { color: var(--orange); }
+    .stat.pct .num { color: var(--accent); }
+
+    /* === QUIZ AREA === */
+    .quiz-area { max-width: 500px; margin: 0 auto; padding: 12px 14px 120px; }
+    .progress-bar { height: 5px; background: var(--border); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #3b82f6); border-radius: 3px; transition: width 0.3s; }
+    .q-counter { text-align: center; color: var(--gray); font-size: 13px; margin-bottom: 10px; }
+    .streak-badge { display: inline-block; background: var(--orange-light); color: var(--orange); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+
+    /* Question card */
+    .q-card {
+      background: var(--card); border-radius: 14px; padding: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .q-card .week-tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; margin-bottom: 8px; }
+    .q-card .question { font-size: 16px; line-height: 1.45; font-weight: 600; margin-bottom: 4px; }
+    .q-card .hint { font-size: 15px; color: #374151; line-height: 1.5; }
+
+    /* Multiple choice */
+    .choices { display: flex; flex-direction: column; gap: 8px; }
+    .choice-btn {
+      background: white; border: 2px solid var(--border); border-radius: 12px;
+      padding: 14px 14px 14px 46px; font-size: 15px; line-height: 1.4;
+      text-align: left; cursor: pointer; transition: all 0.1s;
+      position: relative; min-height: 52px;
+      display: flex; align-items: center;
+    }
+    .choice-btn:active { transform: scale(0.98); }
+    .choice-btn .letter {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 28px; height: 28px; line-height: 28px; text-align: center;
+      background: var(--bg); border-radius: 50%; font-weight: 700; font-size: 13px;
+    }
+    .choice-btn.correct { border-color: var(--green); background: var(--green-light); }
+    .choice-btn.correct .letter { background: var(--green); color: white; }
+    .choice-btn.wrong { border-color: var(--red); background: var(--red-light); }
+    .choice-btn.wrong .letter { background: var(--red); color: white; }
+    .choice-btn.reveal-correct { border-color: var(--green); background: var(--green-light); }
+    .choice-btn.reveal-correct .letter { background: var(--green); color: white; }
+    .choice-btn.disabled { pointer-events: none; opacity: 0.6; }
+
+    /* Type answer */
+    .type-input {
+      width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: 12px;
+      font-size: 17px; outline: none; margin-top: 12px;
+      -webkit-appearance: none; appearance: none;
+    }
+    .type-input:focus { border-color: var(--accent); }
+    .type-input.correct { border-color: var(--green); background: var(--green-light); }
+    .type-input.wrong { border-color: var(--red); background: var(--red-light); }
+
+    /* Match game */
+    .match-container { display: flex; gap: 8px; margin-top: 10px; }
+    .match-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .match-col h4 { font-size: 11px; color: var(--gray); text-transform: uppercase; text-align: center; margin-bottom: 2px; letter-spacing: 0.5px; }
+    .match-item {
+      padding: 10px 8px; border: 2px solid var(--border); border-radius: 10px;
+      font-size: 12px; line-height: 1.3; cursor: pointer; transition: all 0.1s;
+      background: white; min-height: 48px; display: flex; align-items: center;
+    }
+    .match-item:active { transform: scale(0.96); }
+    .match-item.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 2px rgba(30,64,175,0.15); }
+    .match-item.correct { border-color: var(--green); background: var(--green-light); pointer-events: none; }
+    .match-item.wrong { border-color: var(--red); background: var(--red-light); animation: shake 0.35s; }
+    .match-item.matched { opacity: 0.35; pointer-events: none; }
+    .match-item .num { font-weight: 700; margin-right: 6px; color: var(--accent); font-size: 11px; flex-shrink: 0; }
+
+    /* Feedback */
+    .feedback { padding: 14px; border-radius: 12px; margin-top: 12px; font-size: 14px; line-height: 1.5; display: none; }
+    .feedback.show { display: block; animation: fadeIn 0.25s; }
+    .feedback.correct { background: var(--green-light); border: 1px solid var(--green); }
+    .feedback.wrong { background: var(--red-light); border: 1px solid var(--red); }
+    .feedback .fb-title { font-weight: 700; margin-bottom: 4px; }
+    .feedback .fb-example { font-style: italic; color: var(--gray); margin-top: 6px; font-size: 13px; }
+
+    /* Buttons */
+    .btn {
+      padding: 16px 28px; border-radius: 12px; border: none;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: all 0.1s; width: 100%; text-align: center;
+      min-height: 52px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: white; margin-top: 12px; }
+    .btn-check { background: #059669; color: white; margin-top: 10px; }
+    .btn-secondary { background: var(--bg); color: var(--accent); border: 2px solid var(--accent); margin-top: 10px; }
+
+    /* Results */
+    .results { text-align: center; padding: 24px 16px; }
+    .results .big-score { font-size: 56px; font-weight: 800; color: var(--accent); }
+    .results .pct { font-size: 16px; color: var(--gray); margin-bottom: 16px; }
+    .results .grade { font-size: 28px; margin-bottom: 12px; }
+    .wrong-list { text-align: left; margin-top: 20px; }
+    .wrong-list h4 { margin-bottom: 10px; color: var(--red); font-size: 15px; }
+    .wrong-item { background: var(--red-light); border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
+    .wrong-item .term { font-weight: 700; color: var(--red); }
+
+    /* Hidden */
+    .hidden { display: none !important; }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    @keyframes pop { 0% { transform: scale(0.85); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    .pop { animation: pop 0.3s; }
+
+    /* iOS safe areas */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .quiz-area, .menu { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <button class="btn-back hidden" id="backBtn" onclick="goHome()">&#8592; Back</button>
+    <h1 id="navTitle">PM Vocabulary Quiz</h1>
+    <span class="score" id="navScore"></span>
+  </div>
+
+  <div id="menuScreen" class="menu">
+    <h2>PM Vocabulary Quiz</h2>
+    <p class="subtitle">200 product management and strategy terms</p>
+
+    <div id="offlineTip" style="background:var(--accent-light);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;">Flying today?</div>
+          <a href="/quiz.html" download="pm-vocabulary-quiz.html" style="display:inline-block;font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:8px;">Download offline quiz</a>
+          <ol style="margin:0 0 0 18px;color:#475569;font-size:13px;line-height:1.45;">
+            <li>Tap <strong>Download offline quiz</strong></li>
+            <li>Save the file to <strong>Files</strong> or <strong>Downloads</strong></li>
+            <li>On the plane, open that local HTML file and play</li>
+          </ol>
+        </div>
+        <button type="button" aria-label="Close offline help" onclick="dismissOfflineTip()" style="background:none;border:none;color:var(--gray);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;">&times;</button>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="num" id="totalPlayed">0</div><div class="label">Played</div></div>
+      <div class="stat correct"><div class="num" id="totalCorrect">0</div><div class="label">Correct</div></div>
+      <div class="stat pct"><div class="num" id="totalPct">0%</div><div class="label">Rate</div></div>
+      <div class="stat streak"><div class="num" id="bestStreak">0</div><div class="label">Streak</div></div>
+    </div>
+
+    <div class="week-filter">
+      <h4>Filter by Week</h4>
+      <div class="week-btns">
+        <button class="week-btn active" data-week="all" onclick="toggleWeek(this)">All (200)</button>
+        <button class="week-btn" data-week="1" onclick="toggleWeek(this)">W1</button>
+        <button class="week-btn" data-week="2" onclick="toggleWeek(this)">W2</button>
+        <button class="week-btn" data-week="3" onclick="toggleWeek(this)">W3</button>
+        <button class="week-btn" data-week="4" onclick="toggleWeek(this)">W4</button>
+        <button class="week-btn" data-week="5" onclick="toggleWeek(this)">W5</button>
+      </div>
+      <h4 style="margin-top:12px">Questions per round</h4>
+      <div class="count-row">
+        <button class="count-btn" data-n="5" onclick="setCount(this)">5</button>
+        <button class="count-btn active" data-n="10" onclick="setCount(this)">10</button>
+        <button class="count-btn" data-n="20" onclick="setCount(this)">20</button>
+        <button class="count-btn" data-n="50" onclick="setCount(this)">50</button>
+        <button class="count-btn" data-n="0" onclick="setCount(this)">All</button>
+      </div>
+    </div>
+
+    <div class="mode-card" onclick="startGame('mc-def')">
+      <span class="emoji">🟟</span>
+      <h3>Definition &#8594; Term</h3>
+      <p>Read the definition, pick the correct term</p>
+    </div>
+    <div class="mode-card" onclick="startGame('mc-term')">
+      <span class="emoji">🟟</span>
+      <h3>Term &#8594; Definition</h3>
+      <p>See the term, pick the correct definition</p>
+    </div>
+    <div class="mode-card" onclick="startGame('mc-example')">
+      <span class="emoji">🟟</span>
+      <h3>Example &#8594; Term</h3>
+      <p>Read a real-world example, identify the concept</p>
+    </div>
+    <div class="mode-card" onclick="startGame('type')">
+      <span class="emoji">⌨️</span>
+      <h3>Type the Term</h3>
+      <p>Read definition, type the answer. Hardest mode!</p>
+    </div>
+    <div class="mode-card" onclick="startGame('match')">
+      <span class="emoji">🟟</span>
+      <h3>Match Pairs</h3>
+      <p>Tap to connect 5 terms with definitions</p>
+    </div>
+    <div class="mode-card" onclick="startGame('truefalse')">
+      <span class="emoji">✅</span>
+      <h3>True or False</h3>
+      <p>Is this the correct definition? Quick-fire!</p>
+    </div>
+
+    <div style="text-align:center;margin-top:16px">
+      <button style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;padding:8px" onclick="if(confirm('Reset all stats to zero?')){localStorage.removeItem('bpm-quiz-stats');stats={played:0,correct:0,bestStreak:0};updateStatsUI();}">Reset Stats</button>
+    </div>
+  </div>
+
+  <div id="quizScreen" class="quiz-area hidden">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="q-counter" id="qCounter"></div>
+    <div id="questionArea"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn btn-primary hidden" id="nextBtn" onclick="nextQuestion()">Next &#8594;</button>
+  </div>
+
+  <div id="resultsScreen" class="quiz-area hidden"></div>
+
+  <script>
+    const V = [
+      // ===== WEEK 1 (20 terms) =====
+      {id:1,t:"Observe & Notice",d:"Discovery capability: learning about customers through direct research that goes beyond what people do to understand why they do it",x:"Watching how analysts actually use data tools vs. asking them what features they want",w:1},
+      {id:2,t:"Frame & Reframe",d:"Analyzing collected data to identify and choose a problem space worth solving, often challenging initial assumptions about the real problem",x:"Reframing 'we need more dashboards' as 'analysts can't find data without asking engineers'",w:1},
+      {id:3,t:"Imagine & Design",d:"Generating creative solution alternatives and combining them through divergent then convergent thinking",x:"Brainstorming 10 ways to solve data discovery before converging on a catalog approach",w:1},
+      {id:4,t:"Make & Experiment",d:"Taking solution ideas into the real world and testing them with actual users before full commitment",x:"Building a minimal catalog prototype and testing with 3 pilot clients before full development",w:1},
+      {id:5,t:"Mobilize & Execute",d:"Engaging the broader team to get new offerings designed, developed, and delivered at scale",x:"Aligning DevOps, dev team, and CEO on the data platform roadmap and delivery timeline",w:1},
+      {id:6,t:"Data Triangulation",d:"Combining qualitative and quantitative data sources to deepen understanding because neither alone tells the full story",x:"Combining usage analytics with user interviews to understand why feature adoption is low",w:1},
+      {id:7,t:"Contextual Grounding",d:"Asking for stories about specific past experiences rather than opinions or feature requests",x:"'Tell me about the last time you needed a KPI answer urgently' vs. 'What features do you want?'",w:1},
+      {id:8,t:"The Hack Hunt",d:"Actively searching for manual workarounds customers have built which signal where your product is failing them",x:"Discovering that analysts export data to Excel because the platform's filtering is too slow",w:1},
+      {id:9,t:"Psychological Safety",d:"Creating an environment where customers or team members feel safe honestly sharing frustrations and failures",x:"Starting interviews with 'there are no wrong answers, we're here to learn, not to sell'",w:1},
+      {id:10,t:"Ad-Hoc Practice",d:"A capability that happens inconsistently without a repeatable process, the lowest maturity level",x:"Customer research that only happens when someone remembers to do it, not on a regular schedule",w:1},
+      {id:11,t:"Systematic Practice",d:"Standard practice with clear expectations and repeatable processes that the whole team follows",x:"Pipeline monitoring checked every morning using a standard dashboard by the on-call engineer",w:1},
+      {id:12,t:"Cultural Practice",d:"The highest maturity level where the capability is fully embedded in how the team naturally works",x:"The team automatically creates safe-to-fail space for wild ideas before any critical debate",w:1},
+      {id:13,t:"Deferred Judgment",d:"Creating a safe-to-fail space for wild ideas before beginning any critical debate, separating divergent from convergent thinking",x:"In planning, anyone can propose crazy ideas for 10 minutes before the team evaluates feasibility",w:1},
+      {id:14,t:"Productive Friction",d:"Openly challenging each other's thinking using evidence, not hierarchy or politics",x:"Junior dev challenges the Head of Product's assumption with usage data and the team respects it",w:1},
+      {id:15,t:"Cross-Functional Inclusion",d:"Involving engineers and designers in ideation from day one, not just at the hand-off stage",x:"The DevOps engineer joins discovery calls because they understand deployment constraints",w:1},
+      {id:16,t:"Asymmetric Inspiration",d:"Looking for solutions in parallel practices outside your own industry to spark innovation",x:"Studying how hospital ERs triage patients to improve how we prioritize support tickets",w:1},
+      {id:17,t:"Fearless Iteration",d:"Having a kill switch to drop ideas immediately if evidence shows they aren't working, without ego attachment",x:"Canceling the AI chatbot feature after 2-week prototype showed users preferred the search bar",w:1},
+      {id:18,t:"Hypothesis Rigor",d:"Explicitly naming your riskiest assumptions before investing in building a solution",x:"'Our riskiest assumption: analysts will adopt self-service if we give them a data catalog'",w:1},
+      {id:19,t:"Evidence-Based Storytelling",d:"Using customer-centric stories backed by data to build alignment within and outside the team",x:"Sharing a video clip of an analyst struggling with data discovery in the sprint planning meeting",w:1},
+      {id:20,t:"Shared Purpose",d:"Every team member understanding the superordinate goal: the customer transformation you are enabling",x:"Every Airbnb employee knows: 'We help anyone belong anywhere' — that shared purpose drives every product decision",w:1},
+
+      // ===== WEEK 2 (46 terms) =====
+      {id:21,t:"Progression of Economic Value",d:"Pine & Gilmore's framework where value evolves through 5 levels: Commodities, Goods, Services, Experiences, Transformations, each commanding higher margins",x:"Coffee beans ($0.02) to brewed coffee ($1) to Starbucks experience ($5) to barista training ($500)",w:2},
+      {id:22,t:"Commodity",d:"An undifferentiated offering where customers choose solely on price, the lowest value level",x:"Generic cloud storage priced per GB where customers switch for a penny savings",w:2},
+      {id:23,t:"Customization",d:"The force that pushes offerings UP the value progression by tailoring to individual needs, creating differentiation",x:"Spotify's Discover Weekly playlist tailored to each listener's taste vs. a generic Top 40 radio station",w:2},
+      {id:24,t:"Commoditization",d:"The force that pulls offerings DOWN the value progression as competitors copy features and compete on price",x:"Dashboard tools becoming interchangeable as every platform adds the same chart types",w:2},
+      {id:25,t:"Experience Economy",d:"When companies stage memorable events that engage customers personally, commanding premium prices over mere services",x:"Apple Stores designed for hands-on exploration, not just purchasing",w:2},
+      {id:26,t:"Transformation",d:"The highest level of economic value where the offering fundamentally changes the customer into a different person or organization",x:"Khan Academy transforms struggling students into confident learners, not just teaching math",w:2},
+      {id:27,t:"Time Saved",d:"Value created by goods and services that free up customer time, the most basic value proposition",x:"Slack replacing email, chat, and file sharing with one workspace saves teams hours of context-switching daily",w:2},
+      {id:28,t:"Time Well Spent",d:"Value created by experiences that make time enjoyable or meaningful, higher than time saved",x:"A data catalog that makes data exploration feel like discovery rather than a chore",w:2},
+      {id:29,t:"Time Well Invested",d:"Value created by transformations where time spent leads to lasting personal or organizational change",x:"An 8-week leadership program that permanently changes how you make product decisions",w:2},
+      {id:30,t:"SAVE Framework",d:"Modern replacement for the 4Ps: Solution not Product, Access not Place, Value not Price, Education not Promotion",x:"Instead of 'Notion has 47 features' say 'Notion solves the scattered-knowledge problem for teams'",w:2},
+      {id:31,t:"Solution vs. Product",d:"Shift from describing what you built (features) to what problem you solve for the customer",x:"'Cloud storage app' (product) vs. 'Never lose a file again and access from anywhere' (solution, Dropbox)",w:2},
+      {id:32,t:"Access vs. Place",d:"Shift from where you sell to making the solution available wherever and however the customer needs it",x:"Peloton classes available via bike, app, TV, or gym equipment, meeting users wherever they work out",w:2},
+      {id:33,t:"Value vs. Price",d:"Shift from what it costs to what it's worth, communicating the value delivered not the price tag",x:"'Saves 50K in integration costs on day one plus eliminates 5 vendor contracts'",w:2},
+      {id:34,t:"Education vs. Promotion",d:"Shift from advertising to teaching customers why your approach matters and how to get value from it",x:"HubSpot's free marketing courses teach inbound methodology, customers adopt the tool naturally",w:2},
+      {id:35,t:"Inside-Out Thinking",d:"Starting from what you can build or sell and pushing it toward the market, the old way",x:"'We built amazing AI features, let's tell people about them' instead of asking what problems customers actually have",w:2},
+      {id:36,t:"Outside-In Thinking",d:"Starting from customer problems and pulling the solution toward them, the SAVE way",x:"'Data engineers waste 3h/day firefighting pipelines, how do we eliminate that?'",w:2},
+      {id:37,t:"Product Management Canvas",d:"A one-page strategic tool with 4 quadrants: Value for Whom, Creating Value, Delivering Value, Capturing Value",x:"Figma's PMC maps designers, developers, and PMs as segments with freemium pricing and community-led growth on one page",w:2},
+      {id:38,t:"Value Proposition",d:"The specific benefit a product delivers to a specific segment, must be distinct per segment not generic",x:"Management: 'KPI answers in hours not weeks' vs. Data Engineer: 'Pipeline visibility, less firefighting'",w:2},
+      {id:39,t:"Value Co-Creation",d:"Creating value jointly with partners, customers, or ecosystem participants rather than doing everything alone",x:"Shopify and marketing agencies co-create value: agencies bring clients, Shopify brings the platform",w:2},
+      {id:40,t:"Channel Jobs",d:"The 5 functions every channel must perform: Awareness, Evaluation, Purchase, Delivery, and Support",x:"Google Ads (awareness) to free trial (evaluation) to credit card signup (purchase) to onboarding email (delivery)",w:2},
+      {id:41,t:"Revenue Streams",d:"The ways an organization captures monetary value from customers through pricing models and fees",x:"Zoom's tiers: Free (40-min meetings), Pro (per-host/month), Enterprise (custom annual contract)",w:2},
+      {id:42,t:"Cost Structure",d:"All costs incurred to operate the business model including fixed, variable, and hidden costs",x:"80-90% fixed (6 salaries), variable (deployment time), hidden (key person dependency, context switching)",w:2},
+      {id:43,t:"Business Model Canvas",d:"Osterwalder's 9-block framework for describing how a business creates, delivers, and captures value",x:"The PMC is a PM-specific adaptation focused more on customer segments and value propositions",w:2},
+      {id:44,t:"Key Activities",d:"The most important things a company must do to make its business model work",x:"Stripe's key activities: API development, regulatory compliance, developer documentation, fraud prevention",w:2},
+      {id:45,t:"Key Resources",d:"The most important assets required to make a business model work",x:"Canva's key resources: design engine (technology), 100M+ templates (content), brand partnerships (relationships)",w:2},
+      {id:46,t:"Key Partnerships",d:"The network of suppliers and partners that make the business model work through complementary capabilities",x:"Uber partners with mapping providers (Google Maps), payment processors (Stripe), and car manufacturers",w:2},
+      {id:47,t:"Customer Relationships",d:"The types of relationships a company establishes with specific customer segments",x:"White-glove deployment and personal support for enterprise, self-service documentation for community tier",w:2},
+      {id:48,t:"Four Realms of Experience",d:"Pine & Gilmore's matrix of experience types based on two axes: participation (passive/active) and connection (absorption/immersion)",x:"Entertainment (passive/absorb), Education (active/absorb), Escapist (active/immerse), Esthetic (passive/immerse)",w:2},
+
+      // ===== WEEK 3 (46 terms) =====
+      {id:49,t:"Jobs to Be Done",d:"Christensen's framework: customers don't buy products, they hire solutions to make progress in specific situations",x:"A commuter hires Spotify to 'make my 45-minute train ride enjoyable and productive'",w:3},
+      {id:50,t:"Hiring & Firing",d:"JTBD language where customers hire a product when it helps them make progress and fire it when something better comes along",x:"Teams fired email for project updates and hired Slack because it keeps conversations organized and searchable",w:3},
+      {id:51,t:"Functional Job",d:"The practical task the customer needs to accomplish, the most obvious layer of JTBD",x:"'I need to find which database table contains customer revenue data'",w:3},
+      {id:52,t:"Social Job",d:"How the customer wants to be perceived by others when using the solution",x:"'I want my team to see me as self-sufficient with data, not always asking engineers'",w:3},
+      {id:53,t:"Emotional Job",d:"How the customer wants to feel during and after using the solution",x:"'I want to feel confident that my KPI numbers are correct before presenting to leadership'",w:3},
+      {id:54,t:"Identity Job",d:"Who the customer wants to become, the deepest JTBD layer connected to personal growth",x:"'I want to become a data-driven manager, not someone who relies on gut feeling'",w:3},
+      {id:55,t:"Competing Against",d:"In JTBD, true competition is whatever the customer currently hires to get the job done, including non-consumption",x:"Notion competes against Google Docs, sticky notes on monitors, and just keeping everything in your head",w:3},
+      {id:56,t:"Milkshake Case",d:"Christensen's classic JTBD example where morning milkshakes were hired for a boring commute, not as dessert",x:"The job: 'make my 40-minute commute less boring and keep me full until lunch'",w:3},
+      {id:57,t:"Journey Map",d:"A visualization of the complete customer experience across stages showing what they DO, THINK, and FEEL",x:"Mapping how a small business goes from first hearing about Shopify to launching their online store and first sale",w:3},
+      {id:58,t:"Swimlane Diagram",d:"An enhanced journey map with parallel horizontal lanes for Doing, Thinking, Feeling, Satisfaction, and Opportunities",x:"A Satisfaction lane reveals satisfaction drops sharply during deployment because setup takes 2 weeks",w:3},
+      {id:59,t:"Valleys of Frustration",d:"Points in the customer journey where satisfaction drops sharply, representing highest-impact improvement opportunities",x:"The gap between 'Salesforce demo looked amazing' and 'took 4 months to actually configure for our workflow'",w:3},
+      {id:60,t:"Ethnographic Interviewing",d:"A research method from anthropology: observing and talking with people in their natural context to understand behavior",x:"Sitting with a data analyst at their desk watching them work rather than sending a survey",w:3},
+      {id:61,t:"Design Interviewing",d:"Michael Barry's structured interview with 6 phases: Introduction, Kickoff, Build Rapport, Grand Tour, Reflection, Wrap-Up",x:"Starting with 'Tell me about your typical day' rather than 'What do you think about our product?'",w:3},
+      {id:62,t:"Grand Tour Question",d:"An open-ended question inviting the interviewee to walk you through their complete experience in their own words",x:"'Walk me through what happens from the moment someone asks for a report to when you deliver it'",w:3},
+      {id:63,t:"Probing Questions",d:"Follow-up questions that dig deeper: Tell me more, What happened next, How did that make you feel",x:"'You said you felt stuck, can you tell me exactly what you were looking at on screen?'",w:3},
+      {id:64,t:"Conversational Markers",d:"Words the interviewee uses that signal deeper meaning worth exploring, like emotional language or contradictions",x:"'I guess I just deal with it' — that 'I guess' signals resignation worth exploring further",w:3},
+      {id:65,t:"Native Language",d:"Using the customer's own words rather than your product's jargon to show respect and improve understanding",x:"Saying 'your data pipeline' not 'the orchestration DAG' when talking with a business analyst",w:3},
+      {id:66,t:"Web of Abstraction",d:"Moving between concrete details and abstract meaning during interviews to build rich understanding",x:"'I exported to Excel' then 'Why?' then 'Because I don't trust the live numbers' — deeper data trust insight",w:3},
+      {id:67,t:"Problem Space",d:"The area of customer pain or need you choose to focus on, defined before jumping to solutions",x:"'Data engineers can't monitor pipeline health in real-time' — the problem, not 'build a monitoring dashboard'",w:3},
+      {id:68,t:"How Might We",d:"A reframing technique that turns a problem into an opportunity question, opening creative solution space",x:"'HMW help data engineers feel confident their pipelines are healthy without constant manual checking?'",w:3},
+      {id:69,t:"Insight Synthesis",d:"Analyzing raw interview and observation data to identify patterns, themes, and non-obvious connections",x:"4 of 5 analysts mentioned 'asking the data engineer' first — insight: no self-service data discovery",w:3},
+      {id:70,t:"Underserved Opportunities",d:"Jobs where importance is high but current satisfaction is low, the sweet spot for product innovation",x:"Data discovery is critical (importance 9/10) but analysts rate satisfaction 2/10",w:3},
+      {id:71,t:"Outcome-Driven Innovation",d:"Ulwick's framework: measure customer-defined outcomes by importance times satisfaction to find valuable opportunities",x:"'Minimize time to find the right data table': importance 9/10, satisfaction 2/10 = highly underserved",w:3},
+      {id:72,t:"Desired Outcome Statement",d:"A customer-defined metric in the format: minimize/maximize + direction + metric + context",x:"'Minimize the time it takes to determine if a data pipeline has failed during the night'",w:3},
+      {id:73,t:"Non-Consumption",d:"When people aren't using any solution at all for a job, often the biggest competitive threat in JTBD",x:"Managers making decisions 'by gut' because getting data takes too long — they're not using ANY tool",w:3},
+      {id:74,t:"Trigger Event",d:"The specific moment or situation that causes a customer to start looking for a new solution",x:"A major data breach at a competitor triggers the CTO to urgently search for better security tools",w:3},
+
+      // ===== WEEK 4 (44 terms) =====
+      {id:75,t:"Segmentation",d:"Dividing a market into distinct groups of customers with different needs who may require different strategies",x:"Slack segments: A (enterprise with compliance needs), B (mid-market teams), C (small startups and freelancers)",w:4},
+      {id:76,t:"Targeting",d:"Evaluating each segment's attractiveness and selecting which ones to serve because you can't serve everyone well",x:"Figma targets design teams first because that's where the strongest adoption signal exists",w:4},
+      {id:77,t:"Positioning",d:"Establishing a distinct, valued place in the target customer's mind relative to alternatives",x:"'Volvo = the car brand that means safety' occupies a clear position in the customer's mind",w:4},
+      {id:78,t:"STP Process",d:"The complete Segmentation, Targeting, Positioning sequence, a dynamic iterative process not a one-time exercise",x:"Re-running STP quarterly as Slack considers expanding from tech startups to regulated industries like healthcare",w:4},
+      {id:79,t:"Descriptor Variables",d:"The dimensions used to divide a market: demographic/firmographic, geographic, psychographic, behavioral",x:"Firmographic: company size, industry. Behavioral: self-hosted by mandate vs. by choice",w:4},
+      {id:80,t:"Firmographic Segmentation",d:"B2B equivalent of demographics: segmenting by company size, industry, revenue, employees, technology stack",x:"Segment A: 500+ employees in regulated industries, more than 1M annual IT budget",w:4},
+      {id:81,t:"Psychographic Segmentation",d:"Segmenting by attitudes, values, beliefs, and motivations, harder to measure but often more predictive",x:"'Sovereignty by principle' (philosophical choice) vs. 'sovereignty by mandate' (legally required)",w:4},
+      {id:82,t:"Behavioral Segmentation",d:"Segmenting by actual customer behavior: usage patterns, purchase history, and decision-making process",x:"Heavy users (daily data exploration) vs. occasional users (monthly reporting)",w:4},
+      {id:83,t:"Needs-Based Segmentation",d:"Grouping customers by what they're trying to accomplish rather than who they are, often the most actionable",x:"Not 'industry A vs. industry B' but 'must work offline' vs. 'wants vendor consolidation'",w:4},
+      {id:84,t:"Five-Filter Test",d:"Framework for evaluating segments: Measurable, Accessible, Differentiable, Substantial, Actionable",x:"Testing sovereignty-by-choice startups: Measurable? (hard), Accessible? (developer forums), Substantial? (small)",w:4},
+      {id:85,t:"Measurable",d:"Five-Filter: Can you quantify the segment's size, purchasing power, and characteristics?",x:"US healthcare providers: measurable via CMS databases showing 6,000+ hospitals and their IT budgets",w:4},
+      {id:86,t:"Accessible",d:"Five-Filter: Can you actually reach and serve this segment through your channels and capabilities?",x:"Can HubSpot reach solo freelancers? Not through enterprise sales reps, need self-service and content marketing",w:4},
+      {id:87,t:"Differentiable",d:"Five-Filter: Does this segment respond differently to your offering than other segments?",x:"Enterprise buyers value 'SOC 2 compliance' enormously; individual freelancers don't care at all",w:4},
+      {id:88,t:"Substantial",d:"Five-Filter: Is the segment large enough or profitable enough to be worth serving with a dedicated strategy?",x:"200 mid-market retailers at 50K/year = 10M addressable, substantial enough to build a dedicated sales team",w:4},
+      {id:89,t:"Actionable",d:"Five-Filter: Can you design an effective strategy to attract and serve this segment with current resources?",x:"Can a 20-person startup serve both Fortune 500 enterprises AND individual freelancers? Probably not yet",w:4},
+      {id:90,t:"Positioning Statement",d:"A formula: For [target] who [need], [product] is [category] that [benefit] unlike [alternatives] because [reason]",x:"For growing e-commerce brands who need an all-in-one platform, Shopify replaces 5+ tools with one storefront",w:4},
+      {id:91,t:"Competitive Advantage",d:"The specific, defensible reason why customers should choose you over alternatives, must be real not aspirational",x:"Tesla's competitive advantage: vertical integration of battery, software, and manufacturing that no legacy automaker can quickly replicate",w:4},
+      {id:92,t:"Backward Market Research",d:"Start with the strategic decision, determine what info you need, then design research accordingly",x:"Decision: 'Should we build a free tier?' then survey target communities about willingness to pay",w:4},
+      {id:93,t:"Decision-Driven Research",d:"Research designed to inform a specific decision where every question maps to an action based on the answer",x:"'If over 40% say they'd pay for premium support, we'll build an Enterprise tier'",w:4},
+      {id:94,t:"Information Gap",d:"The specific unknowns that prevent a confident strategic decision, what backward market research targets",x:"'We don't know if sovereignty-by-choice companies would pay 500/month or 50/month'",w:4},
+      {id:95,t:"Primary Research",d:"Original data you collect yourself through interviews, surveys, observations, and experiments",x:"Airbnb interviewing 20 hosts about their pricing decisions and guest communication challenges",w:4},
+      {id:96,t:"Secondary Research",d:"Existing data from other sources: industry reports, competitor analysis, public databases, academic studies",x:"Gartner reports on category market size, G2 reviews of competing tools",w:4},
+      {id:97,t:"Total Addressable Market",d:"The total revenue opportunity for a product if 100% market share were achieved in the target segment",x:"All restaurants in the US that could use a POS system: estimated 800K+ restaurants, 15B+ annual market",w:4},
+      {id:98,t:"Serviceable Addressable Market",d:"The portion of TAM you can realistically reach with your current channels and go-to-market approach",x:"Independent coffee shops in California reachable through local partnerships: about 50M annual",w:4},
+      {id:99,t:"Serviceable Obtainable Market",d:"The portion of SAM you can realistically capture in the near term given competition and capacity",x:"Realistic first-year target: 3-5 enterprise customers at 80-100K each = 400-500K",w:4},
+      {id:100,t:"Blue Ocean Strategy",d:"Creating uncontested market space by making competition irrelevant rather than competing in existing markets",x:"Cirque du Soleil created a blue ocean by combining circus and theater, making traditional circuses irrelevant",w:4},
+      {id:101,t:"Red Ocean Strategy",d:"Competing in existing market space where industry boundaries are defined and competitive rules are known",x:"Competing as 'another dashboard tool' against Tableau, PowerBI, Looker in the crowded BI market",w:4},
+      {id:102,t:"Market Opportunity Analysis",d:"Systematic evaluation of whether a market segment is worth pursuing based on size, growth, competition, and fit",x:"Analyzing the sovereignty-driven segment: growing 20%/year as EU data regulations tighten",w:4},
+      {id:103,t:"Switching Costs",d:"The costs a customer incurs when changing from one product to another, including time, money, and learning",x:"Moving off Salesforce means migrating years of CRM data, retraining 500 reps, rebuilding automations: very high",w:4},
+      {id:104,t:"Beachhead Market",d:"The initial market segment you focus all resources on to establish a foothold before expanding",x:"Facebook launched at Harvard as beachhead before expanding to Ivy League, then all US colleges, then everyone",w:4},
+
+      // ===== WEEK 5 (44 terms) =====
+      {id:105,t:"Core Competency",d:"An organizational capability that provides access to multiple markets, contributes to customer value, and is difficult to imitate (Prahalad & Hamel)",x:"Nintendo's game design DNA lets them dominate console gaming, mobile games, AND theme parks",w:5},
+      {id:106,t:"Difficult to Imitate",d:"Core competency test: can competitors replicate this capability within 2-3 years? If yes, it's not core",x:"Tesla's battery and self-driving tech took a decade to build, a legacy automaker can't replicate it in 2 years",w:5},
+      {id:107,t:"Access to Multiple Markets",d:"Core competency test: does this capability open doors to more than one market or product line?",x:"Amazon's logistics competency serves retail, grocery (Whole Foods), AND cloud computing (AWS data centers)",w:5},
+      {id:108,t:"Hollowing Out the Core",d:"The danger of outsourcing so much that you lose the capability that made you valuable",x:"If Nike outsourced all shoe design to contractors, those contractors could eventually launch competing brands",w:5},
+      {id:109,t:"Value Ecosystem",d:"A network of partners, suppliers, and complementors creating more value together than any single company",x:"Apple: hardware + apps (developers) + music (labels) + payments (banks) + carriers",w:5},
+      {id:110,t:"Channel Strategy",d:"The deliberate design of how you reach, serve, and retain customers across all touchpoints",x:"HubSpot's multi-channel strategy: content marketing (blog), freemium product, sales team, and partner agencies",w:5},
+      {id:111,t:"Channel-Journey Mapping",d:"Connecting each customer journey stage to a specific channel, then checking for gaps and mismatches",x:"No Evaluation channel for developers: they can't try the API without talking to sales, creating a journey gap",w:5},
+      {id:112,t:"Three Cs Balance",d:"Effective channel strategy balances Customer needs, Company economics, and Channel Partner incentives",x:"IT partner needs margin, customer needs local support, partner needs training on our product",w:5},
+      {id:113,t:"Channel as Feature",d:"When the channel itself becomes a competitive advantage, the delivery method is part of the value",x:"Tesla's direct sales eliminates dealer markup and ensures consistent customer experience",w:5},
+      {id:114,t:"Go-to-Market",d:"The complete strategy for how a product reaches target customers: channels, pricing, messaging, sales, support",x:"Stripe's GTM: developer docs (awareness), free sandbox (evaluation), self-serve signup (purchase), API integration (delivery)",w:5},
+      {id:115,t:"Cost-Plus Pricing",d:"Setting price by calculating total costs and adding a markup percentage, simple but ignores customer value",x:"'Our cost is 30K, add 50% margin = 45K' ignoring the customer saves 200K in vendor consolidation",w:5},
+      {id:116,t:"Competition-Driven Pricing",d:"Setting price based on what competitors charge, follows the market but can lead to a race to the bottom",x:"Pricing your project management tool at 80% of Asana's rate even though your value proposition is completely different",w:5},
+      {id:117,t:"Value-Based Pricing",d:"Setting price based on the quantified value delivered to the customer, the most profitable approach",x:"Saves 50K + 100K in certification = 150K value, price at 80K, customer keeps 70K surplus",w:5},
+      {id:118,t:"Willingness to Pay",d:"The maximum price a customer would accept before choosing an alternative, varies by segment",x:"Defense contractor: 100K+/year (compliance mandate). Startup: 5K/year (nice-to-have, many alternatives)",w:5},
+      {id:119,t:"Price as Story",d:"Pricing communicates who you are: a low price signals commodity, a premium price signals confidence",x:"500/month says 'enterprise-grade.' 29/month says 'try us, maybe.' Each attracts different customers",w:5},
+      {id:120,t:"Pricing Power",d:"The ability to raise prices without losing customers, driven by differentiation and switching costs",x:"Apple has high pricing power with iPhone users (ecosystem lock-in) but low with budget Android switchers",w:5},
+      {id:121,t:"Total Cost of Ownership",d:"Complete cost over lifetime: purchase + implementation + training + maintenance + opportunity costs",x:"Salesforce at 150K/year vs. DIY CRM: 3 engineers (300K) + hosting (40K) + maintenance (60K) = 400K total",w:5},
+      {id:122,t:"Dynamic Business Model",d:"A business model is an interconnected system where changing one block creates ripple effects across others",x:"Adding a free tier changes revenue, requires self-service onboarding, public infrastructure, developer marketing",w:5},
+      {id:123,t:"Ripple Effect",d:"When a change in one part of the business model forces unexpected changes in other parts",x:"Targeting sovereignty-by-choice needed developer channel, free tier, automated onboarding, public docs",w:5},
+      {id:124,t:"Coherence Analysis",d:"Checking whether all blocks of your business model reinforce each other; incoherence signals strategic risk",x:"Value prop is 'enterprise security' but channel is 'founder-led network selling', doesn't scale together",w:5},
+      {id:125,t:"Strategic Hypothesis",d:"A testable assumption about how a business model change will create value, tested before full commitment",x:"'If we offer a free tier with 5-user limit, 10% will convert to Professional within 6 months'",w:5},
+      {id:126,t:"Capacity Wall",d:"The maximum customers a team can serve before quality degrades or growth stalls, a hidden constraint",x:"A consulting firm hits a wall at 15 clients with 8 consultants. Productizing their service may push capacity to 100+",w:5},
+      {id:127,t:"Price Erosion",d:"The gradual decline in prices over time due to competition, market pressure, or commoditization",x:"Luke Orthopedics facing 2-3% annual price erosion as procurement organizations benchmark aggressively",w:5},
+      {id:128,t:"Price Governance",d:"Internal rules and authority structure controlling who can set prices, approve discounts, and make exceptions",x:"Luke Orthopedics: sales going over the oversight committee's head to the chairman means broken governance",w:5},
+      {id:129,t:"Value Selling",d:"Sales approach focused on communicating quantified value delivered rather than product features or price",x:"Showing the hospital that Luke's services reduce total procedure cost by 15%, not just listing implant features",w:5},
+      {id:130,t:"Portfolio Pricing",d:"Optimizing prices across an entire product line rather than pricing each product independently",x:"Instead of pricing each implant separately, bundle implants + instruments + services for strategic account pricing",w:5},
+      {id:131,t:"Outcome-Based Pricing",d:"Tying some pricing to measurable customer outcomes rather than inputs or features",x:"Pricing partially based on reduced readmission rates or faster patient recovery times",w:5},
+      {id:132,t:"Tiered Pricing",d:"Offering different price levels with different feature sets or usage limits for different customer segments",x:"Free (5 users), Professional (per-seat/month), Enterprise (custom flat fee with deployment support)",w:5},
+      {id:133,t:"Volume Breakeven",d:"The amount of additional volume needed to compensate for a price reduction, often surprisingly high",x:"A 10% price cut requires 25-30% more volume to maintain the same profit — usually unrealistic",w:5},
+      {id:134,t:"Price Signal",d:"The message your price sends to the market about your product's quality, positioning, and target customer",x:"Pricing at 500/month signals enterprise-grade; pricing at 29/month signals lightweight/disposable tool",w:5},
+      {id:135,t:"Freemium Model",d:"Offering a basic product for free while charging for premium features, aiming for conversion over time",x:"Spotify Free with ads and shuffle-only vs. Spotify Premium with offline downloads, no ads, and high-quality audio",w:5},
+      {id:136,t:"Customer Lifetime Value",d:"The total revenue expected from a customer over the entire duration of the business relationship",x:"Enterprise customer paying 80K/year staying for 5 years = 400K CLV, justifies high acquisition cost",w:5},
+      {id:137,t:"Customer Acquisition Cost",d:"The total cost of winning a new customer, including marketing, sales, deployment, and onboarding",x:"Field-sales travel + demo preparation + 2-week onboarding = roughly 20K per new enterprise customer",w:5},
+      {id:138,t:"Lock-In Effect",d:"When switching costs are so high that customers remain even if alternatives are available",x:"After building 200+ automated workflows in Zapier, switching to a competitor would take months to rebuild",w:5},
+      {id:139,t:"Network Effects",d:"When a product becomes more valuable as more people use it, creating a self-reinforcing growth cycle",x:"More users contributing to the data catalog makes the catalog more complete for everyone",w:5},
+      {id:140,t:"Platform Strategy",d:"Building a foundation that others can build upon, creating value through third-party contributions",x:"Shopify as a platform where developers build custom apps, themes, and integrations in the App Store",w:5},
+      {id:141,t:"Disintermediation",d:"Removing intermediaries from the value chain by connecting directly with end customers",x:"Tesla selling directly to customers instead of through dealerships who add markup and control the experience",w:5},
+      {id:142,t:"Margin Compression",d:"When the gap between cost and price shrinks due to competitive pressure or rising costs",x:"Procurement organizations benchmarking prices across suppliers, pushing all implant margins down",w:5},
+      {id:143,t:"Strategic Account Management",d:"Dedicated pricing and relationship strategy for top accounts aligned with long-term partnership goals",x:"Salesforce's top enterprise accounts get dedicated success managers, quarterly business reviews, and priority roadmap input",w:5},
+      {id:144,t:"Minimum Viable Product",d:"The smallest version of a product that delivers enough value to attract early adopters and validate assumptions",x:"A self-service deployment guide tested with 5 beta users to validate the dual-segment model is feasible",w:5},
+      {id:145,t:"Product-Market Fit",d:"When a product satisfies strong market demand, evidenced by organic growth and customer retention",x:"When Slack teams start inviting external partners to shared channels without being asked, that signals PMF",w:5},
+      {id:146,t:"Value Chain",d:"The full range of activities needed to create, deliver, and support a product from concept to customer",x:"Design, develop, package, deploy, train, support — each step must add value or it's waste",w:5},
+      {id:147,t:"Bundling Strategy",d:"Combining multiple products or services into a single package, often at a discount vs. buying separately",x:"Bundle implants + instruments + process improvement + outcomes measurement into one enterprise deal",w:5},
+      {id:148,t:"Unbundling Strategy",d:"Breaking apart a bundled offering into separately purchasable components for flexibility or higher total revenue",x:"Separating deployment support, training, and platform license so customers pay for exactly what they need",w:5},
+
+      // ===== BONUS CROSS-WEEK (52 terms) =====
+      {id:149,t:"Stakeholder Mapping",d:"Identifying all people who influence or are affected by your product decisions, beyond just end users",x:"CFO (budget), IT director (security), marketers (daily users), developers (integrations), legal (compliance)",w:2},
+      {id:150,t:"Persona",d:"A semi-fictional representation of an ideal customer based on research data and real user patterns",x:"'Data-Driven Diana': 35, business analyst, frustrated by waiting for engineers to pull data for her reports",w:4},
+      {id:151,t:"User Story",d:"A short description of a feature from the user's perspective: As a [role], I want [action] so that [benefit]",x:"As a data analyst, I want to search the catalog by keyword so that I can find relevant tables without asking",w:3},
+      {id:152,t:"Acceptance Criteria",d:"The specific conditions that must be met for a user story to be considered complete",x:"Search returns results in under 2 seconds, shows table name, description, and last updated date",w:3},
+      {id:153,t:"Feature Prioritization",d:"The process of deciding which features to build first based on value, effort, risk, and strategic alignment",x:"Using RICE scoring (Reach, Impact, Confidence, Effort) to rank catalog features vs. pipeline monitoring",w:2},
+      {id:154,t:"Technical Debt",d:"The implied cost of future rework caused by choosing a quick solution now instead of a better longer approach",x:"Hardcoding customer configurations instead of building a proper settings system saves time now but breaks later",w:2},
+      {id:155,t:"Opportunity Cost",d:"The value of the next best alternative that is forgone when making a decision",x:"Building the AI agent system means NOT improving the data catalog for 3 months, which delays analyst satisfaction",w:5},
+      {id:156,t:"First-Mover Advantage",d:"The competitive benefit of being the first company to enter a market, often creating barriers for followers",x:"Uber was first to offer ride-hailing via smartphone, creating brand recognition and driver supply before Lyft arrived",w:4},
+      {id:157,t:"Fast-Follower Strategy",d:"Entering a market shortly after pioneers, learning from their mistakes while avoiding pioneering costs",x:"Samsung watched Apple prove the smartphone market, then fast-followed with Galaxy, learning from iPhone's mistakes",w:4},
+      {id:158,t:"Moat",d:"A sustainable competitive advantage that protects a business from competitors, like switching costs or network effects",x:"Amazon's moat: massive logistics network + Prime member loyalty + AWS infrastructure that took 20 years to build",w:5},
+      {id:159,t:"Flywheel Effect",d:"A self-reinforcing cycle where each step of a process feeds the next, building momentum over time",x:"More clients create more case studies, which attract more clients, which fund more features, which attract more clients",w:5},
+      {id:160,t:"North Star Metric",d:"The single metric that best captures the core value your product delivers to customers",x:"Airbnb's North Star: 'nights booked' captures the essence of value for both hosts and guests",w:2},
+      {id:161,t:"Leading Indicator",d:"A metric that predicts future outcomes, as opposed to lagging indicators that measure past results",x:"Number of dashboards created per week (leading) predicts license renewal (lagging)",w:2},
+      {id:162,t:"Lagging Indicator",d:"A metric that measures past results or outcomes, confirming trends after they've already happened",x:"Annual churn rate tells you how many customers left, but by then it's too late to save them",w:2},
+      {id:163,t:"Retention Rate",d:"The percentage of customers who continue using your product over a given period",x:"95% annual retention for enterprise customers means strong product-market fit in a regulated segment",w:5},
+      {id:164,t:"Churn Rate",d:"The percentage of customers who stop using your product over a given period, the inverse of retention",x:"5% annual churn is acceptable for enterprise, but 5% monthly churn would be catastrophic for self-service",w:5},
+      {id:165,t:"Net Promoter Score",d:"A metric measuring customer loyalty by asking how likely they are to recommend your product on a 0-10 scale",x:"Promoters (9-10) minus Detractors (0-6) = NPS. Enterprise clients scoring NPS 60+ signals strong advocacy",w:3},
+      {id:166,t:"Product-Led Growth",d:"A growth strategy where the product itself is the main driver of customer acquisition, conversion, and expansion",x:"Dropbox letting users store 2GB free, experiencing value before sales contact, expanding through sharing",w:5},
+      {id:167,t:"Sales-Led Growth",d:"A growth strategy where sales teams drive acquisition through outreach, demos, and relationship building",x:"Salesforce's army of account executives personally conducting demos and closing enterprise deals",w:5},
+      {id:168,t:"Land and Expand",d:"A strategy of starting small with one team or use case, then growing within the organization over time",x:"Slack lands with one dev team in a company, then expands to marketing, then the whole organization pays for Enterprise",w:5},
+      {id:169,t:"Design Thinking",d:"A human-centered approach to innovation that integrates the needs of people, possibilities of technology, and business viability",x:"Using empathy interviews, ideation workshops, and rapid prototyping to redesign the data catalog experience",w:3},
+      {id:170,t:"Lean Startup",d:"An approach emphasizing rapid experimentation, validated learning, and iterative product releases to reduce waste",x:"Build a minimal deployment guide, test with 5 users, learn, iterate before investing in full self-service",w:4},
+      {id:171,t:"Build-Measure-Learn",d:"The Lean Startup feedback loop: build the minimum product, measure customer behavior, learn from results, repeat",x:"Build catalog search, measure if analysts actually use it vs. still asking engineers, learn and adjust",w:4},
+      {id:172,t:"Pivot",d:"A structured course correction to test a new fundamental hypothesis about the product, strategy, or business model",x:"Instagram pivoting from Burbn (a location check-in app) to a photo-sharing app after noticing that's all users cared about",w:4},
+      {id:173,t:"Value Stream Mapping",d:"Visualizing every step in delivering value to the customer to identify waste and improvement opportunities",x:"Mapping the 47 steps from sales call to deployed platform reveals 12 steps that add no customer value",w:5},
+      {id:174,t:"OKR",d:"Objectives and Key Results: a goal-setting framework where Objectives are qualitative goals and Key Results are measurable outcomes",x:"Objective: 'Become the go-to design tool for teams.' KR1: '10K new team workspaces.' KR2: 'NPS > 60.'",w:2},
+      {id:175,t:"KPI",d:"Key Performance Indicator: a measurable value demonstrating how effectively a company is achieving key business objectives",x:"Monthly active users, deployment success rate, average time to first dashboard, support ticket resolution time",w:2},
+      {id:176,t:"A/B Testing",d:"Comparing two versions of something to see which performs better with real users in a controlled experiment",x:"Testing two onboarding flows: guided wizard vs. template gallery to see which gets users to first dashboard faster",w:4},
+      {id:177,t:"Cohort Analysis",d:"Grouping users by a shared characteristic (like sign-up date) and tracking their behavior over time",x:"Q1 2026 cohort retained 90% after 6 months vs. Q3 2025 cohort at 75% — improved onboarding is working",w:4},
+      {id:178,t:"Jobs Atlas",d:"A comprehensive map of all the jobs customers are trying to get done, organized hierarchically from main job to sub-jobs",x:"Main job: 'Make data-driven decisions' -> Sub-jobs: 'Find data', 'Transform data', 'Visualize data', 'Share insights'",w:3},
+      {id:179,t:"Empathy Map",d:"A collaborative tool used to gain deeper insight into customers by mapping what they Say, Think, Do, and Feel",x:"Says: 'The tool is fine.' Thinks: 'I wish I didn't need it.' Does: Exports to Excel. Feels: Frustrated, dependent.",w:3},
+      {id:180,t:"Value Curve",d:"A visual comparison of how your product delivers on key factors compared to competitors and alternatives",x:"Zoom scores highest on 'ease of use' and 'reliability' but lowest on 'feature breadth' vs. Microsoft Teams",w:4},
+      {id:181,t:"Kano Model",d:"A framework categorizing features as Must-Have, Performance, or Delighter based on customer satisfaction impact",x:"Must-have: works offline. Performance: faster queries. Delighter: AI-suggested dashboards they didn't ask for",w:3},
+      {id:182,t:"RICE Framework",d:"Prioritization scoring: Reach x Impact x Confidence / Effort = priority score for each feature",x:"Data catalog (reach 80%, impact high, confidence 90%, effort 3 months) scores higher than AI agents",w:2},
+      {id:183,t:"MoSCoW Method",d:"Prioritization: Must have, Should have, Could have, Won't have for organizing requirements by importance",x:"Must: pipeline monitoring. Should: data catalog search. Could: AI suggestions. Won't: mobile app (this release)",w:2},
+      {id:184,t:"Two-Sided Market",d:"A platform that serves two distinct user groups who provide each other with network benefits",x:"Airbnb is two-sided: hosts (property owners) and guests (travelers) provide each other with network benefits",w:5},
+      {id:185,t:"Ecosystem Lock-In",d:"When a customer becomes so integrated into your ecosystem of products and partners that leaving is impractical",x:"After building your business on Apple (iPhone, Mac, iCloud, AirDrop, Apple Watch), switching to Android is enormous",w:5},
+      {id:186,t:"Co-Opetition",d:"Simultaneously cooperating and competing with another company, being partners in some areas and rivals in others",x:"Samsung manufactures displays for Apple (cooperation) while competing with iPhone using Galaxy phones (competition)",w:5},
+      {id:187,t:"Strategic Pricing",d:"Pricing decisions made in the context of overall business strategy rather than just cost recovery or market matching",x:"Pricing the free tier to maximize conversion to Professional, not to minimize costs or match competitors",w:5},
+      {id:188,t:"Anchor Pricing",d:"Setting a high reference price first so that subsequent prices feel like a better deal by comparison",x:"Show the 'Enterprise at 150K/year' tier first, making 'Professional at 40K/year' feel like a bargain",w:5},
+      {id:189,t:"Loss Leader",d:"A product sold at or below cost to attract customers who will then purchase profitable products",x:"Amazon selling Kindle devices at cost as loss leader to attract users who buy profitable e-books and Prime",w:5},
+      {id:190,t:"Razor-and-Blades Model",d:"Selling the initial product cheaply and making profit on recurring consumables or services",x:"Low-cost initial deployment, then recurring annual license + support + training generates the real revenue",w:5},
+      {id:191,t:"Market Penetration",d:"Strategy to grow by selling more of existing products to existing market segments",x:"Getting current Netflix subscribers to upgrade from Basic to Premium plan for 4K and multiple screens",w:4},
+      {id:192,t:"Market Development",d:"Strategy to grow by finding new customer segments for existing products",x:"Taking the existing Uber ride-hailing platform to new cities and countries, not just San Francisco",w:4},
+      {id:193,t:"Product Development",d:"Strategy to grow by creating new products for existing customer segments",x:"Netflix building a gaming platform for existing subscribers who want interactive entertainment beyond streaming",w:4},
+      {id:194,t:"Diversification",d:"Strategy to grow by creating new products for new markets, the riskiest growth strategy",x:"Building a completely new consumer privacy tool for individuals, unrelated to current B2B data platform",w:4},
+      {id:195,t:"Ansoff Matrix",d:"A 2x2 growth strategy matrix with axes of existing/new products and existing/new markets, yielding 4 strategies",x:"Market Penetration (existing/existing), Market Development (existing/new), Product Development (new/existing), Diversification (new/new)",w:4},
+      {id:196,t:"Value Innovation",d:"Simultaneously pursuing differentiation AND low cost by eliminating factors the industry takes for granted",x:"IKEA eliminated delivery and assembly (low cost) while adding showroom experience and Swedish design (differentiation)",w:5},
+      {id:197,t:"Customer Development",d:"Steve Blank's process: Customer Discovery, Customer Validation, Customer Creation, Company Building",x:"Currently in Customer Validation: have paying pilots, testing if the business model scales beyond founder-led sales",w:4},
+      {id:198,t:"Technology Adoption Lifecycle",d:"The progression of market adoption: Innovators, Early Adopters, Early Majority, Late Majority, Laggards",x:"Current pilot customers are Early Adopters who tolerate rough edges; crossing to Early Majority needs polish",w:4},
+      {id:199,t:"Crossing the Chasm",d:"Geoffrey Moore's concept: the gap between Early Adopters and Early Majority requires different strategies to cross",x:"Early-adopter enterprise customers accept white-glove setup; to cross the chasm to mainstream, need self-service deployment",w:4},
+      {id:200,t:"Innovator's Dilemma",d:"Christensen's theory that successful companies fail by focusing on existing customers while disruptive competitors capture emerging markets",x:"Kodak focused on film profits while digital camera startups disrupted from below with cheaper, instant photos",w:5},
+    ];
+
+    const WN = {1:"Week 1",2:"Week 2",3:"Week 3",4:"Week 4",5:"Week 5"};
+    let qCount = 10;
+    let state = {mode:null,questions:[],currentQ:0,correct:0,wrong:0,streak:0,bestStreak:0,answered:false,wrongList:[],selectedWeeks:[1,2,3,4,5],matchTermSel:null,matchDefSel:null,matchPairs:[],matchedCount:0};
+    let stats = JSON.parse(localStorage.getItem('bpm-quiz-stats')||'{"played":0,"correct":0,"bestStreak":0}');
+    updateStatsUI();
+    initOfflineTip();
+
+    function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+    function pick(a,n,ex=[]){return shuffle(a.filter(x=>!ex.includes(x))).slice(0,n);}
+    function $(id){return document.getElementById(id);}
+    function show(id){$(id).classList.remove('hidden');}
+    function hide(id){$(id).classList.add('hidden');}
+    function pool(){return V.filter(v=>state.selectedWeeks.includes(v.w));}
+    function esc(s){return s.replace(/'/g,"\\'");}
+
+    function updateStatsUI(){
+      $('totalPlayed').textContent=stats.played;
+      $('totalCorrect').textContent=stats.correct;
+      $('bestStreak').textContent=stats.bestStreak;
+      $('totalPct').textContent=stats.played?Math.round(stats.correct/stats.played*100)+'%':'0%';
+    }
+
+    function initOfflineTip(){
+      const el = document.getElementById("offlineTip");
+      if (!el) return;
+      if (localStorage.getItem("bpm-quiz-hide-offline-tip") === "1") el.style.display = "none";
+    }
+
+    function dismissOfflineTip(){
+      localStorage.setItem("bpm-quiz-hide-offline-tip", "1");
+      const el = document.getElementById("offlineTip");
+      if (el) el.style.display = "none";
+    }
+
+    function toggleWeek(btn){
+      const w=btn.dataset.week;
+      if(w==='all'){state.selectedWeeks=[1,2,3,4,5];document.querySelectorAll('.week-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+      else{document.querySelector('.week-btn[data-week="all"]').classList.remove('active');btn.classList.toggle('active');const a=[...document.querySelectorAll('.week-btn.active')].map(b=>parseInt(b.dataset.week)).filter(x=>!isNaN(x));state.selectedWeeks=a.length?a:[1,2,3,4,5];if(state.selectedWeeks.length===5){document.querySelectorAll('.week-btn').forEach(b=>b.classList.remove('active'));document.querySelector('.week-btn[data-week="all"]').classList.add('active');}}
+      const p=pool();
+      document.querySelector('.week-btn[data-week="all"]').textContent=state.selectedWeeks.length===5?`All (${V.length})`:'All';
+    }
+
+    function setCount(btn){document.querySelectorAll('.count-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');qCount=parseInt(btn.dataset.n);}
+
+    function startGame(mode){
+      state.mode=mode;state.currentQ=0;state.correct=0;state.wrong=0;state.streak=0;state.answered=false;state.wrongList=[];
+      const p=pool();
+      if(p.length<4){alert('Need at least 4 terms. Select more weeks.');return;}
+      const n=qCount===0?p.length:Math.min(qCount,p.length);
+      if(mode==='match'){state.questions=[];const s=shuffle(p);for(let i=0;i<Math.min(Math.ceil(n/5),Math.floor(s.length/5));i++)state.questions.push(s.slice(i*5,i*5+5));if(!state.questions.length)state.questions.push(s.slice(0,Math.min(5,s.length)));}
+      else state.questions=shuffle(p).slice(0,n);
+      hide('menuScreen');show('quizScreen');$('backBtn').classList.remove('hidden');
+      const titles={'mc-def':'Definition \u2192 Term','mc-term':'Term \u2192 Definition','mc-example':'Example \u2192 Term','type':'Type the Term','match':'Match Pairs','truefalse':'True or False'};
+      $('navTitle').textContent=titles[mode]||'Quiz';
+      renderQ();
+    }
+
+    function renderQ(){
+      state.answered=false;hide('nextBtn');$('feedback').className='feedback';$('feedback').innerHTML='';
+      const tot=state.questions.length,cur=state.currentQ;
+      $('progressFill').style.width=((cur/tot)*100)+'%';
+      const streakHTML=state.streak>=3?`<span class="streak-badge">\u{1F525} ${state.streak}</span>`:'';
+      $('qCounter').textContent=`${cur+1} / ${tot}`;$('qCounter').innerHTML+=streakHTML;
+      $('navScore').textContent=`${state.correct}\u2713`;
+      const q=state.questions[cur];
+      if(state.mode==='match'){renderMatch(q);return;}
+      if(state.mode==='mc-def')renderMC(q,'def');
+      else if(state.mode==='mc-term')renderMC(q,'term');
+      else if(state.mode==='mc-example')renderMC(q,'example');
+      else if(state.mode==='type')renderType(q);
+      else if(state.mode==='truefalse')renderTF(q);
+    }
+
+    function renderMC(q,type){
+      const p=pool(),L=['A','B','C','D'];
+      let prompt,correctAns,opts;
+      if(type==='def'){prompt='What term matches this definition?';correctAns=q.t;const wr=pick(p,3,[q]).map(x=>x.t);opts=shuffle([q.t,...wr]);}
+      else if(type==='term'){prompt=q.t;correctAns=q.d;const wr=pick(p,3,[q]).map(x=>x.d);opts=shuffle([q.d,...wr]);}
+      else{prompt='Which concept does this example illustrate?';correctAns=q.t;const wr=pick(p,3,[q]).map(x=>x.t);opts=shuffle([q.t,...wr]);}
+
+      const hintText=type==='term'?'Pick the correct definition:':(type==='example'?`"${q.x}"`:q.d);
+
+      $('questionArea').innerHTML=`
+        <div class="q-card"><span class="week-tag">${WN[q.w]}</span>
+        <div class="question">${type==='term'?prompt:'What term matches?'}</div>
+        <div class="hint">${hintText}</div></div>
+        <div class="choices">${opts.map((o,i)=>`<button class="choice-btn" data-val="${esc(o)}" onclick="checkMC(this)"><span class="letter">${L[i]}</span><span>${o}</span></button>`).join('')}</div>`;
+
+      state._correctAns=correctAns;
+    }
+
+    function checkMC(btn){
+      if(state.answered)return;state.answered=true;
+      const q=state.questions[state.currentQ];
+      const sel=btn.dataset.val,correct=state._correctAns;
+      const isCorrect=(sel===correct);
+      document.querySelectorAll('.choice-btn').forEach(b=>{
+        b.classList.add('disabled');
+        if(b.dataset.val===correct)b.classList.add('reveal-correct');
+      });
+      btn.classList.add(isCorrect?'correct':'wrong');
+      record(isCorrect,q);
+      show('nextBtn');
+    }
+
+    function renderType(q){
+      $('questionArea').innerHTML=`
+        <div class="q-card"><span class="week-tag">${WN[q.w]}</span>
+        <div class="question">Type the term:</div><div class="hint">${q.d}</div></div>
+        <input type="text" class="type-input" id="typeIn" placeholder="Type the term..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button class="btn btn-check" onclick="checkType()">Check</button>`;
+      setTimeout(()=>{const i=$('typeIn');if(i)i.focus();},300);
+    }
+
+    function checkType(){
+      if(state.answered)return;state.answered=true;
+      const q=state.questions[state.currentQ],inp=$('typeIn');
+      const ans=inp.value.trim().toLowerCase(),cor=q.t.toLowerCase();
+      const kw=cor.split(/[\s&,()]+/).filter(w=>w.length>2);
+      const mc=kw.filter(w=>ans.includes(w.toLowerCase())).length;
+      const ok=ans===cor||mc>=Math.ceil(kw.length*0.6);
+      inp.classList.add(ok?'correct':'wrong');inp.disabled=true;
+      record(ok,q);
+      if(!ok)showFB(false,`Answer: <strong>${q.t}</strong>`,q.x);
+      else showFB(true,`Correct! <strong>${q.t}</strong>`,null);
+      $('questionArea').querySelectorAll('.btn').forEach(b=>b.style.display='none');
+      show('nextBtn');
+    }
+
+    function renderTF(q){
+      const p=pool(),isTrue=Math.random()>0.5;
+      let shownDef=isTrue?q.d:pick(p,1,[q])[0].d;
+      state._tfTrue=isTrue;state._tfCorrectDef=q.d;
+      $('questionArea').innerHTML=`
+        <div class="q-card"><span class="week-tag">${WN[q.w]}</span>
+        <div class="question">${q.t}</div>
+        <div class="hint" style="font-style:normal;margin-top:8px">"${shownDef}"</div></div>
+        <div class="choices">
+          <button class="choice-btn" style="justify-content:center;font-weight:700;font-size:16px" data-val="true" onclick="checkTF(this,true)">
+            <span class="letter" style="position:static;margin-right:10px">\u2713</span>TRUE
+          </button>
+          <button class="choice-btn" style="justify-content:center;font-weight:700;font-size:16px" data-val="false" onclick="checkTF(this,false)">
+            <span class="letter" style="position:static;margin-right:10px">\u2717</span>FALSE
+          </button>
+        </div>`;
+    }
+
+    function checkTF(btn,said){
+      if(state.answered)return;state.answered=true;
+      const q=state.questions[state.currentQ];
+      const ok=(state._tfTrue===said);
+      btn.classList.add(ok?'correct':'wrong');
+      document.querySelectorAll('.choice-btn').forEach(b=>b.classList.add('disabled'));
+      record(ok,q);
+      if(!ok)showFB(false,`Correct definition of <strong>${q.t}</strong>:`,q.d);
+      show('nextBtn');
+    }
+
+    function renderMatch(pairs){
+      state.matchTermSel=null;state.matchDefSel=null;state.matchPairs=pairs;state.matchedCount=0;
+      const st=shuffle([...pairs]),sd=shuffle([...pairs]);
+      $('qCounter').textContent=`Round ${state.currentQ+1} / ${state.questions.length}`;
+      $('questionArea').innerHTML=`<div class="match-container">
+        <div class="match-col"><h4>Terms</h4>${st.map((p,i)=>`<div class="match-item" data-id="${p.id}" data-side="t" onclick="tapM(this)"><span class="num">${i+1}</span>${p.t}</div>`).join('')}</div>
+        <div class="match-col"><h4>Definitions</h4>${sd.map((p,i)=>`<div class="match-item" data-id="${p.id}" data-side="d" onclick="tapM(this)"><span class="num">${String.fromCharCode(65+i)}</span><span style="font-size:11px">${p.d.substring(0,70)}...</span></div>`).join('')}</div>
+      </div>`;
+    }
+
+    function tapM(el){
+      if(el.classList.contains('matched'))return;
+      const side=el.dataset.side,id=parseInt(el.dataset.id);
+      document.querySelectorAll(`.match-item[data-side="${side}"]`).forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      if(side==='t')state.matchTermSel={el,id};else state.matchDefSel={el,id};
+      if(state.matchTermSel&&state.matchDefSel){
+        const ok=state.matchTermSel.id===state.matchDefSel.id;
+        const tE=state.matchTermSel.el,dE=state.matchDefSel.el;
+        if(ok){tE.classList.remove('selected');dE.classList.remove('selected');tE.classList.add('correct','matched');dE.classList.add('correct','matched');state.matchedCount++;state.correct++;state.streak++;if(state.streak>state.bestStreak)state.bestStreak=state.streak;
+          if(state.matchedCount>=state.matchPairs.length){stats.correct+=state.matchPairs.length;stats.played+=state.matchPairs.length;if(state.streak>stats.bestStreak)stats.bestStreak=state.streak;localStorage.setItem('bpm-quiz-stats',JSON.stringify(stats));updateStatsUI();$('navScore').textContent=state.correct+'\u2713';setTimeout(()=>show('nextBtn'),400);} }
+        else{tE.classList.add('wrong');dE.classList.add('wrong');state.streak=0;setTimeout(()=>{tE.classList.remove('wrong','selected');dE.classList.remove('wrong','selected');},500);}
+        state.matchTermSel=null;state.matchDefSel=null;
+      }
+    }
+
+    function record(ok,q){
+      if(ok){state.correct++;state.streak++;if(state.streak>state.bestStreak)state.bestStreak=state.streak;showFB(true,'Correct!',null);}
+      else{state.wrong++;state.streak=0;state.wrongList.push(q);}
+      stats.played++;if(ok)stats.correct++;if(state.streak>stats.bestStreak)stats.bestStreak=state.streak;
+      localStorage.setItem('bpm-quiz-stats',JSON.stringify(stats));updateStatsUI();
+    }
+
+    function showFB(ok,msg,ex){
+      const f=$('feedback');f.className=`feedback show ${ok?'correct':'wrong'}`;
+      f.innerHTML=`<div class="fb-title">${msg}</div>${ex?`<div class="fb-example">${ex}</div>`:''}`;
+    }
+
+    function nextQuestion(){
+      state.currentQ++;
+      if(state.currentQ>=state.questions.length)showResults();
+      else renderQ();
+    }
+
+    function showResults(){
+      hide('quizScreen');show('resultsScreen');$('navTitle').textContent='Results';$('navScore').textContent='';
+      const tot=state.mode==='match'?state.correct:state.questions.length;
+      const pct=Math.round((state.correct/tot)*100);
+      const grade=pct>=90?'\u{1F3C6} Expert!':pct>=70?'\u2B50 Great job!':pct>=50?'\u{1F44D} Good effort':'\u{1F4DA} Keep studying';
+      let wHTML='';
+      if(state.wrongList.length){
+        wHTML=`<div class="wrong-list"><h4>Review These (${state.wrongList.length}):</h4>${state.wrongList.map(q=>`<div class="wrong-item"><div class="term">${q.t} <span style="color:var(--gray);font-weight:400;font-size:11px">(${WN[q.w]})</span></div><div style="margin-top:4px">${q.d}</div></div>`).join('')}</div>`;
+      }
+      $('resultsScreen').innerHTML=`<div class="results">
+        <div class="grade pop">${grade}</div>
+        <div class="big-score pop">${state.correct}/${tot}</div>
+        <div class="pct">${pct}% correct &nbsp;|&nbsp; Streak: ${state.bestStreak}</div>
+        ${wHTML}
+        <button class="btn btn-primary" onclick="startGame(state.mode)">Play Again</button>
+        <button class="btn btn-secondary" onclick="goHome()">Menu</button>
+      </div>`;
+    }
+
+    function goHome(){hide('quizScreen');hide('resultsScreen');show('menuScreen');$('backBtn').classList.add('hidden');$('navTitle').textContent='PM Vocabulary Quiz';$('navScore').textContent='';updateStatsUI();}
+  </script>
+</body>
+</html>
+

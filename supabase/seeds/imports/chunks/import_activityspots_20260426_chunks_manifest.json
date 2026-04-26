@@ -1,0 +1,50 @@
+[
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_01_bay_area_events_part01.sql",
+    "rows": 250,
+    "label": "Bay Area official library/event activities part 01",
+    "size_bytes": 1445686
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_01_bay_area_events_part02.sql",
+    "rows": 250,
+    "label": "Bay Area official library/event activities part 02",
+    "size_bytes": 1450490
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_01_bay_area_events_part03.sql",
+    "rows": 250,
+    "label": "Bay Area official library/event activities part 03",
+    "size_bytes": 1450610
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_01_bay_area_events_part04.sql",
+    "rows": 250,
+    "label": "Bay Area official library/event activities part 04",
+    "size_bytes": 1466255
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_02_bay_area_hikes_part01.sql",
+    "rows": 250,
+    "label": "Bay Area OSM hikes/trails part 01",
+    "size_bytes": 1155032
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_02_bay_area_hikes_part02.sql",
+    "rows": 250,
+    "label": "Bay Area OSM hikes/trails part 02",
+    "size_bytes": 1165063
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_03_latvia_activities_part01.sql",
+    "rows": 250,
+    "label": "Latvia OSM activities part 01",
+    "size_bytes": 1182741
+  },
+  {
+    "file": "supabase/seeds/imports/chunks/import_activityspots_20260426_03_latvia_activities_part02.sql",
+    "rows": 250,
+    "label": "Latvia OSM activities part 02",
+    "size_bytes": 1171888
+  }
+]

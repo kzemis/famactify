@@ -75,8 +75,8 @@ const App = () => (
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
-          <Route path="/community" element={<CommunityActivities />} />
-          <Route path="/community/:id/edit" element={<ProtectedRoute><EditActivity /></ProtectedRoute>} />
+          <Route path="/activities" element={<CommunityActivities />} />
+          <Route path="/activities/:id/edit" element={<ProtectedRoute><EditActivity /></ProtectedRoute>} />
           <Route path="/generated-activities" element={<GeneratedActivities />} />
           <Route path="/confirm" element={<ConfirmAttendance />} />
           <Route path="/trip/:shareToken" element={<SharedTrip />} />

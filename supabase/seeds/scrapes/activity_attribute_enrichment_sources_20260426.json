@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-04-26T12:55:00-07:00",
+  "sources": {
+    "openstreetmap": "https://www.openstreetmap.org/",
+    "overpass": [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter"
+    ]
+  },
+  "hikeTrailLengths": 500,
+  "hikeNearbyAmenityEnriched": 76,
+  "latviaDirectTagEnriched": 1,
+  "latviaNearbyAmenityEnriched": 235,
+  "bayEventsReviewed": 1000,
+  "notes": [
+    "Only positive source-supported values were added. Missing source evidence remains null.",
+    "Trail length is computed from OSM way geometry; it is segment length, not necessarily a full curated hike route.",
+    "Nearby amenities are OSM nodes within the stated radius and should be reviewed before import."
+  ],
+  "final_counts": {
+    "bayEvents": {
+      "facilities_restrooms": 1000,
+      "facilities_changingtable": 0,
+      "sensory_friendly": 1,
+      "fenced": 0,
+      "foodvenue_kidamenities": 0,
+      "foodvenue_kidcorner": 0,
+      "foodvenue_kidmenu": 0
+    },
+    "bayHikes": {
+      "trail_lengthkm": 500,
+      "trail_durationminutes": 500,
+      "facilities_restrooms": 56,
+      "facilities_changingtable": 0,
+      "transit_accessible": 26,
+      "fenced": 0,
+      "sensory_friendly": 0
+    },
+    "latvia": {
+      "facilities_restrooms": 84,
+      "facilities_changingtable": 4,
+      "transit_accessible": 149,
+      "fenced": 1,
+      "sensory_friendly": 0,
+      "accessibility_wheelchair": 42,
+      "accessibility_stroller": 233
+    }
+  }
+}

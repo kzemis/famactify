@@ -167,7 +167,7 @@ export default function KidView() {
           <Button
             variant="destructive"
             size="lg"
-            onClick={() => navigate('/community')}
+            onClick={() => navigate('/activities')}
             className="text-sm font-bold"
           >
             <X className="w-4 h-4 mr-2" />

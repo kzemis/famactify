@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-04-25T23:59:00-07:00",
+  "requested_range": "500-1000",
+  "saved_records": 1000,
+  "candidate_records": 1648,
+  "rejected_records": 865,
+  "sources": {
+    "oakland_public_library": {
+      "fetched_pages": 30,
+      "candidates": 444,
+      "accepted": 444,
+      "rejected": 156,
+      "errors": [],
+      "saved": 256
+    },
+    "san_jose_public_library": {
+      "fetched_pages": 35,
+      "candidates": 399,
+      "accepted": 399,
+      "rejected": 301,
+      "errors": [],
+      "saved": 255
+    },
+    "berkeley_public_library": {
+      "fetched_pages": 1,
+      "candidates": 567,
+      "accepted": 567,
+      "rejected": 325,
+      "errors": [],
+      "saved": 256
+    },
+    "san_francisco_public_library": {
+      "fetched_pages": 55,
+      "candidates": 238,
+      "accepted": 238,
+      "rejected": 83,
+      "errors": [],
+      "saved": 233
+    }
+  },
+  "files": {
+    "candidates": "bay_area_activity_candidates_20260425.json",
+    "activityspots": "bay_area_activityspots_scrape_20260425.json",
+    "rejected": "bay_area_activity_rejected_20260425.json",
+    "sources": "bay_area_activity_sources_20260425.json"
+  }
+}

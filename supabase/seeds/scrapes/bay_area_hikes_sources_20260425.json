@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-04-25T23:59:00-07:00",
+  "source": "bay_area_hikes",
+  "source_type": "openstreetmap_overpass",
+  "osm_license": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "saved_records": 500,
+  "candidate_records": 1800,
+  "rejected_records": 1300,
+  "saved_by_source": {
+    "openstreetmap_bay_area_hikes": 500
+  }
+}

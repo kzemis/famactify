@@ -675,7 +675,7 @@ export default function CommunityActivities() {
               {t.communityActivities?.title || 'Community Activities'}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {t.communityActivities?.subtitle || 'Discover family-friendly activities contributed by our community'}
+              {t.communityActivities?.subtitle || 'Browse family-friendly activities, plan your day, contribute a spot'}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
@@ -1306,7 +1306,7 @@ export default function CommunityActivities() {
                               {t.communityActivities?.showOnMap || 'Show on map'}
                             </Button>
                           )}
-                          <Button size="sm" variant="outline" onClick={() => navigate(`/community/${activity.id}/edit`)}>
+                          <Button size="sm" variant="outline" onClick={() => navigate(`/activities/${activity.id}/edit`)}>
                             Edit
                           </Button>
                         </div>

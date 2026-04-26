@@ -1,0 +1,23 @@
+[
+  {
+    "file": "supabase/seeds/imports/import_activityspots_20260426_01_bay_area_events.sql",
+    "source": "supabase/seeds/scrapes/bay_area_activityspots_scrape_20260425.json",
+    "label": "Bay Area official library/event activities",
+    "rows": 1000,
+    "size_bytes": 5795797
+  },
+  {
+    "file": "supabase/seeds/imports/import_activityspots_20260426_02_bay_area_hikes.sql",
+    "source": "supabase/seeds/scrapes/bay_area_hikes_activityspots_scrape_20260425.json",
+    "label": "Bay Area OSM hikes/trails",
+    "rows": 500,
+    "size_bytes": 2314431
+  },
+  {
+    "file": "supabase/seeds/imports/import_activityspots_20260426_03_latvia_activities.sql",
+    "source": "supabase/seeds/scrapes/latvia_activityspots_scrape_20260425.json",
+    "label": "Latvia OSM activities",
+    "rows": 500,
+    "size_bytes": 2348969
+  }
+]

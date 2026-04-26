@@ -79,7 +79,7 @@ const AppHeader = () => {
         {/* Right side controls + Activities */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Activities: list icon on mobile, labeled on larger screens */}
-          <Button variant="default" onClick={() => navigate('/community')} size="icon" className="sm:w-auto sm:px-4">
+          <Button variant="default" onClick={() => navigate('/activities')} size="icon" className="sm:w-auto sm:px-4">
             <Map className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Activities</span>
           </Button>

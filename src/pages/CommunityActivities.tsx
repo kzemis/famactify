@@ -604,6 +604,54 @@ export default function CommunityActivities() {
             ))}
           </div>
 
+          {/* Row 3: Together Mode quick-pills */}
+          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              onClick={() => setSelectedInvolvement('')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === ''
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              All modes
+            </button>
+            <button
+              onClick={() => setSelectedInvolvement('active_together')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === 'active_together'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              🤝 Together
+            </button>
+            <button
+              onClick={() => setSelectedInvolvement('supervise')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === 'supervise'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              👀 Watch from Side
+            </button>
+            <button
+              onClick={() => setSelectedInvolvement('drop_go')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === 'drop_go'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              🚗 Drop &amp; Go
+            </button>
+          </div>
+
           {/* Advanced filter panel */}
           {filtersExpanded && (
             <div className="rounded-lg border bg-card p-4 space-y-4">
@@ -972,6 +1020,19 @@ export default function CommunityActivities() {
                           <p className="text-sm text-muted-foreground line-clamp-2">{activity.description}</p>
                         )}
                       </div>
+
+                      {/* Involvement badge (TOG-03) */}
+                      {activity.involvement && (
+                        <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold w-fit',
+                          activity.involvement === 'active_together' ? 'bg-green-100 text-green-700' :
+                          activity.involvement === 'supervise'       ? 'bg-blue-100  text-blue-700'  :
+                                                                       'bg-gray-100  text-gray-600'
+                        )}>
+                          {activity.involvement === 'active_together' ? '🤝 Together' :
+                           activity.involvement === 'supervise'       ? '👀 Watch from Side' :
+                                                                        '🚗 Drop & Go'}
+                        </span>
+                      )}
 
                       {/* Location */}
                       {activity.location_address && (

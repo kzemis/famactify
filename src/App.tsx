@@ -43,6 +43,7 @@ import AdminLists from "./pages/AdminLists";
 import AdminListEdit from "./pages/AdminListEdit";
 import LongHorizonPlanner from "./pages/LongHorizonPlanner";
 import BalanceTracker from "./pages/BalanceTracker";
+import ParentInbox from "./pages/ParentInbox";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
           <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
           <Route path="/plan/horizon" element={<ProtectedRoute><LongHorizonPlanner /></ProtectedRoute>} />
           <Route path="/balance" element={<ProtectedRoute><BalanceTracker /></ProtectedRoute>} />
+          <Route path="/proposals" element={<ProtectedRoute><ParentInbox /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

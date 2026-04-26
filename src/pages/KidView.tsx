@@ -20,8 +20,34 @@ interface ActivitySpot {
   max_price: number | null;
   age_buckets: string[];
   duration_minutes: number | null;
+  involvement: string | null;
+  primary_category: string | null;
+  tags: string[] | null;
   json: any;
 }
+
+interface KidProposal {
+  id: string;
+  activityId: string;
+  activityName: string;
+  activityImage: string | null;
+  message: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'declined';
+}
+
+// ---------------------------------------------------------------------------
+// Kid category config
+// ---------------------------------------------------------------------------
+const KID_CATEGORIES = [
+  { emoji: '🐾', label: 'Animals',  match: ['animals', 'nature', 'farm'] },
+  { emoji: '🎨', label: 'Art',      match: ['art', 'craft', 'culture'] },
+  { emoji: '🎵', label: 'Music',    match: ['music'] },
+  { emoji: '🔬', label: 'Science',  match: ['science', 'education', 'stem'] },
+  { emoji: '🏃', label: 'Sport',    match: ['sport', 'outdoor', 'active'] },
+  { emoji: '🌿', label: 'Nature',   match: ['nature', 'park', 'outdoor', 'hike'] },
+  { emoji: '🎉', label: 'Fun',      match: ['fun', 'play', 'social'] },
+];
 
 // ---------------------------------------------------------------------------
 // Price display helper
@@ -46,6 +72,7 @@ export default function KidView() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<ActivitySpot | null>(null);
+  const [selectedKidCategory, setSelectedKidCategory] = useState<string>('');
 
   // ---------------------------------------------------------------------------
   // Fetch
@@ -55,7 +82,7 @@ export default function KidView() {
       setLoading(true);
       const { data, error } = await supabase
         .from('activityspots')
-        .select('id, name, imageurlthumb, description, highlights, min_price, max_price, age_buckets, duration_minutes, json')
+        .select('id, name, imageurlthumb, description, highlights, min_price, max_price, age_buckets, duration_minutes, involvement, primary_category, tags, json')
         .order('name', { ascending: true });
       if (error) {
         toast.error('Could not load activities');
@@ -69,16 +96,58 @@ export default function KidView() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Search
+  // Search + category filter
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFiltered(activities);
-    } else {
+    let result = [...activities];
+
+    if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      setFiltered(activities.filter(a => a.name.toLowerCase().includes(q)));
+      result = result.filter(a => a.name.toLowerCase().includes(q));
     }
-  }, [searchQuery, activities]);
+
+    if (selectedKidCategory) {
+      const catConfig = KID_CATEGORIES.find(c => c.label === selectedKidCategory);
+      if (catConfig) {
+        result = result.filter(a => {
+          const allTerms = [
+            ...(a.tags || []),
+            ...(a.highlights || []).map(h => h.toLowerCase()),
+            a.primary_category?.toLowerCase() || '',
+          ].join(' ');
+          return catConfig.match.some(m => allTerms.includes(m));
+        });
+      }
+    }
+
+    setFiltered(result);
+  }, [searchQuery, selectedKidCategory, activities]);
+
+  // ---------------------------------------------------------------------------
+  // Kid proposal
+  // ---------------------------------------------------------------------------
+  const submitProposal = (activity: ActivitySpot) => {
+    const proposals: KidProposal[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    if (proposals.some(p => p.activityId === activity.id && p.status === 'pending')) {
+      toast.success('Already asked! Your parent will see it 😊');
+      return;
+    }
+    const newProposal: KidProposal = {
+      id: Math.random().toString(36).slice(2),
+      activityId: activity.id,
+      activityName: activity.name,
+      activityImage: activity.imageurlthumb,
+      message: 'I want to go here!',
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+    };
+    proposals.push(newProposal);
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify(proposals));
+    // Notify other tabs (AppHeader badge)
+    window.dispatchEvent(new Event('storage'));
+    toast.success('Asked! Your parent will see it soon 🎉');
+    setSelectedActivity(null);
+  };
 
   // ---------------------------------------------------------------------------
   // Render
@@ -113,6 +182,29 @@ export default function KidView() {
           <p className="text-5xl mb-3">🌟</p>
           <h1 className="text-4xl font-extrabold text-orange-600 mb-2">What do you want to do today?</h1>
           <p className="text-lg text-orange-400">Pick something fun!</p>
+        </div>
+
+        {/* Category picker */}
+        <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <button
+            onClick={() => setSelectedKidCategory('')}
+            className={`px-4 py-2 rounded-2xl text-lg font-bold border-2 transition-colors ${
+              selectedKidCategory === '' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:border-orange-400'
+            }`}
+          >
+            ✅ Show All
+          </button>
+          {KID_CATEGORIES.map(cat => (
+            <button
+              key={cat.label}
+              onClick={() => setSelectedKidCategory(prev => prev === cat.label ? '' : cat.label)}
+              className={`px-4 py-2 rounded-2xl text-lg font-bold border-2 transition-colors ${
+                selectedKidCategory === cat.label ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:border-orange-400'
+              }`}
+            >
+              {cat.emoji} {cat.label}
+            </button>
+          ))}
         </div>
 
         {/* Search */}
@@ -200,6 +292,13 @@ export default function KidView() {
                           👧 {activity.age_buckets.slice(0, 2).join(', ')} yrs
                         </span>
                       )}
+                      {/* Involvement badge (TOG-03) */}
+                      {activity.involvement === 'active_together' && (
+                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">🤝 We go together!</span>
+                      )}
+                      {activity.involvement === 'drop_go' && (
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-bold">🚗 Drop-off OK</span>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -273,6 +372,13 @@ export default function KidView() {
                         ⏱️ {selectedActivity.duration_minutes} min
                       </span>
                     )}
+                    {/* Involvement badge (TOG-03) */}
+                    {selectedActivity.involvement === 'active_together' && (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-base font-bold">🤝 We go together!</span>
+                    )}
+                    {selectedActivity.involvement === 'drop_go' && (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-base font-bold">🚗 Drop-off OK</span>
+                    )}
                   </div>
 
                   <Button
@@ -280,6 +386,13 @@ export default function KidView() {
                     onClick={() => setSelectedActivity(null)}
                   >
                     Looks good! 🎉
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-2xl text-lg py-4 font-bold border-2 border-orange-300 text-orange-600 mt-2"
+                    onClick={() => submitProposal(selectedActivity)}
+                  >
+                    Ask for this! 💌
                   </Button>
                 </div>
               </>

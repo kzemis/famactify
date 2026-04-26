@@ -9,7 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
-  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer, Trash2, Layers,
+  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer, Trash2, Layers, LayoutGrid,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -199,7 +199,13 @@ export default function CommunityActivities() {
   // Focused spot modal (from "Show on map" button)
   const [spotModalOpen, setSpotModalOpen] = useState(false);
   const [spotModalCenter, setSpotModalCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
-  const [spotModalPlace, setSpotModalPlace] = useState<{ id: string; name: string; lat: number; lon: number } | undefined>(undefined);
+  const [spotModalPlace, setSpotModalPlace] = useState<{
+    id: string; name: string; lat: number; lon: number;
+    imageurlthumb?: string | null; location_address?: string | null;
+    min_price?: number | null; max_price?: number | null;
+    age_buckets?: string[] | null; urlmoreinfo?: string | null;
+    description?: string | null;
+  } | undefined>(undefined);
 
   // ---------------------------------------------------------------------------
   // Data fetching
@@ -636,7 +642,19 @@ export default function CommunityActivities() {
     if (typeof spot.location_lat === 'number' && typeof spot.location_lon === 'number') {
       setSelectedId(spot.id);
       setCenter({ lat: spot.location_lat, lon: spot.location_lon });
-      setSpotModalPlace({ id: spot.id, name: spot.name, lat: spot.location_lat, lon: spot.location_lon });
+      setSpotModalPlace({
+        id: spot.id,
+        name: spot.name,
+        lat: spot.location_lat,
+        lon: spot.location_lon,
+        imageurlthumb: spot.imageurlthumb,
+        location_address: spot.location_address,
+        min_price: spot.min_price,
+        max_price: spot.max_price,
+        age_buckets: spot.age_buckets,
+        urlmoreinfo: spot.urlmoreinfo,
+        description: spot.description,
+      });
       setSpotModalCenter({ lat: spot.location_lat, lon: spot.location_lon });
       setSpotModalOpen(true);
     }
@@ -649,29 +667,41 @@ export default function CommunityActivities() {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className={cn('container mx-auto px-4 py-8', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
+      <main className={cn('container mx-auto px-4 py-4', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-start justify-between gap-2 mb-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">
+            <h1 className="text-2xl font-bold">
               {t.communityActivities?.title || 'Community Activities'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {t.communityActivities?.subtitle || 'Discover family-friendly activities contributed by our community'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Contribute</span>
+          </Button>
+        </div>
+
+        {/* ── Sticky toolbar: view switcher + search + filters ── */}
+        <div className="sticky top-16 z-40 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border mb-4">
+          <div className="flex items-center gap-2 py-2">
             {/* View switcher */}
-            <div className="inline-flex rounded-md border bg-card">
-              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
-              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>Map</Button>
+            <div className="inline-flex rounded-md border bg-card shrink-0">
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} className="gap-1.5 px-2.5">
+                <LayoutGrid className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Grid</span>
+              </Button>
+              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')} className="gap-1.5 px-2.5">
+                <MapIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Map</span>
+              </Button>
               <Button
                 variant={viewMode === 'plan' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('plan')}
-                className="relative"
+                className="relative gap-1.5 px-2.5"
               >
-                🗓️ Plan
+                <Clock className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Plan</span>
                 {planItems.length > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
                     {planItems.length}
@@ -679,30 +709,23 @@ export default function CommunityActivities() {
                 )}
               </Button>
             </div>
-            <Button onClick={() => navigate('/contribute')} size="lg">
-              <Plus className="w-4 h-4 mr-2" />
-              Contribute Activity
-            </Button>
-          </div>
-        </div>
 
-        {/* ── Rich Filters (DIS-01) ── */}
-        <div className="mb-6">
-          {/* Single row: search + filters toggle */}
-          <div className="flex gap-2">
+            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search activities…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-9"
               />
             </div>
+
+            {/* Filters button */}
             <button
               onClick={() => setFiltersExpanded(v => !v)}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
+                'flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
                 filtersExpanded || activeFilterCount > (searchQuery ? 1 : 0)
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-background border-border hover:border-primary/50',
@@ -718,9 +741,10 @@ export default function CommunityActivities() {
             </button>
           </div>
 
-          {/* Expandable filter panel */}
+          {/* Filter panel — expands inside sticky bar, scrollable on mobile */}
           {filtersExpanded && (
-            <div className="mt-3 rounded-lg border bg-card p-4 space-y-4">
+            <div className="max-h-[60vh] overflow-y-auto pb-3">
+              <div className="rounded-lg border bg-card p-4 space-y-4">
 
               {/* Category */}
               <div>
@@ -1035,6 +1059,7 @@ export default function CommunityActivities() {
                   <X className="w-3.5 h-3.5" /> Clear all filters
                 </button>
               )}
+              </div>
             </div>
           )}
         </div>
@@ -1604,14 +1629,32 @@ export default function CommunityActivities() {
 
         {/* ── Focused Spot Modal ── */}
         <Dialog open={spotModalOpen} onOpenChange={setSpotModalOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
             {spotModalPlace && (
-              <div className="rounded-lg overflow-hidden h-[450px]">
-                <MapView
-                  places={[spotModalPlace]}
-                  center={spotModalCenter}
-                />
-              </div>
+              <>
+                {/* Activity header */}
+                <div className="px-4 pt-4 pb-3 border-b">
+                  <p className="font-semibold text-base leading-tight">{spotModalPlace.name}</p>
+                  {spotModalPlace.location_address && (
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 shrink-0" />{spotModalPlace.location_address}
+                    </p>
+                  )}
+                  {(spotModalPlace.min_price !== undefined || spotModalPlace.max_price !== undefined) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatPriceRange(spotModalPlace.min_price ?? null, spotModalPlace.max_price ?? null, t)}
+                      {spotModalPlace.age_buckets?.length ? ` · ${spotModalPlace.age_buckets.join(', ')} yrs` : ''}
+                    </p>
+                  )}
+                </div>
+                {/* Map */}
+                <div className="h-[380px]">
+                  <MapView
+                    places={[spotModalPlace]}
+                    center={spotModalCenter}
+                  />
+                </div>
+              </>
             )}
           </DialogContent>
         </Dialog>

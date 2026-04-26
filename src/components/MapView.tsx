@@ -69,6 +69,13 @@ const MapView: React.FC<MapViewProps> = ({
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const nearbyCircleRef = useRef<L.Circle | null>(null);
 
+  // Keep callback refs stable so the markers effect doesn't re-fire (and re-fitBounds)
+  // every time the parent re-renders with a new inline function reference.
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const getMarkerIconRef = useRef(getMarkerIcon);
+  getMarkerIconRef.current = getMarkerIcon;
+
   // Initialize map
   useEffect(() => {
     if (!mapRef.current || leafletRef.current) return;
@@ -108,7 +115,7 @@ const MapView: React.FC<MapViewProps> = ({
     const markerBounds: L.LatLngExpression[] = [];
 
     validPlaces.forEach((place) => {
-      const icon = getMarkerIcon ? getMarkerIcon(place) : undefined;
+      const icon = getMarkerIconRef.current ? getMarkerIconRef.current(place) : undefined;
       const marker = L.marker([place.lat, place.lon], icon ? { icon } : undefined);
 
       // Rich popup card — inline styles (Leaflet popup is plain DOM, no Tailwind)
@@ -159,8 +166,8 @@ const MapView: React.FC<MapViewProps> = ({
         leafletRef.current?.invalidateSize();
       });
 
-      if (onSelect) {
-        marker.on('click', () => onSelect(place.id));
+      if (onSelectRef.current) {
+        marker.on('click', () => onSelectRef.current?.(place.id));
       }
 
       marker.addTo(markersLayerRef.current!);
@@ -171,7 +178,8 @@ const MapView: React.FC<MapViewProps> = ({
     if (markerBounds.length > 1 && !path) {
       leafletRef.current.fitBounds(markerBounds);
     }
-  }, [places, onSelect, getMarkerIcon, path]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places, path]); // onSelect/getMarkerIcon intentionally omitted — using refs above
 
   // Update path
   useEffect(() => {

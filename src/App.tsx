@@ -37,6 +37,10 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import EditActivity from "./pages/EditActivity";
 import SessionPlanner from "./pages/SessionPlanner";
 import KidView from "./pages/KidView";
+import CuratedLists from "./pages/CuratedLists";
+import CuratedListDetail from "./pages/CuratedListDetail";
+import AdminLists from "./pages/AdminLists";
+import AdminListEdit from "./pages/AdminListEdit";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +82,11 @@ const App = () => (
           <Route path="/cats" element={<CatComparison />} />
           <Route path="/plan" element={<ProtectedRoute><SessionPlanner /></ProtectedRoute>} />
           <Route path="/kids" element={<KidView />} />
+          <Route path="/lists" element={<CuratedLists />} />
+          <Route path="/lists/:slug" element={<CuratedListDetail />} />
+          <Route path="/admin/lists" element={<ProtectedRoute><AdminLists /></ProtectedRoute>} />
+          <Route path="/admin/lists/new" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
+          <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

@@ -35,6 +35,7 @@ import CatComparison from "./pages/CatComparison";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditActivity from "./pages/EditActivity";
+import SessionPlanner from "./pages/SessionPlanner";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ const App = () => (
           <Route path="/test-auth" element={<TestAuth />} />
           <Route path="/events-calendar" element={<EventsCalendar />} />
           <Route path="/cats" element={<CatComparison />} />
+          <Route path="/plan" element={<ProtectedRoute><SessionPlanner /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

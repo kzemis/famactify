@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X, Map as MapIcon, SlidersHorizontal, CloudRain, Home } from 'lucide-react';
+import {
+  Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
+  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import AppHeader from '@/components/AppHeader';
@@ -17,6 +19,24 @@ import MapView from '@/components/MapView';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
 
+// ---------------------------------------------------------------------------
+// Haversine distance helper (module-level — no closure needed)
+// ---------------------------------------------------------------------------
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * (Math.PI / 180)) *
+    Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ---------------------------------------------------------------------------
+// Types & constants
+// ---------------------------------------------------------------------------
 interface ActivitySpot {
   id: string;
   name: string;
@@ -38,7 +58,7 @@ interface ActivitySpot {
   foodvenue_kidmenu: boolean | null;
   source: string | null;
   created_at: string;
-  // v3.1 schema fields (from migration 20260425_160000)
+  // v3.1 schema fields
   primary_category: string | null;
   involvement: string | null;
   city: string | null;
@@ -55,13 +75,39 @@ interface ActivitySpot {
   json: any;
 }
 
+const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
+const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
+const INVOLVEMENT_OPTIONS = [
+  { value: 'active_together', label: '🤝 Active Together' },
+  { value: 'supervise',       label: '👀 Watch from Side' },
+  { value: 'drop_go',         label: '🚗 Drop & Go' },
+];
+const PRICE_OPTIONS = [
+  { value: 'free', label: 'Free' },
+  { value: '10',   label: 'Under $10' },
+  { value: '20',   label: 'Under $20' },
+];
+const DISTANCE_OPTIONS = [
+  { value: 2,  label: '2 km' },
+  { value: 5,  label: '5 km' },
+  { value: 10, label: '10 km' },
+  { value: 25, label: '25 km' },
+];
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 export default function CommunityActivities() {
   const { t } = useLanguage();
   const { countryCode } = useCountry();
   const navigate = useNavigate();
+
+  // Data
   const [activities, setActivities] = useState<ActivitySpot[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivitySpot[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Rich filters (DIS-01)
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedAges, setSelectedAges] = useState<string[]>([]);
@@ -70,36 +116,36 @@ export default function CommunityActivities() {
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [rainSuitable, setRainSuitable] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // GPS / Nearby filter
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [nearbyKm, setNearbyKm] = useState<number | null>(null);
+  const [locatingGPS, setLocatingGPS] = useState(false);
+
+  // UI
   const [error, setError] = useState<string | null>(null);
-  const [spots, setSpots] = useState<ActivitySpot[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-  const [locating, setLocating] = useState(false);
+
+  // Lightbox
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Focused spot modal (from "Show on map" button)
   const [spotModalOpen, setSpotModalOpen] = useState(false);
   const [spotModalCenter, setSpotModalCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
   const [spotModalPlace, setSpotModalPlace] = useState<{ id: string; name: string; lat: number; lon: number } | undefined>(undefined);
 
-  const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
-  const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
-  const INVOLVEMENT_OPTIONS = [
-    { value: 'active_together', label: '🤝 Active Together' },
-    { value: 'supervise',       label: '👀 Watch from Side' },
-    { value: 'drop_go',         label: '🚗 Drop & Go' },
-  ];
-  const PRICE_OPTIONS = [
-    { value: 'free', label: 'Free' },
-    { value: '10',   label: 'Under $10' },
-    { value: '20',   label: 'Under $20' },
-  ];
+  // ---------------------------------------------------------------------------
+  // Data fetching
+  // ---------------------------------------------------------------------------
 
+  // Main activities fetch + realtime subscription
   useEffect(() => {
     fetchActivities();
 
-    // Set up real-time subscription — filter by country so new inserts are relevant
     const channel = supabase
       .channel(`activityspots-changes-${countryCode}`)
       .on(
@@ -111,55 +157,13 @@ export default function CommunityActivities() {
           filter: `country_code=eq.${countryCode}`,
         },
         (payload) => {
-          console.log('New activity added:', payload);
           setActivities(prev => [payload.new as ActivitySpot, ...prev]);
-        }
+        },
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [countryCode]);
-
-  useEffect(() => {
-    filterActivities();
-  }, [activities, searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable]);
-
-  useEffect(() => {
-    const fetchSpots = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from('activityspots')
-        .select('id,name,location_lat,location_lon,location_address,imageurlthumb,description')
-        .eq('country_code', countryCode)
-        .order('name', { ascending: true });
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-      const withCoords = (data || []).filter(s => typeof s.location_lat === 'number' && typeof s.location_lon === 'number');
-      setSpots(withCoords as ActivitySpot[]);
-      // initial center: first spot or country default
-      if (withCoords.length > 0) {
-        setCenter({ lat: withCoords[0].location_lat!, lon: withCoords[0].location_lon! });
-      } else {
-        // US default: SF Bay Area; LV default: Riga
-        setCenter(countryCode === 'US'
-          ? { lat: 37.7749, lon: -122.4194 }
-          : { lat: 56.9496, lon: 24.1052 }
-        );
-      }
-      setLoading(false);
-    };
-    fetchSpots();
-  }, [countryCode]);
-
-  const places = useMemo(() => {
-    return spots.map(s => ({ id: s.id, name: s.name, lat: s.location_lat!, lon: s.location_lon! }));
-  }, [spots]);
 
   const fetchActivities = async () => {
     try {
@@ -171,41 +175,63 @@ export default function CommunityActivities() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setActivities(data || []);
-    } catch (error: any) {
-      console.error('Error fetching activities:', error);
+
+      // Set default map center from data
+      const withCoords = (data || []).filter(
+        a => typeof a.location_lat === 'number' && typeof a.location_lon === 'number',
+      );
+      if (withCoords.length > 0) {
+        setCenter({ lat: withCoords[0].location_lat!, lon: withCoords[0].location_lon! });
+      } else {
+        setCenter(countryCode === 'US'
+          ? { lat: 37.7749, lon: -122.4194 }
+          : { lat: 56.9496, lon: 24.1052 });
+      }
+    } catch (err: any) {
+      console.error('Error fetching activities:', err);
       toast.error('Failed to load activities');
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Filtering — runs whenever data or any filter state changes
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    filterActivities();
+  }, [
+    activities, searchQuery, selectedCategories, selectedAges,
+    selectedInvolvement, maxPrice, indoorOnly, rainSuitable,
+    userLocation, nearbyKm,
+  ]);
+
   const filterActivities = () => {
     let filtered = [...activities];
 
-    // Text search across name, description, address, tags
+    // Text search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(a =>
         a.name.toLowerCase().includes(q) ||
         a.description?.toLowerCase().includes(q) ||
         a.location_address?.toLowerCase().includes(q) ||
-        a.tags?.some(tag => tag.toLowerCase().includes(q))
+        a.tags?.some(tag => tag.toLowerCase().includes(q)),
       );
     }
 
-    // Primary category (multi-select OR: show if any selected cat matches)
+    // Category
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(a =>
-        a.primary_category && selectedCategories.includes(a.primary_category)
+        a.primary_category && selectedCategories.includes(a.primary_category),
       );
     }
 
-    // Age buckets (multi-select OR: show if any selected bucket overlaps)
+    // Age buckets
     if (selectedAges.length > 0) {
       filtered = filtered.filter(a =>
-        a.age_buckets?.some(bucket => selectedAges.includes(bucket))
+        a.age_buckets?.some(bucket => selectedAges.includes(bucket)),
       );
     }
 
@@ -214,7 +240,7 @@ export default function CommunityActivities() {
       filtered = filtered.filter(a => a.involvement === selectedInvolvement);
     }
 
-    // Budget (filter on min_price — if activity has no price data, include it)
+    // Budget
     if (maxPrice === 'free') {
       filtered = filtered.filter(a => a.min_price === 0 || a.min_price === null);
     } else if (maxPrice === '10') {
@@ -223,10 +249,10 @@ export default function CommunityActivities() {
       filtered = filtered.filter(a => a.min_price === null || a.min_price <= 20);
     }
 
-    // Indoor only
+    // Environment
     if (indoorOnly) {
       filtered = filtered.filter(a =>
-        a.location_environment === 'indoor' || a.location_environment === 'both'
+        a.location_environment === 'indoor' || a.location_environment === 'both',
       );
     }
 
@@ -235,9 +261,29 @@ export default function CommunityActivities() {
       filtered = filtered.filter(a => a.rain_suitable === true);
     }
 
+    // Nearby (GPS distance) — only filters activities that HAVE coordinates
+    if (nearbyKm !== null && userLocation) {
+      filtered = filtered.filter(a => {
+        if (typeof a.location_lat !== 'number' || typeof a.location_lon !== 'number') return false;
+        return haversineKm(userLocation.lat, userLocation.lon, a.location_lat, a.location_lon) <= nearbyKm;
+      });
+    }
+
     setFilteredActivities(filtered);
   };
 
+  // ---------------------------------------------------------------------------
+  // Derived data — map places come from filtered list (fixes "ignored filters" bug)
+  // ---------------------------------------------------------------------------
+  const places = useMemo(() => {
+    return filteredActivities
+      .filter(a => typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
+      .map(a => ({ id: a.id, name: a.name, lat: a.location_lat!, lon: a.location_lon! }));
+  }, [filteredActivities]);
+
+  // ---------------------------------------------------------------------------
+  // Filter helpers
+  // ---------------------------------------------------------------------------
   const activeFilterCount = useMemo(() => {
     let n = 0;
     if (searchQuery) n++;
@@ -247,8 +293,9 @@ export default function CommunityActivities() {
     if (maxPrice !== 'any') n++;
     if (indoorOnly) n++;
     if (rainSuitable) n++;
+    if (nearbyKm !== null) n++;
     return n;
-  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable]);
+  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -258,14 +305,42 @@ export default function CommunityActivities() {
     setMaxPrice('any');
     setIndoorOnly(false);
     setRainSuitable(false);
+    setNearbyKm(null);
+    setUserLocation(null);
   };
 
+  // ---------------------------------------------------------------------------
+  // GPS / locate me
+  // ---------------------------------------------------------------------------
+  const handleLocateMe = () => {
+    if (!('geolocation' in navigator)) {
+      toast.error('Geolocation not supported by your browser');
+      return;
+    }
+    setLocatingGPS(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lon: longitude });
+        setCenter({ lat: latitude, lon: longitude });
+        setLocatingGPS(false);
+        toast.success('Location found — pick a distance to filter nearby activities');
+      },
+      (err) => {
+        toast.error(err.message || 'Failed to get location');
+        setLocatingGPS(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+
+  // ---------------------------------------------------------------------------
+  // Misc handlers
+  // ---------------------------------------------------------------------------
   const getPriceDisplay = (activity: ActivitySpot) => {
     if (!activity.min_price && !activity.max_price) return 'Free';
     if (activity.min_price === 0 && activity.max_price === 0) return 'Free';
-    if (activity.min_price && activity.max_price) {
-      return `€${activity.min_price} - €${activity.max_price}`;
-    }
+    if (activity.min_price && activity.max_price) return `€${activity.min_price} – €${activity.max_price}`;
     if (activity.min_price) return `From €${activity.min_price}`;
     if (activity.max_price) return `Up to €${activity.max_price}`;
     return 'Price varies';
@@ -277,34 +352,33 @@ export default function CommunityActivities() {
     setLightboxOpen(true);
   };
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % lightboxImages.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
-  };
+  const nextImage = () => setCurrentImageIndex(prev => (prev + 1) % lightboxImages.length);
+  const prevImage = () => setCurrentImageIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
 
   const handleShowOnMap = (spot: ActivitySpot) => {
     if (typeof spot.location_lat === 'number' && typeof spot.location_lon === 'number') {
       setSelectedId(spot.id);
       setCenter({ lat: spot.location_lat, lon: spot.location_lon });
-      // Open modal popup for focused map
       setSpotModalPlace({ id: spot.id, name: spot.name, lat: spot.location_lat, lon: spot.location_lon });
       setSpotModalCenter({ lat: spot.location_lat, lon: spot.location_lon });
       setSpotModalOpen(true);
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      
+
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2">{t.communityActivities?.title || 'Community Activities'}</h1>
+            <h1 className="text-4xl font-bold mb-2">
+              {t.communityActivities?.title || 'Community Activities'}
+            </h1>
             <p className="text-muted-foreground">
               {t.communityActivities?.subtitle || 'Discover family-friendly activities contributed by our community'}
             </p>
@@ -312,8 +386,12 @@ export default function CommunityActivities() {
           <div className="flex items-center gap-2">
             {/* View switcher */}
             <div className="inline-flex rounded-md border bg-card">
-              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
-              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>Map</Button>
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>
+                Grid
+              </Button>
+              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>
+                Map
+              </Button>
             </div>
             <Button onClick={() => navigate('/contribute')} size="lg">
               <Plus className="w-4 h-4 mr-2" />
@@ -338,10 +416,10 @@ export default function CommunityActivities() {
             <button
               onClick={() => setFiltersExpanded(v => !v)}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0",
+                'flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
                 filtersExpanded || activeFilterCount > (searchQuery ? 1 : 0)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background border-border hover:border-primary/50"
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
               )}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -354,15 +432,15 @@ export default function CommunityActivities() {
             </button>
           </div>
 
-          {/* Row 2: category quick-pills (always visible, horizontal scroll on mobile) */}
+          {/* Row 2: category quick-pills */}
           <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setSelectedCategories([])}
               className={cn(
-                "shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                 selectedCategories.length === 0
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background border-border hover:border-primary/50"
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
               )}
             >
               All
@@ -372,14 +450,14 @@ export default function CommunityActivities() {
                 key={cat}
                 onClick={() =>
                   setSelectedCategories(prev =>
-                    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
                   )
                 }
                 className={cn(
-                  "shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                  'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                   selectedCategories.includes(cat)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background border-border hover:border-primary/50"
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background border-border hover:border-primary/50',
                 )}
               >
                 {cat}
@@ -387,9 +465,10 @@ export default function CommunityActivities() {
             ))}
           </div>
 
-          {/* Advanced filter panel (expanded) */}
+          {/* Advanced filter panel */}
           {filtersExpanded && (
             <div className="rounded-lg border bg-card p-4 space-y-4">
+
               {/* Age */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Age Group</p>
@@ -397,10 +476,10 @@ export default function CommunityActivities() {
                   <button
                     onClick={() => setSelectedAges([])}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                       selectedAges.length === 0
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:border-primary/50"
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
                     )}
                   >
                     All Ages
@@ -410,14 +489,14 @@ export default function CommunityActivities() {
                       key={age}
                       onClick={() =>
                         setSelectedAges(prev =>
-                          prev.includes(age) ? prev.filter(a => a !== age) : [...prev, age]
+                          prev.includes(age) ? prev.filter(a => a !== age) : [...prev, age],
                         )
                       }
                       className={cn(
-                        "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                         selectedAges.includes(age)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
                       )}
                     >
                       {age} yrs
@@ -433,10 +512,10 @@ export default function CommunityActivities() {
                   <button
                     onClick={() => setSelectedInvolvement('')}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                       selectedInvolvement === ''
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:border-primary/50"
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
                     )}
                   >
                     Any
@@ -446,10 +525,10 @@ export default function CommunityActivities() {
                       key={opt.value}
                       onClick={() => setSelectedInvolvement(opt.value)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                         selectedInvolvement === opt.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
                       )}
                     >
                       {opt.label}
@@ -465,10 +544,10 @@ export default function CommunityActivities() {
                   <button
                     onClick={() => setMaxPrice('any')}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                       maxPrice === 'any'
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:border-primary/50"
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
                     )}
                   >
                     Any
@@ -478,10 +557,10 @@ export default function CommunityActivities() {
                       key={opt.value}
                       onClick={() => setMaxPrice(opt.value)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                         maxPrice === opt.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
                       )}
                     >
                       {opt.label}
@@ -490,17 +569,17 @@ export default function CommunityActivities() {
                 </div>
               </div>
 
-              {/* Environment toggles */}
+              {/* Environment */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Environment</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setRainSuitable(v => !v)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                       rainSuitable
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:border-primary/50"
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
                     )}
                   >
                     <CloudRain className="w-3.5 h-3.5" /> Rain suitable
@@ -508,14 +587,57 @@ export default function CommunityActivities() {
                   <button
                     onClick={() => setIndoorOnly(v => !v)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                       indoorOnly
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:border-primary/50"
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
                     )}
                   >
                     <Home className="w-3.5 h-3.5" /> Indoor only
                   </button>
+                </div>
+              </div>
+
+              {/* Nearby — GPS + distance */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Nearby</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* GPS locate button */}
+                  <button
+                    onClick={handleLocateMe}
+                    disabled={locatingGPS}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors disabled:opacity-50',
+                      userLocation
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
+                    )}
+                  >
+                    <Locate className="w-3.5 h-3.5" />
+                    {locatingGPS ? 'Locating…' : userLocation ? 'Location set ✓' : 'Use my location'}
+                  </button>
+                  {/* Distance pills — only active after GPS obtained */}
+                  {userLocation
+                    ? DISTANCE_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                            nearbyKm === opt.value
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background border-border hover:border-primary/50',
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))
+                    : (
+                      <span className="text-xs text-muted-foreground">
+                        Get location first, then pick a distance
+                      </span>
+                    )
+                  }
                 </div>
               </div>
 
@@ -542,18 +664,19 @@ export default function CommunityActivities() {
           )}
         </div>
 
-        {/* Grid View */}
+        {/* ── Grid View ── */}
         {viewMode === 'grid' && (
           loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="h-48 bg-muted" />
-                  <CardHeader>
-                    <div className="h-6 bg-muted rounded mb-2" />
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                  </CardHeader>
-                </Card>
+                <div key={i} className="rounded-xl border bg-card animate-pulse">
+                  <div className="h-48 bg-muted rounded-t-xl" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-5 bg-muted rounded w-3/4" />
+                    <div className="h-4 bg-muted rounded w-full" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : filteredActivities.length === 0 ? (
@@ -561,235 +684,206 @@ export default function CommunityActivities() {
               <p className="text-muted-foreground text-lg mb-4">
                 No activities found matching your filters
               </p>
-              <Button variant="outline" onClick={() => {
-                setSearchQuery('');
-                setSelectedType('all');
-                setSelectedAge('all');
-              }}>
+              <Button variant="outline" onClick={clearFilters}>
                 Clear Filters
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredActivities.map((activity) => (
-                <Card key={activity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Image or Carousel */}
-                  {(() => {
-                    const images = activity.json?.images || [];
-                    const hasMultipleImages = images.length > 1;
-                    const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
+              {filteredActivities.map((activity) => {
+                const images = activity.json?.images || [];
+                const hasMultipleImages = images.length > 1;
+                const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
 
-                    if (hasMultipleImages) {
-                      return (
-                        <div className="h-48 relative">
-                          <Carousel className="w-full h-full">
-                            <CarouselContent>
-                              {images.map((imageUrl, idx) => (
-                                <CarouselItem key={idx}>
-                                  <div
-                                    className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => openLightbox(images, idx)}
-                                  >
-                                    <img
-                                      src={imageUrl}
-                                      alt={`${activity.name} - Image ${idx + 1}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                </CarouselItem>
-                              ))}
-                            </CarouselContent>
-                            <CarouselPrevious className="left-2" />
-                            <CarouselNext className="right-2" />
-                          </Carousel>
-                        </div>
-                      );
-                    } else if (displayImage) {
-                      return (
-                        <div
-                          className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => openLightbox([displayImage], 0)}
-                        >
-                          <img
-                            src={displayImage}
-                            alt={activity.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div className="h-48 bg-muted flex items-center justify-center">
-                          <MapPin className="w-12 h-12 text-muted-foreground" />
-                        </div>
-                      );
-                    }
-                  })()}
-
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2">{activity.name}</CardTitle>
-                    {activity.description && (
-                      <CardDescription className="line-clamp-2">
-                        {activity.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-
-                  <CardContent className="space-y-3">
-                    {/* Location */}
-                    {activity.location_address && (
-                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-1">{activity.location_address}</span>
+                return (
+                  <div key={activity.id} className="rounded-xl border bg-card overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    {/* Image / Carousel */}
+                    {hasMultipleImages ? (
+                      <div className="h-48 relative">
+                        <Carousel className="w-full h-full">
+                          <CarouselContent>
+                            {images.map((imageUrl: string, idx: number) => (
+                              <CarouselItem key={idx}>
+                                <div
+                                  className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => openLightbox(images, idx)}
+                                >
+                                  <img src={imageUrl} alt={`${activity.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="left-2" />
+                          <CarouselNext className="right-2" />
+                        </Carousel>
+                      </div>
+                    ) : displayImage ? (
+                      <div
+                        className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openLightbox([displayImage], 0)}
+                      >
+                        <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-muted flex items-center justify-center">
+                        <MapPin className="w-12 h-12 text-muted-foreground" />
                       </div>
                     )}
 
-                    {/* Price */}
-                    <div className="flex items-center gap-2 text-sm">
-                      <Euro className="w-4 h-4 text-muted-foreground" />
-                      <span>{getPriceDisplay(activity)}</span>
-                    </div>
+                    <div className="p-4 flex flex-col gap-3 flex-1">
+                      <div>
+                        <h3 className="font-semibold text-base line-clamp-2 mb-1">{activity.name}</h3>
+                        {activity.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{activity.description}</p>
+                        )}
+                      </div>
 
-                    {/* Activity Types */}
-                    <div className="flex flex-wrap gap-1">
-                      {activity.activity_type.slice(0, 3).map(type => (
-                        <Badge key={type} variant="secondary" className="text-xs">
-                          {type}
-                        </Badge>
-                      ))}
-                      {activity.activity_type.length > 3 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{activity.activity_type.length - 3}
-                        </Badge>
+                      {/* Location */}
+                      {activity.location_address && (
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+                          <span className="line-clamp-1">{activity.location_address}</span>
+                        </div>
                       )}
-                    </div>
 
-                    {/* Age Groups */}
-                    {activity.age_buckets.length > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="w-4 h-4" />
-                        <span>{activity.age_buckets.join(', ')} years</span>
+                      {/* Distance badge if nearby filter active */}
+                      {userLocation && typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
+                        <div className="text-xs text-muted-foreground">
+                          📍 {haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon).toFixed(1)} km away
+                        </div>
+                      )}
+
+                      {/* Price */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Euro className="w-4 h-4 text-muted-foreground" />
+                        <span>{getPriceDisplay(activity)}</span>
                       </div>
-                    )}
 
-                    {/* Kid Amenities */}
-                    {(activity.foodvenue_kidamenities || activity.foodvenue_kidcorner || activity.foodvenue_kidmenu) && (
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground">Bērnu ērtības:</span>
+                      {/* Activity types */}
+                      <div className="flex flex-wrap gap-1">
+                        {activity.activity_type.slice(0, 3).map(type => (
+                          <Badge key={type} variant="secondary" className="text-xs">{type}</Badge>
+                        ))}
+                        {activity.activity_type.length > 3 && (
+                          <Badge variant="secondary" className="text-xs">+{activity.activity_type.length - 3}</Badge>
+                        )}
+                      </div>
+
+                      {/* Age groups */}
+                      {activity.age_buckets.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="w-4 h-4" />
+                          <span>{activity.age_buckets.join(', ')} years</span>
+                        </div>
+                      )}
+
+                      {/* Kid amenities */}
+                      {(activity.foodvenue_kidamenities || activity.foodvenue_kidcorner || activity.foodvenue_kidmenu) && (
                         <div className="flex flex-wrap gap-1">
-                          {activity.foodvenue_kidamenities && (
-                            <Badge variant="outline" className="text-xs">🎨 Activity Kit</Badge>
+                          {activity.foodvenue_kidamenities && <Badge variant="outline" className="text-xs">🎨 Activity Kit</Badge>}
+                          {activity.foodvenue_kidcorner && <Badge variant="outline" className="text-xs">🧸 Kids Corner</Badge>}
+                          {activity.foodvenue_kidmenu && <Badge variant="outline" className="text-xs">🎪 Playroom</Badge>}
+                        </div>
+                      )}
+
+                      {/* Accessibility */}
+                      <div className="flex gap-2">
+                        {activity.accessibility_wheelchair && <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>}
+                        {activity.accessibility_stroller && <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>}
+                        {activity.facilities_restrooms && <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-auto pt-2">
+                        {activity.urlmoreinfo && (
+                          <Button variant="link" className="h-auto p-0 text-primary text-sm" asChild>
+                            <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
+                              Website →
+                            </a>
+                          </Button>
+                        )}
+                        <div className="flex gap-2 ml-auto">
+                          {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
+                            <Button size="sm" variant="outline" onClick={() => handleShowOnMap(activity)}>
+                              {t.communityActivities?.showOnMap || 'Show on map'}
+                            </Button>
                           )}
-                          {activity.foodvenue_kidcorner && (
-                            <Badge variant="outline" className="text-xs">🧸 Kids Corner</Badge>
-                          )}
-                          {activity.foodvenue_kidmenu && (
-                            <Badge variant="outline" className="text-xs">🎪 Playroom</Badge>
-                          )}
+                          <Button size="sm" variant="outline" onClick={() => navigate(`/community/${activity.id}/edit`)}>
+                            Edit
+                          </Button>
                         </div>
                       </div>
-                    )}
-
-                    {/* Accessibility Icons */}
-                    <div className="flex gap-2 pt-2">
-                      {activity.accessibility_wheelchair && (
-                        <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>
-                      )}
-                      {activity.accessibility_stroller && (
-                        <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>
-                      )}
-                      {activity.facilities_restrooms && (
-                        <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
-                      )}
                     </div>
-
-                    {/* Official Website Link */}
-                    {activity.urlmoreinfo && (
-                      <div className="pt-2">
-                        <Button
-                          variant="link"
-                          className="h-auto p-0 text-primary"
-                          asChild
-                        >
-                          <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
-                            Visit Official Website →
-                          </a>
-                        </Button>
-                      </div>
-                    )}
-                    <div className="pt-2 flex gap-2">
-                       {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
-                         <Button size="sm" variant="outline" onClick={() => handleShowOnMap(activity)}>
-                           {t.communityActivities?.showOnMap || 'Show on map'}
-                         </Button>
-                       )}
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/community/${activity.id}/edit`)}>
-                        Edit
-                      </Button>
-                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )
         )}
 
-        {/* Map View */}
+        {/* ── Map View ── */}
         {viewMode === 'map' && (
           <div className="mt-2">
-            <h2 className="text-2xl font-bold mb-4">{t.communityActivities?.mapTitle || 'Activity Locations Map'}</h2>
-            <div className="rounded-lg border overflow-hidden">
+            <h2 className="text-2xl font-bold mb-4">
+              {t.communityActivities?.mapTitle || 'Activity Locations Map'}
+            </h2>
+            {/* BUG FIX: height on wrapper → MapView's h-full resolves correctly */}
+            <div className="rounded-lg border overflow-hidden h-[360px] md:h-[520px]">
               <MapView
                 places={places}
                 center={center}
-                className="w-full h-[360px] md:h-[520px] block"
+                userLocation={userLocation}
+                nearbyKm={nearbyKm}
+                onSelect={(id) => setSelectedId(id)}
                 overlay={
                   <div className="flex items-center gap-2">
                     {selectedId && (
-                      <div className="text-xs bg-background/80 rounded px-2 py-1 border">Showing: {spots.find(s => s.id === selectedId)?.name}</div>
+                      <div className="text-xs bg-background/80 rounded px-2 py-1 border">
+                        {filteredActivities.find(a => a.id === selectedId)?.name}
+                      </div>
                     )}
+                    {/* GPS locate button — centers map AND sets location for filter */}
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        if (!('geolocation' in navigator)) {
-                          toast.error('Geolocation not supported');
-                          return;
-                        }
-                        setLocating(true);
-                        navigator.geolocation.getCurrentPosition(
-                          (pos) => {
-                            const { latitude, longitude } = pos.coords;
-                            setCenter({ lat: latitude, lon: longitude });
-                            setLocating(false);
-                          },
-                          (err) => {
-                            toast.error(err.message || 'Failed to get location');
-                            setLocating(false);
-                          },
-                          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                        );
-                      }}
-                      disabled={locating}
+                      variant={userLocation ? 'default' : 'outline'}
+                      onClick={handleLocateMe}
+                      disabled={locatingGPS}
+                      title={userLocation ? 'Re-center on my location' : 'Find my location'}
                     >
-                      <MapIcon className="w-4 h-4 mr-1" /> GPS
+                      <Locate className="w-4 h-4 mr-1" />
+                      {locatingGPS ? '…' : 'Me'}
                     </Button>
+                    {/* Distance quick-select in map overlay */}
+                    {userLocation && DISTANCE_OPTIONS.map(opt => (
+                      <Button
+                        key={opt.value}
+                        size="sm"
+                        variant={nearbyKm === opt.value ? 'default' : 'outline'}
+                        onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
+                        className="px-2 py-1 h-auto text-xs"
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
                   </div>
                 }
               />
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {places.length} {places.length === 1 ? 'location' : 'locations'} shown
+              {activeFilterCount > 0 && ' (filtered)'}
+            </p>
           </div>
         )}
 
-        {/* Focused Spot Map Modal */}
+        {/* ── Focused Spot Modal ── */}
         <Dialog open={spotModalOpen} onOpenChange={setSpotModalOpen}>
           <DialogContent className="sm:max-w-lg">
             {spotModalPlace && (
-              <div className="rounded-lg overflow-hidden">
+              <div className="rounded-lg overflow-hidden h-[450px]">
                 <MapView
                   places={[spotModalPlace]}
                   center={spotModalCenter}
-                  className="h-[450px]"
                 />
               </div>
             )}
@@ -797,32 +891,27 @@ export default function CommunityActivities() {
         </Dialog>
       </main>
 
-      {/* Lightbox Modal */}
+      {/* ── Lightbox ── */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
           <div className="relative w-full h-[95vh] flex items-center justify-center">
-            {/* Close button */}
             <Button
-              variant="ghost"
-              size="icon"
+              variant="ghost" size="icon"
               className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
               onClick={() => setLightboxOpen(false)}
             >
               <X className="h-6 w-6" />
             </Button>
 
-            {/* Image counter */}
             {lightboxImages.length > 1 && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
                 {currentImageIndex + 1} / {lightboxImages.length}
               </div>
             )}
 
-            {/* Previous button */}
             {lightboxImages.length > 1 && (
               <Button
-                variant="ghost"
-                size="icon"
+                variant="ghost" size="icon"
                 className="absolute left-4 z-50 text-white hover:bg-white/20 h-12 w-12"
                 onClick={prevImage}
               >
@@ -830,18 +919,15 @@ export default function CommunityActivities() {
               </Button>
             )}
 
-            {/* Current image */}
             <img
               src={lightboxImages[currentImageIndex]}
               alt={`Full size image ${currentImageIndex + 1}`}
               className="max-w-full max-h-full object-contain"
             />
 
-            {/* Next button */}
             {lightboxImages.length > 1 && (
               <Button
-                variant="ghost"
-                size="icon"
+                variant="ghost" size="icon"
                 className="absolute right-4 z-50 text-white hover:bg-white/20 h-12 w-12"
                 onClick={nextImage}
               >

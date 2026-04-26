@@ -35,6 +35,10 @@ interface MapViewProps {
   onMapClick?: (lat: number, lon: number) => void;
   overlay?: React.ReactNode;
   className?: string; // optional style override for wrapper
+  /** User's GPS location — renders a blue "you are here" dot */
+  userLocation?: { lat: number; lon: number } | null;
+  /** If set alongside userLocation, draws a radius circle (km) */
+  nearbyKm?: number | null;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -46,11 +50,15 @@ const MapView: React.FC<MapViewProps> = ({
   onMapClick,
   overlay,
   className,
+  userLocation,
+  nearbyKm,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const pathLayerRef = useRef<L.LayerGroup | null>(null);
+  const userLocationMarkerRef = useRef<L.Marker | null>(null);
+  const nearbyCircleRef = useRef<L.Circle | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -174,6 +182,59 @@ const MapView: React.FC<MapViewProps> = ({
     // Fit bounds to path
     leafletRef.current.fitBounds(polyline.getBounds().pad(0.15));
   }, [path, onSelect]);
+
+  // User location marker — blue "you are here" dot
+  useEffect(() => {
+    if (!leafletRef.current) return;
+
+    // Remove previous marker
+    if (userLocationMarkerRef.current) {
+      userLocationMarkerRef.current.remove();
+      userLocationMarkerRef.current = null;
+    }
+
+    if (!userLocation) return;
+
+    const icon = L.divIcon({
+      html: `
+        <div style="
+          width: 18px; height: 18px;
+          background: #3b82f6;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.35), 0 2px 6px rgba(0,0,0,0.3);
+        "></div>`,
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+
+    userLocationMarkerRef.current = L.marker([userLocation.lat, userLocation.lon], { icon, zIndexOffset: 1000 })
+      .bindPopup('<strong>You are here</strong>')
+      .addTo(leafletRef.current);
+  }, [userLocation?.lat, userLocation?.lon]);
+
+  // Nearby radius circle — drawn when both userLocation and nearbyKm are set
+  useEffect(() => {
+    if (!leafletRef.current) return;
+
+    // Remove previous circle
+    if (nearbyCircleRef.current) {
+      nearbyCircleRef.current.remove();
+      nearbyCircleRef.current = null;
+    }
+
+    if (!userLocation || !nearbyKm) return;
+
+    nearbyCircleRef.current = L.circle([userLocation.lat, userLocation.lon], {
+      radius: nearbyKm * 1000, // metres
+      color: '#3b82f6',
+      weight: 1.5,
+      opacity: 0.6,
+      fillColor: '#3b82f6',
+      fillOpacity: 0.08,
+    }).addTo(leafletRef.current);
+  }, [userLocation?.lat, userLocation?.lon, nearbyKm]);
 
   // Recenter map when center prop changes (e.g., after GPS or selecting a point)
   useEffect(() => {

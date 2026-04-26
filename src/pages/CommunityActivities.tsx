@@ -73,6 +73,10 @@ interface ActivitySpot {
   country_code: string | null;
   duration_minutes: number | null;
   json: any;
+  // v3.2 schema fields
+  sensory_friendly: boolean | null;
+  transit_accessible: boolean | null;
+  fenced: boolean | null;
 }
 
 const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
@@ -116,6 +120,13 @@ export default function CommunityActivities() {
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [rainSuitable, setRainSuitable] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Accessibility filters (DIS-15)
+  const [wheelchairAccessible, setWheelchairAccessible] = useState(false);
+  const [strollerFriendly, setStrollerFriendly] = useState(false);
+  const [sensoryFriendly, setSensoryFriendly] = useState(false);
+  const [transitAccessible, setTransitAccessible] = useState(false);
+  const [fencedArea, setFencedArea] = useState(false);
 
   // GPS / Nearby filter
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -205,6 +216,7 @@ export default function CommunityActivities() {
     activities, searchQuery, selectedCategories, selectedAges,
     selectedInvolvement, maxPrice, indoorOnly, rainSuitable,
     userLocation, nearbyKm,
+    wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea,
   ]);
 
   const filterActivities = () => {
@@ -261,6 +273,34 @@ export default function CommunityActivities() {
       filtered = filtered.filter(a => a.rain_suitable === true);
     }
 
+    // Accessibility filters (DIS-15)
+    // Check both v3.2 boolean columns AND tags[] — backward compat with older records
+    if (wheelchairAccessible) {
+      filtered = filtered.filter(a =>
+        a.accessibility_wheelchair === true || a.tags?.includes('wheelchair-accessible'),
+      );
+    }
+    if (strollerFriendly) {
+      filtered = filtered.filter(a =>
+        a.accessibility_stroller === true || a.tags?.includes('stroller-friendly'),
+      );
+    }
+    if (sensoryFriendly) {
+      filtered = filtered.filter(a =>
+        a.sensory_friendly === true || a.tags?.includes('sensory-friendly'),
+      );
+    }
+    if (transitAccessible) {
+      filtered = filtered.filter(a =>
+        a.transit_accessible === true || a.tags?.includes('transit-friendly'),
+      );
+    }
+    if (fencedArea) {
+      filtered = filtered.filter(a =>
+        a.fenced === true || a.tags?.includes('fenced'),
+      );
+    }
+
     // Nearby (GPS distance) — only filters activities that HAVE coordinates
     if (nearbyKm !== null && userLocation) {
       filtered = filtered.filter(a => {
@@ -306,8 +346,13 @@ export default function CommunityActivities() {
     if (indoorOnly) n++;
     if (rainSuitable) n++;
     if (nearbyKm !== null) n++;
+    if (wheelchairAccessible) n++;
+    if (strollerFriendly) n++;
+    if (sensoryFriendly) n++;
+    if (transitAccessible) n++;
+    if (fencedArea) n++;
     return n;
-  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm]);
+  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -319,6 +364,11 @@ export default function CommunityActivities() {
     setRainSuitable(false);
     setNearbyKm(null);
     setUserLocation(null);
+    setWheelchairAccessible(false);
+    setStrollerFriendly(false);
+    setSensoryFriendly(false);
+    setTransitAccessible(false);
+    setFencedArea(false);
   };
 
   // ---------------------------------------------------------------------------
@@ -610,6 +660,33 @@ export default function CommunityActivities() {
                 </div>
               </div>
 
+              {/* Accessibility & Practical (DIS-15) */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Accessibility & Practical</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { state: wheelchairAccessible, set: setWheelchairAccessible, label: '♿ Wheelchair' },
+                    { state: strollerFriendly,     set: setStrollerFriendly,     label: '🚼 Stroller friendly' },
+                    { state: sensoryFriendly,      set: setSensoryFriendly,      label: '🤫 Sensory friendly' },
+                    { state: transitAccessible,    set: setTransitAccessible,    label: '🚇 Transit accessible' },
+                    { state: fencedArea,           set: setFencedArea,           label: '🔒 Fenced area' },
+                  ].map(({ state, set, label }) => (
+                    <button
+                      key={label}
+                      onClick={() => set(v => !v)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        state
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Nearby — GPS + distance */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Nearby</p>
@@ -798,12 +875,34 @@ export default function CommunityActivities() {
                         </div>
                       )}
 
-                      {/* Accessibility */}
-                      <div className="flex gap-2">
-                        {activity.accessibility_wheelchair && <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>}
-                        {activity.accessibility_stroller && <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>}
-                        {activity.facilities_restrooms && <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>}
-                      </div>
+                      {/* Accessibility & practical badges */}
+                      {(activity.accessibility_wheelchair || activity.tags?.includes('wheelchair-accessible') ||
+                        activity.accessibility_stroller || activity.tags?.includes('stroller-friendly') ||
+                        activity.sensory_friendly || activity.tags?.includes('sensory-friendly') ||
+                        activity.transit_accessible || activity.tags?.includes('transit-friendly') ||
+                        activity.fenced || activity.tags?.includes('fenced') ||
+                        activity.facilities_restrooms) && (
+                        <div className="flex flex-wrap gap-1">
+                          {(activity.accessibility_wheelchair || activity.tags?.includes('wheelchair-accessible')) && (
+                            <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>
+                          )}
+                          {(activity.accessibility_stroller || activity.tags?.includes('stroller-friendly')) && (
+                            <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>
+                          )}
+                          {(activity.sensory_friendly || activity.tags?.includes('sensory-friendly')) && (
+                            <Badge variant="outline" className="text-xs">🤫 Sensory friendly</Badge>
+                          )}
+                          {(activity.transit_accessible || activity.tags?.includes('transit-friendly')) && (
+                            <Badge variant="outline" className="text-xs">🚇 Transit</Badge>
+                          )}
+                          {(activity.fenced || activity.tags?.includes('fenced')) && (
+                            <Badge variant="outline" className="text-xs">🔒 Fenced</Badge>
+                          )}
+                          {activity.facilities_restrooms && (
+                            <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
+                          )}
+                        </div>
+                      )}
 
                       {/* Actions */}
                       <div className="flex gap-2 mt-auto pt-2">

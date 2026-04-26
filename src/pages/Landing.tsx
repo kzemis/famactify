@@ -24,7 +24,7 @@ const Landing = () => {
               </div>
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                 Discover &amp; Plan{" "}
-                <span className="text-primary">Family Activities</span>
+                <span className="text-primary">Memorable Family Activities</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl">
                 A community-built registry of family-friendly places, events and experiences.

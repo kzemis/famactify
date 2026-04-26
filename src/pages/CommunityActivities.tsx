@@ -9,7 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
-  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer,
+  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer, Trash2, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -188,6 +188,7 @@ export default function CommunityActivities() {
   const [sessionFinishTime, setSessionFinishTime] = useState('18:00');
   const [planName, setPlanName] = useState('My Plan');
   const [savingPlan, setSavingPlan] = useState(false);
+  const [showAllOnPlanMap, setShowAllOnPlanMap] = useState(false);
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1375,6 +1376,51 @@ export default function CommunityActivities() {
               {places.length} {places.length === 1 ? 'location' : 'locations'} shown
               {activeFilterCount > 0 && ' (filtered)'}
             </p>
+
+            {/* Selected activity card — appears when a map marker is clicked */}
+            {selectedId && (() => {
+              const sel = filteredActivities.find(a => a.id === selectedId);
+              if (!sel) return null;
+              const inPlan = planItems.some(p => p.activityId === sel.id);
+              return (
+                <div className="mt-3 flex items-start gap-3 p-3 rounded-lg border bg-card shadow-sm animate-in slide-in-from-bottom-2">
+                  {sel.imageurlthumb && (
+                    <img src={sel.imageurlthumb} alt={sel.name} className="w-16 h-16 rounded-md object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{sel.name}</p>
+                    {sel.location_address && (
+                      <p className="text-xs text-muted-foreground truncate">{sel.location_address}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatPriceRange(sel.min_price, sel.max_price, regionConfig)}
+                      {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      onClick={() => inPlan ? removeFromPlan(sel.id) : addToPlan(sel)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap',
+                        inPlan
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          : 'border border-border bg-background hover:bg-accent'
+                      )}
+                    >
+                      {inPlan
+                        ? `✓ In plan (${planItems.findIndex(p => p.activityId === sel.id) + 1})`
+                        : '+ Add to plan'}
+                    </button>
+                    <button
+                      onClick={() => setSelectedId(null)}
+                      className="px-3 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors text-center"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1385,13 +1431,24 @@ export default function CommunityActivities() {
             <div className="w-full lg:w-2/5 flex flex-col bg-card border-r overflow-y-auto">
               {/* Plan header */}
               <div className="p-4 border-b space-y-3">
-                <input
-                  type="text"
-                  value={planName}
-                  onChange={(e) => setPlanName(e.target.value)}
-                  className="w-full text-lg font-semibold bg-transparent border-b border-border/50 focus:border-primary outline-none pb-1"
-                  placeholder="My Plan"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={planName}
+                    onChange={(e) => setPlanName(e.target.value)}
+                    className="flex-1 text-lg font-semibold bg-transparent border-b border-border/50 focus:border-primary outline-none pb-1"
+                    placeholder="My Plan"
+                  />
+                  {planItems.length > 0 && (
+                    <button
+                      onClick={() => { if (window.confirm('Clear all activities from plan?')) { setPlanItems([]); } }}
+                      title="Clear entire plan"
+                      className="shrink-0 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 <div className="flex gap-3 items-center text-sm">
                   <label className="text-muted-foreground">Start</label>
                   <input
@@ -1474,19 +1531,57 @@ export default function CommunityActivities() {
 
             {/* Right: route map */}
             <div className="w-full lg:w-3/5 h-64 lg:h-full">
-              {planPath.length > 0 ? (
+              {planPath.length > 0 || showAllOnPlanMap ? (
                 <MapView
-                  places={[]}
+                  places={showAllOnPlanMap ? places : []}
                   path={planPath}
                   className="h-full rounded-none border-0"
-                  center={planPath.length > 0 ? { lat: planPath[0].lat, lon: planPath[0].lon } : undefined}
+                  center={planPath.length > 0 ? { lat: planPath[0].lat, lon: planPath[0].lon } : center}
+                  onSelect={(id) => {
+                    const sel = filteredActivities.find(a => a.id === id);
+                    if (!sel) return;
+                    if (planItems.some(p => p.activityId === id)) {
+                      toast.info(`"${sel.name}" is already in your plan`);
+                    } else {
+                      addToPlan(sel);
+                      toast.success(`Added "${sel.name}" to plan`);
+                    }
+                  }}
+                  overlay={
+                    <div className="flex flex-col gap-1.5 items-end">
+                      <button
+                        onClick={() => setShowAllOnPlanMap(v => !v)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-md transition-colors',
+                          showAllOnPlanMap
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background border border-border text-foreground hover:bg-accent'
+                        )}
+                        title="Show all activities on map so you can add nearby ones to your plan"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        {showAllOnPlanMap ? 'All activities shown' : 'Show all activities'}
+                      </button>
+                      {showAllOnPlanMap && (
+                        <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow">
+                          Click any pin to add to plan
+                        </p>
+                      )}
+                    </div>
+                  }
                 />
               ) : (
-                <div className="h-full bg-muted flex items-center justify-center">
+                <div className="h-full bg-muted flex flex-col items-center justify-center gap-3">
                   <div className="text-center text-muted-foreground">
                     <p className="text-4xl mb-2">🗺️</p>
                     <p className="text-sm">Add activities with locations to see the route</p>
                   </div>
+                  <button
+                    onClick={() => setShowAllOnPlanMap(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
+                  >
+                    <Layers className="w-4 h-4" /> Show all activities to pick from
+                  </button>
                 </div>
               )}
             </div>
@@ -1569,14 +1664,23 @@ export default function CommunityActivities() {
                 </span>
               )}
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setViewMode('plan')}
-              className="font-semibold"
-            >
-              View Plan →
-            </Button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPlanItems([])}
+                title="Clear plan"
+                className="p-1.5 rounded-md hover:bg-primary-foreground/20 text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setViewMode('plan')}
+                className="font-semibold"
+              >
+                View Plan →
+              </Button>
+            </div>
           </div>
         </div>
       )}

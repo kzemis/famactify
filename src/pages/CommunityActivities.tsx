@@ -281,16 +281,7 @@ export default function CommunityActivities() {
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>('grid');
 
-  // Map view — auto-loading pins (viewport mode when no city, city mode when cities selected)
-  const [mapViewPlaces, setMapViewPlaces] = useState<SlimActivity[]>([]);
-  const [isFetchingMapView, setIsFetchingMapView] = useState(false);
-  const mapBoundsRef = useRef<{ north: number; south: number; east: number; west: number } | null>(null);
-  const mapFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Stable refs so callbacks always see latest values without re-creating
-  const selectedCitiesRef = useRef<string[]>([]);
-  selectedCitiesRef.current = selectedCities;
-  const viewModeRef = useRef<'grid' | 'map' | 'plan'>('grid');
-  viewModeRef.current = viewMode;
+  // (Map pins come directly from allActivitiesForMap — no separate viewport fetch)
 
   // Session plan (shopping-cart pattern)
   interface PlanItem {
@@ -352,19 +343,6 @@ export default function CommunityActivities() {
       });
   }, [countryCode]);
 
-  // When switching to map view, immediately fetch pins for current bounds/cities
-  useEffect(() => {
-    if (viewMode === 'map') {
-      const cities = selectedCitiesRef.current;
-      const bounds = mapBoundsRef.current;
-      if (cities.length > 0) {
-        fetchMapViewPinsRef.current({ cities, bounds: null });
-      } else if (bounds) {
-        fetchMapViewPinsRef.current({ cities: [], bounds });
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode]);
 
   // ---------------------------------------------------------------------------
   // Data fetching — server-side filtering + pagination
@@ -375,7 +353,7 @@ export default function CommunityActivities() {
    * Works on any query — call before .select()/.range() so both grid and map
    * queries share identical filter logic.
    */
-  const applyServerFilters = useCallback((q: any, opts?: { skipCity?: boolean }): any => {
+  const applyServerFilters = useCallback((q: any): any => {
     const now = new Date();
     const nowIso = now.toISOString();
 
@@ -450,8 +428,8 @@ export default function CommunityActivities() {
     if (transitAccessible)  q = q.or('transit_accessible.eq.true,tags.cs.{transit-friendly}');
     if (fencedArea)         q = q.or('fenced.eq.true,tags.cs.{fenced}');
 
-    // City / area filter (can be skipped by fetchMapViewPins which handles city itself)
-    if (selectedCities.length > 0 && !opts?.skipCity) q = q.in('city', selectedCities);
+    // City / area filter
+    if (selectedCities.length > 0) q = q.in('city', selectedCities);
 
     return q;
   }, [
@@ -479,37 +457,29 @@ export default function CommunityActivities() {
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setCurrentPage(0);
-      // If currently in map view and filters change, re-fetch map pins immediately
-      if (viewModeRef.current === 'map') {
-        const cities = selectedCitiesRef.current;
-        const bounds = mapBoundsRef.current;
-        if (cities.length > 0) {
-          fetchMapViewPinsRef.current({ cities, bounds: null });
-        } else if (bounds) {
-          fetchMapViewPinsRef.current({ cities: [], bounds });
-        }
-      }
       try {
         const isNearby = nearbyKm !== null && userLocation !== null;
 
-        // ── Grid query ──────────────────────────────────────────────────────
+        // ── Grid query — ordered by excitement_score then recency ────────────
         let gridQ = applyServerFiltersRef.current(
           supabase.from('activityspots').select(GRID_COLUMNS, { count: 'exact' })
-        ).order('created_at', { ascending: false });
+        )
+          .order('excitement_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false });
 
         if (!isNearby) {
           gridQ = gridQ.range(0, PAGE_SIZE - 1);
         }
         // (when nearby, skip range so we can haversine-filter the full result)
 
-        // ── Map/slim query ───────────────────────────────────────────────────
+        // ── Map/slim query — all matching pins (no bbox limit) ──────────────
         const mapQ = applyServerFiltersRef.current(
           supabase.from('activityspots').select(MAP_COLUMNS)
         )
           .not('location_lat', 'is', null)
           .not('location_lon', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(isNearby ? 5000 : 600); // cap pins at 600; raise limit when filtering by distance
+          .order('excitement_score', { ascending: false, nullsFirst: false })
+          .limit(isNearby ? 5000 : 1000);
 
         const [gridResult, mapResult] = await Promise.all([gridQ, mapQ]);
 
@@ -583,87 +553,6 @@ export default function CommunityActivities() {
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // Map view — Airbnb-style viewport-based pin loading
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Fetch map pins in two modes:
-   *  - City mode  (cities.length > 0): fetch all pins for selected cities, no bbox limit
-   *  - Viewport mode (cities empty):   fetch pins within bbox, debounced on pan/zoom
-   */
-  const fetchMapViewPins = useCallback(async (
-    opts: { cities: string[]; bounds: { north: number; south: number; east: number; west: number } | null }
-  ) => {
-    setIsFetchingMapView(true);
-    try {
-      let q = applyServerFiltersRef.current(
-        supabase.from('activityspots').select(MAP_COLUMNS),
-        { skipCity: true } // city handled below so it doesn't AND with bbox
-      )
-        .not('location_lat', 'is', null)
-        .not('location_lon', 'is', null);
-
-      if (opts.cities.length > 0) {
-        // City mode: show every pin for the chosen cities (no bbox restriction)
-        q = q.in('city', opts.cities).limit(300);
-      } else if (opts.bounds) {
-        // Viewport mode: only pins visible in current map bbox
-        q = q
-          .gte('location_lat', opts.bounds.south)
-          .lte('location_lat', opts.bounds.north)
-          .gte('location_lon', opts.bounds.west)
-          .lte('location_lon', opts.bounds.east)
-          .limit(150);
-      } else {
-        // No cities and no bounds yet — nothing to show
-        setMapViewPlaces([]);
-        setIsFetchingMapView(false);
-        return;
-      }
-
-      const { data } = await q;
-      setMapViewPlaces((data as SlimActivity[]) || []);
-    } catch (err) {
-      console.error('fetchMapViewPins error', err);
-    } finally {
-      setIsFetchingMapView(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // stable — reads filters via applyServerFiltersRef
-
-  const fetchMapViewPinsRef = useRef(fetchMapViewPins);
-  fetchMapViewPinsRef.current = fetchMapViewPins;
-
-  /**
-   * Called by MapView on every pan/zoom end and once on initial render.
-   * - In city mode (cities selected): bounds are stored but no bbox fetch is done — the
-   *   city filter already shows all pins, so panning doesn't need a new fetch.
-   * - In viewport mode (no cities): debounce 350 ms then auto-fetch pins in new bbox.
-   */
-  const handleMapBoundsChange = useCallback((
-    bounds: { north: number; south: number; east: number; west: number }
-  ) => {
-    mapBoundsRef.current = bounds;
-    if (selectedCitiesRef.current.length > 0) return; // city mode — bbox irrelevant
-    if (viewModeRef.current !== 'map') return;
-    if (mapFetchTimerRef.current) clearTimeout(mapFetchTimerRef.current);
-    mapFetchTimerRef.current = window.setTimeout(() => {
-      fetchMapViewPinsRef.current({ cities: [], bounds });
-    }, 350);
-  }, []);
-
-  // When selectedCities changes while in map view, re-fetch pins immediately
-  useEffect(() => {
-    if (viewMode !== 'map') return;
-    const bounds = mapBoundsRef.current;
-    if (selectedCities.length > 0) {
-      fetchMapViewPinsRef.current({ cities: selectedCities, bounds: null });
-    } else if (bounds) {
-      fetchMapViewPinsRef.current({ cities: [], bounds });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCities]);
 
   // ---------------------------------------------------------------------------
   // Regional — distance options in correct units for current country
@@ -693,25 +582,6 @@ export default function CommunityActivities() {
       }));
   }, [allActivitiesForMap]);
 
-  /** Current viewport pins — used for the map view (Airbnb-style, bbox-fetched) */
-  const mapViewPlacesForMap = useMemo(() =>
-    mapViewPlaces
-      .filter(a => typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
-      .map(a => ({
-        id: a.id,
-        name: a.name,
-        lat: a.location_lat!,
-        lon: a.location_lon!,
-        imageurlthumb: a.imageurlthumb,
-        location_address: a.location_address,
-        min_price: a.min_price,
-        max_price: a.max_price,
-        age_buckets: a.age_buckets,
-        urlmoreinfo: a.urlmoreinfo,
-        urlmoreinfo_status: a.urlmoreinfo_status,
-      })),
-    [mapViewPlaces]
-  );
 
   // ---------------------------------------------------------------------------
   // Filter helpers
@@ -994,6 +864,30 @@ export default function CommunityActivities() {
               )}
             </div>
 
+            {/* City quick-filter pill — opens filter panel at city section */}
+            {availableCities.length > 0 && (
+              <button
+                onClick={() => setFiltersExpanded(true)}
+                className={cn(
+                  'flex items-center gap-1 px-2.5 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
+                  selectedCities.length > 0
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background border-border hover:border-primary/50',
+                )}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {selectedCities.length === 0 ? 'City' : selectedCities.length === 1 ? selectedCities[0] : `${selectedCities.length} cities`}
+                </span>
+                {selectedCities.length > 0 && (
+                  <X
+                    className="w-3 h-3 ml-0.5 opacity-70 hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); setSelectedCities([]); }}
+                  />
+                )}
+              </button>
+            )}
+
             {/* Filters button */}
             <button
               onClick={() => setFiltersExpanded(v => !v)}
@@ -1014,41 +908,6 @@ export default function CommunityActivities() {
             </button>
           </div>
 
-          {/* City quick-filter row — compact multi-select chips, horizontal scroll */}
-          {availableCities.length > 0 && (
-            <div className="flex items-center gap-2 py-1.5 overflow-x-auto scrollbar-none border-t border-border/40">
-              <span className="text-xs text-muted-foreground shrink-0">📍</span>
-              <button
-                onClick={() => setSelectedCities([])}
-                className={cn(
-                  'px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-colors',
-                  selectedCities.length === 0
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background border-border hover:border-primary/50',
-                )}
-              >
-                All
-              </button>
-              {availableCities.map(city => (
-                <button
-                  key={city}
-                  onClick={() =>
-                    setSelectedCities(prev =>
-                      prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
-                    )
-                  }
-                  className={cn(
-                    'px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-colors',
-                    selectedCities.includes(city)
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background border-border hover:border-primary/50',
-                  )}
-                >
-                  {city}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Filter panel — expands inside sticky bar, scrollable on mobile */}
           {filtersExpanded && (
@@ -1691,14 +1550,13 @@ export default function CommunityActivities() {
             {/* BUG FIX: height on wrapper → MapView's h-full resolves correctly */}
             <div className="relative rounded-lg border overflow-hidden h-[360px] md:h-[520px]">
               <MapView
-                places={mapViewPlacesForMap}
+                places={places}
                 center={center}
                 userLocation={userLocation}
                 nearbyKm={nearbyKm}
-                onBoundsChange={handleMapBoundsChange}
                 onSelect={(id) => setSelectedId(id)}
                 onAddToPlan={(id) => {
-                  const a = mapViewPlaces.find(x => x.id === id) || allActivitiesForMap.find(x => x.id === id);
+                  const a = allActivitiesForMap.find(x => x.id === id);
                   if (a) addToPlan(a);
                 }}
                 planItemIds={planItems.map(p => p.activityId)}
@@ -1730,9 +1588,9 @@ export default function CommunityActivities() {
                   </div>
                 }
               />
-              {/* Loading spinner — auto-fetches on pan/zoom, no manual button needed */}
-              {isFetchingMapView && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+              {/* Loading overlay while main query runs */}
+              {loading && (
+                <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-[1000]">
                   <div className="px-4 py-2 bg-white/95 backdrop-blur text-xs text-muted-foreground rounded-full shadow-lg border border-border flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
                     Loading…
@@ -1741,9 +1599,9 @@ export default function CommunityActivities() {
               )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {isFetchingMapView ? 'Fetching pins…' : (
+              {loading ? '…' : (
                 <>
-                  {mapViewPlacesForMap.length} {mapViewPlacesForMap.length === 1 ? 'location' : 'locations'} in view
+                  {places.length} {places.length === 1 ? 'location' : 'locations'} shown
                   {activeFilterCount > 0 && ' (filtered)'}
                 </>
               )}
@@ -1751,7 +1609,7 @@ export default function CommunityActivities() {
 
             {/* Selected activity card — appears when a map marker is clicked */}
             {selectedId && (() => {
-              const sel = mapViewPlaces.find(a => a.id === selectedId) || allActivitiesForMap.find(a => a.id === selectedId);
+              const sel = allActivitiesForMap.find(a => a.id === selectedId);
               if (!sel) return null;
               const inPlan = planItems.some(p => p.activityId === sel.id);
               return (

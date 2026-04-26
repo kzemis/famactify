@@ -15,6 +15,24 @@ import MapPicker from '@/components/MapPicker';
 import MapView from '@/components/MapView';
 import { useLanguage } from '@/i18n/LanguageContext';
 
+const PRIMARY_CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
+const INVOLVEMENT_OPTIONS = [
+  { value: 'active_together', label: '🤝 Active Together' },
+  { value: 'supervise',       label: '👀 Watch from Side' },
+  { value: 'drop_go',         label: '🚗 Drop & Go' },
+];
+const TAGS_VOCABULARY = [
+  'editors-pick', 'rainy-day', 'free', 'under-$10', 'under-$20', 'weekend-special',
+  'stroller-friendly', 'wheelchair-accessible', 'parking-easy', 'close-to-bart',
+  'transit-friendly', 'booking-needed-advance', 'drop-in', 'reservation-required', 'memberships-accepted',
+  'sensory-friendly', 'nursing-friendly', 'food-available', 'food-nearby',
+  'picnic-friendly', 'shade', 'fenced', 'sibling-friendly', 'carrier-friendly', 'low-cost',
+  'animals', 'science', 'art', 'music', 'cooking', 'water', 'climbing', 'nature',
+  'sports', 'trains', 'dinosaurs', 'space', 'building',
+  'toddler', 'preschool', 'elementary', 'teen', 'all-ages',
+  'indoor', 'outdoor', 'farm', 'beach', 'forest', 'urban',
+];
+
 interface ActivityRow {
   id: string;
   name: string;
@@ -29,6 +47,18 @@ interface ActivityRow {
   location_environment: string | null;
   imageurlthumb: string | null;
   urlmoreinfo: string | null;
+  // v3.1
+  primary_category: string | null;
+  involvement: string | null;
+  rain_suitable: boolean | null;
+  tags: string[] | null;
+  // v3.2
+  sensory_friendly: boolean | null;
+  transit_accessible: boolean | null;
+  fenced: boolean | null;
+  source_url: string | null;
+  source_confidence: number | null;
+  family_fit_score: number | null;
   json: any;
 }
 
@@ -52,6 +82,18 @@ const EditActivity: React.FC = () => {
   const [environment, setEnvironment] = useState<string>('');
   const [moreInfo, setMoreInfo] = useState<string>('');
   const [images, setImages] = useState<string[]>([]);
+  // v3.1 fields
+  const [primaryCategory, setPrimaryCategory] = useState<string>('');
+  const [involvement, setInvolvement] = useState<string>('');
+  const [rainSuitable, setRainSuitable] = useState<boolean>(false);
+  const [tags, setTags] = useState<string[]>([]);
+  // v3.2 fields
+  const [sensoryFriendly, setSensoryFriendly] = useState<boolean>(false);
+  const [transitAccessible, setTransitAccessible] = useState<boolean>(false);
+  const [fenced, setFenced] = useState<boolean>(false);
+  const [sourceUrl, setSourceUrl] = useState<string>('');
+  const [sourceConfidence, setSourceConfidence] = useState<string>('');
+  const [familyFitScore, setFamilyFitScore] = useState<string>('');
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +124,16 @@ const EditActivity: React.FC = () => {
       setLon(data.location_lon);
       setEnvironment(data.location_environment || '');
       setMoreInfo(data.urlmoreinfo || '');
+      setPrimaryCategory(data.primary_category || '');
+      setInvolvement(data.involvement || '');
+      setRainSuitable(data.rain_suitable ?? false);
+      setTags(data.tags || []);
+      setSensoryFriendly(data.sensory_friendly ?? false);
+      setTransitAccessible(data.transit_accessible ?? false);
+      setFenced(data.fenced ?? false);
+      setSourceUrl(data.source_url || '');
+      setSourceConfidence(data.source_confidence != null ? String(data.source_confidence) : '');
+      setFamilyFitScore(data.family_fit_score != null ? String(data.family_fit_score) : '');
       const existingImages: string[] = data.json?.images || [];
       const unique = Array.from(new Set([...(existingImages || []), data.imageurlthumb].filter(Boolean)));
       setImages(unique);
@@ -188,6 +240,18 @@ const EditActivity: React.FC = () => {
           location_environment: environment || null,
           urlmoreinfo: moreInfo || null,
           imageurlthumb,
+          // v3.1
+          primary_category: primaryCategory || null,
+          involvement: involvement || null,
+          rain_suitable: rainSuitable,
+          tags: tags.length > 0 ? tags : null,
+          // v3.2
+          sensory_friendly: sensoryFriendly || null,
+          transit_accessible: transitAccessible || null,
+          fenced: fenced || null,
+          source_url: sourceUrl || null,
+          source_confidence: sourceConfidence ? parseInt(sourceConfidence) : null,
+          family_fit_score: familyFitScore ? parseInt(familyFitScore) : null,
           json
         })
         .eq('id', row.id);
@@ -264,6 +328,111 @@ const EditActivity: React.FC = () => {
               <div>
                 <Label htmlFor="more-info">More info site</Label>
                 <Input id="more-info" type="url" value={moreInfo} onChange={(e) => setMoreInfo(e.target.value)} />
+              </div>
+
+              {/* Primary Category */}
+              <div>
+                <Label>Primary Category</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {PRIMARY_CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setPrimaryCategory(prev => prev === cat ? '' : cat)}
+                      className={`px-3 py-1 rounded-full text-sm border transition-colors ${primaryCategory === cat ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Involvement */}
+              <div>
+                <Label>Parent Involvement</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {INVOLVEMENT_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setInvolvement(prev => prev === opt.value ? '' : opt.value)}
+                      className={`px-3 py-1 rounded-full text-sm border transition-colors ${involvement === opt.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rain suitable + accessibility booleans */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                {[
+                  { label: '🌧️ Rain suitable', val: rainSuitable, set: setRainSuitable },
+                  { label: '♾️ Sensory Friendly', val: sensoryFriendly, set: setSensoryFriendly },
+                  { label: '🚌 Transit Accessible', val: transitAccessible, set: setTransitAccessible },
+                  { label: '🔒 Fenced Area', val: fenced, set: setFenced },
+                ].map(({ label, val, set }) => (
+                  <label key={label} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={val}
+                      onChange={(e) => set(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">{label}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Tags */}
+              <div>
+                <Label>Tags</Label>
+                <div className="flex flex-wrap gap-1.5 mt-2 max-h-40 overflow-y-auto">
+                  {TAGS_VOCABULARY.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                      className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${tags.includes(tag) ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                {tags.length > 0 && <p className="text-xs text-muted-foreground mt-1">{tags.length} tag{tags.length !== 1 ? 's' : ''} selected</p>}
+              </div>
+
+              {/* Source URL + scores */}
+              <div className="space-y-2 border-t pt-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Source & Data Quality</p>
+                <div>
+                  <Label htmlFor="edit-source-url">Source URL</Label>
+                  <Input id="edit-source-url" type="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://official-venue-page.com" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-source-confidence">Source Confidence (1–5)</Label>
+                    <select id="edit-source-confidence" value={sourceConfidence} onChange={(e) => setSourceConfidence(e.target.value)} className="w-full mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="">— pick —</option>
+                      <option value="5">5 — Official page</option>
+                      <option value="4">4 — Official + secondary</option>
+                      <option value="3">3 — Aggregator</option>
+                      <option value="2">2 — Social / community</option>
+                      <option value="1">1 — Unverified</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-family-fit">Family Fit Score (1–5)</Label>
+                    <select id="edit-family-fit" value={familyFitScore} onChange={(e) => setFamilyFitScore(e.target.value)} className="w-full mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="">— pick —</option>
+                      <option value="5">5 — Built for families</option>
+                      <option value="4">4 — Very kid-friendly</option>
+                      <option value="3">3 — Some kid features</option>
+                      <option value="2">2 — Kids tolerated</option>
+                      <option value="1">1 — Not suitable</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Duration and Price */}

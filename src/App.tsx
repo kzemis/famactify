@@ -36,6 +36,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditActivity from "./pages/EditActivity";
 import SessionPlanner from "./pages/SessionPlanner";
+import KidView from "./pages/KidView";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
           <Route path="/events-calendar" element={<EventsCalendar />} />
           <Route path="/cats" element={<CatComparison />} />
           <Route path="/plan" element={<ProtectedRoute><SessionPlanner /></ProtectedRoute>} />
+          <Route path="/kids" element={<KidView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

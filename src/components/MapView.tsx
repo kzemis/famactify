@@ -26,6 +26,7 @@ interface Place {
   max_price?: number | null;
   age_buckets?: string[] | null;
   urlmoreinfo?: string | null;
+  urlmoreinfo_status?: string | null;
 }
 
 interface PathItem {
@@ -52,6 +53,8 @@ interface MapViewProps {
   onAddToPlan?: (id: string) => void;
   /** IDs of activities already in the plan — used to show "✓ In plan" state */
   planItemIds?: string[];
+  /** Fires on initial load and after each pan/zoom ends — gives current viewport bounds */
+  onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -67,6 +70,7 @@ const MapView: React.FC<MapViewProps> = ({
   nearbyKm,
   onAddToPlan,
   planItemIds,
+  onBoundsChange,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
@@ -85,6 +89,8 @@ const MapView: React.FC<MapViewProps> = ({
   onAddToPlanRef.current = onAddToPlan;
   const planItemIdsRef = useRef(planItemIds);
   planItemIdsRef.current = planItemIds;
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  onBoundsChangeRef.current = onBoundsChange;
 
   // Initialize map
   useEffect(() => {
@@ -104,11 +110,27 @@ const MapView: React.FC<MapViewProps> = ({
       });
     }
 
+    // Viewport bounds reporting — fires on every pan/zoom end + once on init
+    const fireBounds = () => {
+      if (!onBoundsChangeRef.current) return;
+      const b = map.getBounds();
+      onBoundsChangeRef.current({
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      });
+    };
+    map.on('moveend', fireBounds);
+    // Fire once after the initial paint so the host gets the initial viewport bounds
+    const boundsTimer = setTimeout(fireBounds, 150);
+
     markersLayerRef.current = L.layerGroup().addTo(map);
     pathLayerRef.current = L.layerGroup().addTo(map);
     leafletRef.current = map;
 
     return () => {
+      clearTimeout(boundsTimer);
       map.remove();
       leafletRef.current = null;
     };
@@ -155,7 +177,7 @@ const MapView: React.FC<MapViewProps> = ({
           ${place.age_buckets?.length
             ? `<div style="font-size:12px;color:#666;margin-bottom:6px;">👶 ${place.age_buckets.join(', ')} yrs</div>`
             : ''}
-          ${place.urlmoreinfo
+          ${place.urlmoreinfo && place.urlmoreinfo_status === 'ok'
             ? `<a href="${place.urlmoreinfo}" target="_blank" rel="noopener noreferrer"
                 style="font-size:12px;color:#ec4899;text-decoration:none;font-weight:500;">
                 More info →

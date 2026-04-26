@@ -32,6 +32,7 @@ interface ActivitySpot {
   age_buckets: string[];
   activity_type: string[];
   urlmoreinfo: string | null;
+  urlmoreinfo_status: string | null;
 }
 
 interface ListItemWithActivity {
@@ -99,7 +100,7 @@ export default function CuratedListDetail() {
           activity:activity_id (
             id, name, description, imageurlthumb,
             min_price, max_price, location_address,
-            age_buckets, activity_type, urlmoreinfo
+            age_buckets, activity_type, urlmoreinfo, urlmoreinfo_status
           )
         `)
         .eq('list_id', listData.id)
@@ -245,7 +246,7 @@ export default function CuratedListDetail() {
                       ))}
                     </div>
 
-                    {activity.urlmoreinfo && (
+                    {activity.urlmoreinfo && activity.urlmoreinfo_status === 'ok' && (
                       <a
                         href={activity.urlmoreinfo}
                         target="_blank"

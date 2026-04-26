@@ -35,6 +35,7 @@ const dbColumns = [
   'booking_required', 'tags', 'season', 'rain_suitable', 'highlights', 'excitement_score', 'image_urls',
   'country_code', 'sensory_friendly', 'transit_accessible', 'fenced',
   'source_url', 'source_confidence', 'family_fit_score',
+  'created_by', 'created_by_reference', 'urlmoreinfo_status',
 ];
 
 const recordsetColumns = [
@@ -52,7 +53,8 @@ const recordsetColumns = [
   'booking_required boolean', 'tags text[]', 'season text[]', 'rain_suitable boolean',
   'highlights text[]', 'excitement_score smallint', 'image_urls text[]', 'country_code text',
   'sensory_friendly boolean', 'transit_accessible boolean', 'fenced boolean', 'source_url text',
-  'source_confidence smallint', 'family_fit_score smallint',
+  'source_confidence smallint', 'family_fit_score smallint', 'created_by text',
+  'created_by_reference jsonb', 'urlmoreinfo_status text',
 ];
 
 function normalize(row) {
@@ -67,6 +69,14 @@ function normalize(row) {
   out.schedule_openinghours = row.schedule_openinghours ?? null;
   out.source = row.source ?? 'codex_scrape';
   out.json = row.json ?? row;
+  out.created_by = 'crawler_codex';
+  out.created_by_reference = {
+    task_id: 'TASK-20260426-121',
+    generator: 'generate_activity_import_sql_20260426.mjs',
+    source: out.source,
+    source_url: row.source_url ?? row.urlmoreinfo ?? null,
+  };
+  out.urlmoreinfo_status = 'unknown';
   return out;
 }
 

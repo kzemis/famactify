@@ -31,7 +31,7 @@ const PAGE_SIZE = 50;
 // uses json.images — but since we paginate (50 rows), this is ~150 KB max vs 6 MB for 2000 rows.
 const GRID_COLUMNS = [
   'id', 'name', 'description', 'primary_category', 'activity_type', 'age_buckets',
-  'location_address', 'location_lat', 'location_lon', 'imageurlthumb', 'urlmoreinfo',
+  'location_address', 'location_lat', 'location_lon', 'imageurlthumb', 'urlmoreinfo', 'urlmoreinfo_status',
   'min_price', 'max_price', 'involvement', 'location_environment', 'rain_suitable',
   'booking_required', 'tags', 'duration_minutes', 'excitement_score', 'country_code',
   'accessibility_wheelchair', 'accessibility_stroller', 'sensory_friendly',
@@ -44,7 +44,7 @@ const GRID_COLUMNS = [
 // Map / slim data: only the columns needed for pins, popups, and addToPlan
 const MAP_COLUMNS = [
   'id', 'name', 'location_lat', 'location_lon', 'location_address',
-  'imageurlthumb', 'min_price', 'max_price', 'duration_minutes', 'age_buckets', 'urlmoreinfo',
+  'imageurlthumb', 'min_price', 'max_price', 'duration_minutes', 'age_buckets', 'urlmoreinfo', 'urlmoreinfo_status',
   'primary_category', 'location_environment', 'activity_type', 'tags',
 ].join(', ');
 
@@ -90,6 +90,7 @@ interface ActivitySpot {
   location_lon: number | null;
   imageurlthumb: string | null;
   urlmoreinfo: string | null;
+  urlmoreinfo_status: string | null;
   min_price: number | null;
   max_price: number | null;
   accessibility_wheelchair: boolean | null;
@@ -195,6 +196,7 @@ interface SlimActivity {
   duration_minutes: number | null;
   age_buckets: string[] | null;
   urlmoreinfo: string | null;
+  urlmoreinfo_status: string | null;
   primary_category: string | null;
   location_environment: string | null;
   activity_type: string[] | null;
@@ -264,10 +266,21 @@ export default function CommunityActivities() {
   const [transitAccessible, setTransitAccessible] = useState(false);
   const [fencedArea, setFencedArea] = useState(false);
 
+  // City / area filter
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+
   // GPS / Nearby filter
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [nearbyKm, setNearbyKm] = useState<number | null>(null);
   const [locatingGPS, setLocatingGPS] = useState(false);
+
+  // Map view — Airbnb-style viewport loading
+  const [mapViewPlaces, setMapViewPlaces] = useState<SlimActivity[]>([]);
+  const [showSearchArea, setShowSearchArea] = useState(false);
+  const [isFetchingMapView, setIsFetchingMapView] = useState(false);
+  const mapBoundsRef = useRef<{ north: number; south: number; east: number; west: number } | null>(null);
+  const mapNeedsRefetch = useRef(true);
 
   // UI
   const [error, setError] = useState<string | null>(null);
@@ -312,9 +325,36 @@ export default function CommunityActivities() {
     id: string; name: string; lat: number; lon: number;
     imageurlthumb?: string | null; location_address?: string | null;
     min_price?: number | null; max_price?: number | null;
-    age_buckets?: string[] | null; urlmoreinfo?: string | null;
+    age_buckets?: string[] | null; urlmoreinfo?: string | null; urlmoreinfo_status?: string | null;
     description?: string | null;
   } | undefined>(undefined);
+
+  // ---------------------------------------------------------------------------
+  // Fetch distinct cities for current country — used for city quick-filter
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    supabase
+      .from('activityspots')
+      .select('city')
+      .eq('country_code', countryCode)
+      .not('city', 'is', null)
+      .limit(1000)
+      .then(({ data }) => {
+        const cities = [
+          ...new Set((data || []).map((r: any) => r.city as string).filter(Boolean)),
+        ].sort();
+        setAvailableCities(cities);
+        setSelectedCity(''); // reset when switching countries
+      });
+  }, [countryCode]);
+
+  // Reset map viewport refetch flag when switching to map view
+  useEffect(() => {
+    if (viewMode === 'map') {
+      mapNeedsRefetch.current = true;
+      setShowSearchArea(false);
+    }
+  }, [viewMode]);
 
   // ---------------------------------------------------------------------------
   // Data fetching — server-side filtering + pagination
@@ -400,11 +440,15 @@ export default function CommunityActivities() {
     if (transitAccessible)  q = q.or('transit_accessible.eq.true,tags.cs.{transit-friendly}');
     if (fencedArea)         q = q.or('fenced.eq.true,tags.cs.{fenced}');
 
+    // City / area filter
+    if (selectedCity) q = q.eq('city', selectedCity);
+
     return q;
   }, [
     countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
     maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
     sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
+    selectedCity,
   ]);
 
   /** Ref so loadMore always uses the latest applyServerFilters without stale closure */
@@ -425,6 +469,8 @@ export default function CommunityActivities() {
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setCurrentPage(0);
+      // Signal map view to re-fetch on next bounds update (filters changed)
+      mapNeedsRefetch.current = true;
       try {
         const isNearby = nearbyKm !== null && userLocation !== null;
 
@@ -494,7 +540,7 @@ export default function CommunityActivities() {
     countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
     maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
     sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
-    nearbyKm, userLocation,
+    nearbyKm, userLocation, selectedCity,
   ]);
 
   /** Load the next page of grid results (appends to current activities) */
@@ -520,6 +566,52 @@ export default function CommunityActivities() {
   };
 
   // ---------------------------------------------------------------------------
+  // Map view — Airbnb-style viewport-based pin loading
+  // ---------------------------------------------------------------------------
+
+  /** Fetch pins visible in the given bbox, applying the current server filters */
+  const fetchMapViewPins = useCallback(async (
+    bounds: { north: number; south: number; east: number; west: number }
+  ) => {
+    setIsFetchingMapView(true);
+    setShowSearchArea(false);
+    try {
+      const { data } = await applyServerFiltersRef.current(
+        supabase.from('activityspots').select(MAP_COLUMNS)
+      )
+        .not('location_lat', 'is', null)
+        .not('location_lon', 'is', null)
+        .gte('location_lat', bounds.south)
+        .lte('location_lat', bounds.north)
+        .gte('location_lon', bounds.west)
+        .lte('location_lon', bounds.east)
+        .limit(150);
+      setMapViewPlaces((data as SlimActivity[]) || []);
+    } catch (err) {
+      console.error('fetchMapViewPins error', err);
+    } finally {
+      setIsFetchingMapView(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // stable — reads filters via applyServerFiltersRef
+
+  const fetchMapViewPinsRef = useRef(fetchMapViewPins);
+  fetchMapViewPinsRef.current = fetchMapViewPins;
+
+  /** Called by MapView on every pan/zoom end and once on initial render */
+  const handleMapBoundsChange = useCallback((
+    bounds: { north: number; south: number; east: number; west: number }
+  ) => {
+    mapBoundsRef.current = bounds;
+    if (mapNeedsRefetch.current) {
+      mapNeedsRefetch.current = false;
+      fetchMapViewPinsRef.current(bounds);
+    } else {
+      setShowSearchArea(true);
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
   // Regional — distance options in correct units for current country
   // ---------------------------------------------------------------------------
   const distanceOptions = useMemo(() => getDistanceOptions(regionConfig), [regionConfig]);
@@ -527,6 +619,8 @@ export default function CommunityActivities() {
   // ---------------------------------------------------------------------------
   // Derived data — map places come from the slim dataset (all matching, server-filtered)
   // ---------------------------------------------------------------------------
+
+  /** All matching places — used for plan view "show all" overlay */
   const places = useMemo(() => {
     return allActivitiesForMap
       .filter(a => typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
@@ -541,8 +635,29 @@ export default function CommunityActivities() {
         max_price: a.max_price,
         age_buckets: a.age_buckets,
         urlmoreinfo: a.urlmoreinfo,
+        urlmoreinfo_status: a.urlmoreinfo_status,
       }));
   }, [allActivitiesForMap]);
+
+  /** Current viewport pins — used for the map view (Airbnb-style, bbox-fetched) */
+  const mapViewPlacesForMap = useMemo(() =>
+    mapViewPlaces
+      .filter(a => typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
+      .map(a => ({
+        id: a.id,
+        name: a.name,
+        lat: a.location_lat!,
+        lon: a.location_lon!,
+        imageurlthumb: a.imageurlthumb,
+        location_address: a.location_address,
+        min_price: a.min_price,
+        max_price: a.max_price,
+        age_buckets: a.age_buckets,
+        urlmoreinfo: a.urlmoreinfo,
+        urlmoreinfo_status: a.urlmoreinfo_status,
+      })),
+    [mapViewPlaces]
+  );
 
   // ---------------------------------------------------------------------------
   // Filter helpers
@@ -550,6 +665,7 @@ export default function CommunityActivities() {
   const activeFilterCount = useMemo(() => {
     let n = 0;
     if (searchQuery) n++;
+    if (selectedCity) n++;
     if (selectedCategories.length > 0) n++;
     if (selectedAges.length > 0) n++;
     if (selectedInvolvement) n++;
@@ -566,10 +682,11 @@ export default function CommunityActivities() {
     if (timingFilter !== 'any') n++;
     if (durationFilter !== 'any') n++;
     return n;
-  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
+  }, [searchQuery, selectedCity, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
+    setSelectedCity('');
     setSelectedCategories([]);
     setSelectedAges([]);
     setSelectedInvolvement('');
@@ -746,6 +863,7 @@ export default function CommunityActivities() {
         max_price: spot.max_price,
         age_buckets: spot.age_buckets,
         urlmoreinfo: spot.urlmoreinfo,
+        urlmoreinfo_status: spot.urlmoreinfo_status,
         description: spot.description,
       });
       setSpotModalCenter({ lat: spot.location_lat, lon: spot.location_lon });
@@ -765,11 +883,9 @@ export default function CommunityActivities() {
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-4">
           <div>
-            <h1 className="text-2xl font-bold">
-              {t.communityActivities?.title || 'Community Activities'}
-            </h1>
+            <h1 className="text-2xl font-bold">Activities</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {t.communityActivities?.subtitle || 'Browse family-friendly activities, plan your day, contribute a spot'}
+              Browse family-friendly activities, build a day plan
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
@@ -844,10 +960,76 @@ export default function CommunityActivities() {
             </button>
           </div>
 
+          {/* City quick-filter row — horizontal scroll, only when cities available */}
+          {availableCities.length > 0 && (
+            <div className="flex items-center gap-2 py-1.5 overflow-x-auto scrollbar-none border-t border-border/40">
+              <span className="text-xs text-muted-foreground shrink-0">📍</span>
+              <button
+                onClick={() => setSelectedCity('')}
+                className={cn(
+                  'px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-colors',
+                  selectedCity === ''
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background border-border hover:border-primary/50',
+                )}
+              >
+                All cities
+              </button>
+              {availableCities.map(city => (
+                <button
+                  key={city}
+                  onClick={() => setSelectedCity(city)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-colors',
+                    selectedCity === city
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background border-border hover:border-primary/50',
+                  )}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Filter panel — expands inside sticky bar, scrollable on mobile */}
           {filtersExpanded && (
             <div className="max-h-[60vh] overflow-y-auto pb-3">
               <div className="rounded-lg border bg-card p-4 space-y-4">
+
+              {/* City / Area (only when cities are available for this country) */}
+              {availableCities.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">📍 City / Area</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setSelectedCity('')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        selectedCity === ''
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      All Cities
+                    </button>
+                    {availableCities.map(city => (
+                      <button
+                        key={city}
+                        onClick={() => setSelectedCity(city)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                          selectedCity === city
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background border-border hover:border-primary/50',
+                        )}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Category */}
               <div>
@@ -1402,7 +1584,7 @@ export default function CommunityActivities() {
 
                       {/* Actions */}
                       <div className="flex gap-2 pt-2">
-                        {activity.urlmoreinfo && (
+                        {activity.urlmoreinfo && activity.urlmoreinfo_status === 'ok' && (
                           <Button variant="link" className="h-auto p-0 text-primary text-sm" asChild>
                             <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
                               Website →
@@ -1445,19 +1627,17 @@ export default function CommunityActivities() {
         {/* ── Map View ── */}
         {viewMode === 'map' && (
           <div className="mt-2">
-            <h2 className="text-2xl font-bold mb-4">
-              {t.communityActivities?.mapTitle || 'Activity Locations Map'}
-            </h2>
             {/* BUG FIX: height on wrapper → MapView's h-full resolves correctly */}
-            <div className="rounded-lg border overflow-hidden h-[360px] md:h-[520px]">
+            <div className="relative rounded-lg border overflow-hidden h-[360px] md:h-[520px]">
               <MapView
-                places={places}
+                places={mapViewPlacesForMap}
                 center={center}
                 userLocation={userLocation}
                 nearbyKm={nearbyKm}
+                onBoundsChange={handleMapBoundsChange}
                 onSelect={(id) => setSelectedId(id)}
                 onAddToPlan={(id) => {
-                  const a = allActivitiesForMap.find(x => x.id === id);
+                  const a = mapViewPlaces.find(x => x.id === id) || allActivitiesForMap.find(x => x.id === id);
                   if (a) addToPlan(a);
                 }}
                 planItemIds={planItems.map(p => p.activityId)}
@@ -1489,15 +1669,38 @@ export default function CommunityActivities() {
                   </div>
                 }
               />
+              {/* Airbnb-style "Search this area" — appears after panning/zooming */}
+              {(showSearchArea || isFetchingMapView) && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
+                  {isFetchingMapView ? (
+                    <div className="px-4 py-2 bg-white/95 backdrop-blur text-xs text-muted-foreground rounded-full shadow-lg border border-border flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
+                      Loading…
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => mapBoundsRef.current && fetchMapViewPins(mapBoundsRef.current)}
+                      className="px-4 py-2 bg-white/95 backdrop-blur text-sm font-semibold rounded-full shadow-lg border border-border hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      Search this area
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {places.length} {places.length === 1 ? 'location' : 'locations'} shown
-              {activeFilterCount > 0 && ' (filtered)'}
+              {isFetchingMapView ? 'Fetching pins…' : (
+                <>
+                  {mapViewPlacesForMap.length} {mapViewPlacesForMap.length === 1 ? 'location' : 'locations'} in view
+                  {activeFilterCount > 0 && ' (filtered)'}
+                </>
+              )}
             </p>
 
             {/* Selected activity card — appears when a map marker is clicked */}
             {selectedId && (() => {
-              const sel = allActivitiesForMap.find(a => a.id === selectedId);
+              const sel = mapViewPlaces.find(a => a.id === selectedId) || allActivitiesForMap.find(a => a.id === selectedId);
               if (!sel) return null;
               const inPlan = planItems.some(p => p.activityId === sel.id);
               return (
@@ -1782,7 +1985,7 @@ export default function CommunityActivities() {
                       imageurlthumb: a.imageurlthumb,
                       location_address: a.location_address,
                       min_price: a.min_price, max_price: a.max_price,
-                      age_buckets: a.age_buckets, urlmoreinfo: a.urlmoreinfo,
+                      age_buckets: a.age_buckets, urlmoreinfo: a.urlmoreinfo, urlmoreinfo_status: a.urlmoreinfo_status,
                     }))
                 : [];
               return (

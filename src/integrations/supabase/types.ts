@@ -21,6 +21,8 @@ export type Database = {
           activity_type: string[]
           age_buckets: string[]
           created_at: string
+          created_by: string | null
+          created_by_reference: Json | null
           description: string
           duration_minutes: number | null
           event_endtime: string | null
@@ -48,6 +50,10 @@ export type Database = {
           trail_routetype: string | null
           updated_at: string
           urlmoreinfo: string | null
+          urlmoreinfo_checked_at: string | null
+          urlmoreinfo_final_url: string | null
+          urlmoreinfo_http_status: number | null
+          urlmoreinfo_status: string | null
         }
         Insert: {
           accessibility_stroller?: boolean | null
@@ -55,6 +61,8 @@ export type Database = {
           activity_type?: string[]
           age_buckets?: string[]
           created_at?: string
+          created_by?: string | null
+          created_by_reference?: Json | null
           description: string
           duration_minutes?: number | null
           event_endtime?: string | null
@@ -82,6 +90,10 @@ export type Database = {
           trail_routetype?: string | null
           updated_at?: string
           urlmoreinfo?: string | null
+          urlmoreinfo_checked_at?: string | null
+          urlmoreinfo_final_url?: string | null
+          urlmoreinfo_http_status?: number | null
+          urlmoreinfo_status?: string | null
         }
         Update: {
           accessibility_stroller?: boolean | null
@@ -89,6 +101,8 @@ export type Database = {
           activity_type?: string[]
           age_buckets?: string[]
           created_at?: string
+          created_by?: string | null
+          created_by_reference?: Json | null
           description?: string
           duration_minutes?: number | null
           event_endtime?: string | null
@@ -116,6 +130,10 @@ export type Database = {
           trail_routetype?: string | null
           updated_at?: string
           urlmoreinfo?: string | null
+          urlmoreinfo_checked_at?: string | null
+          urlmoreinfo_final_url?: string | null
+          urlmoreinfo_http_status?: number | null
+          urlmoreinfo_status?: string | null
         }
         Relationships: []
       }

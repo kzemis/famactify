@@ -30,6 +30,7 @@ const columns = [
   'booking_required', 'tags', 'season', 'rain_suitable', 'highlights', 'excitement_score', 'image_urls',
   'country_code', 'sensory_friendly', 'transit_accessible', 'fenced',
   'source_url', 'source_confidence', 'family_fit_score',
+  'created_by', 'created_by_reference', 'urlmoreinfo_status',
 ];
 
 function normalize(row) {
@@ -40,6 +41,14 @@ function normalize(row) {
   }
   out.source = row.source ?? 'codex_scrape';
   out.json = row.json ?? row;
+  out.created_by = 'crawler_codex';
+  out.created_by_reference = {
+    task_id: 'TASK-20260426-121',
+    importer: 'import_activityspots_direct_20260426.mjs',
+    source: out.source,
+    source_url: row.source_url ?? row.urlmoreinfo ?? null,
+  };
+  out.urlmoreinfo_status = 'unknown';
   return out;
 }
 
@@ -108,6 +117,9 @@ try {
             source_url = excluded.source_url,
             source_confidence = excluded.source_confidence,
             family_fit_score = excluded.family_fit_score,
+            created_by = excluded.created_by,
+            created_by_reference = excluded.created_by_reference,
+            urlmoreinfo_status = excluded.urlmoreinfo_status,
             updated_at = now()
         `;
       });

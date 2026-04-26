@@ -198,6 +198,8 @@ export default function CommunityActivities() {
 
   // Focused spot modal (from "Show on map" button)
   const [spotModalOpen, setSpotModalOpen] = useState(false);
+  const [spotModalShowAll, setSpotModalShowAll] = useState(false);
+  const [spotModalActivity, setSpotModalActivity] = useState<ActivitySpot | undefined>(undefined);
   const [spotModalCenter, setSpotModalCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
   const [spotModalPlace, setSpotModalPlace] = useState<{
     id: string; name: string; lat: number; lon: number;
@@ -642,6 +644,7 @@ export default function CommunityActivities() {
     if (typeof spot.location_lat === 'number' && typeof spot.location_lon === 'number') {
       setSelectedId(spot.id);
       setCenter({ lat: spot.location_lat, lon: spot.location_lon });
+      setSpotModalActivity(spot);
       setSpotModalPlace({
         id: spot.id,
         name: spot.name,
@@ -656,6 +659,7 @@ export default function CommunityActivities() {
         description: spot.description,
       });
       setSpotModalCenter({ lat: spot.location_lat, lon: spot.location_lon });
+      setSpotModalShowAll(false);
       setSpotModalOpen(true);
     }
   };
@@ -1637,34 +1641,94 @@ export default function CommunityActivities() {
         )}
 
         {/* ── Focused Spot Modal ── */}
-        <Dialog open={spotModalOpen} onOpenChange={setSpotModalOpen}>
+        <Dialog open={spotModalOpen} onOpenChange={(open) => { setSpotModalOpen(open); if (!open) setSpotModalShowAll(false); }}>
           <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-            {spotModalPlace && (
-              <>
-                {/* Activity header */}
-                <div className="px-4 pt-4 pb-3 border-b">
-                  <p className="font-semibold text-base leading-tight">{spotModalPlace.name}</p>
-                  {spotModalPlace.location_address && (
-                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 shrink-0" />{spotModalPlace.location_address}
-                    </p>
-                  )}
-                  {(spotModalPlace.min_price !== undefined || spotModalPlace.max_price !== undefined) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatPriceRange(spotModalPlace.min_price ?? null, spotModalPlace.max_price ?? null, t)}
-                      {spotModalPlace.age_buckets?.length ? ` · ${spotModalPlace.age_buckets.join(', ')} yrs` : ''}
-                    </p>
-                  )}
-                </div>
-                {/* Map */}
-                <div className="h-[380px]">
-                  <MapView
-                    places={[spotModalPlace]}
-                    center={spotModalCenter}
-                  />
-                </div>
-              </>
-            )}
+            {spotModalPlace && (() => {
+              const inPlan = planItems.some(p => p.activityId === spotModalPlace.id);
+              // Other activities to show on map when toggle is on
+              const otherPlaces = spotModalShowAll
+                ? activities
+                    .filter(a => a.id !== spotModalPlace.id && typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
+                    .map(a => ({
+                      id: a.id, name: a.name,
+                      lat: a.location_lat!, lon: a.location_lon!,
+                      imageurlthumb: a.imageurlthumb,
+                      location_address: a.location_address,
+                      min_price: a.min_price, max_price: a.max_price,
+                      age_buckets: a.age_buckets, urlmoreinfo: a.urlmoreinfo,
+                    }))
+                : [];
+              return (
+                <>
+                  {/* Activity header */}
+                  <div className="px-4 pt-4 pb-3 border-b space-y-2">
+                    <div>
+                      <p className="font-semibold text-base leading-tight">{spotModalPlace.name}</p>
+                      {spotModalPlace.location_address && (
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 shrink-0" />{spotModalPlace.location_address}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatPriceRange(spotModalPlace.min_price ?? null, spotModalPlace.max_price ?? null, regionConfig)}
+                        {spotModalPlace.age_buckets?.length ? ` · ${spotModalPlace.age_buckets.join(', ')} yrs` : ''}
+                      </p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {/* Add / Remove from plan */}
+                      <Button
+                        size="sm"
+                        variant={inPlan ? 'secondary' : 'default'}
+                        className="gap-1.5"
+                        onClick={() => {
+                          if (inPlan) {
+                            removeFromPlan(spotModalPlace.id);
+                            toast.success(`Removed from plan`);
+                          } else if (spotModalActivity) {
+                            addToPlan(spotModalActivity);
+                            toast.success(`Added "${spotModalPlace.name}" to plan`);
+                          }
+                        }}
+                      >
+                        {inPlan ? '✓ In plan' : '+ Add to plan'}
+                      </Button>
+
+                      {/* Show all activities toggle */}
+                      <Button
+                        size="sm"
+                        variant={spotModalShowAll ? 'secondary' : 'outline'}
+                        className="gap-1.5"
+                        onClick={() => setSpotModalShowAll(v => !v)}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        {spotModalShowAll ? 'Hide others' : 'Show all'}
+                      </Button>
+
+                      {/* Back / close */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 ml-auto text-muted-foreground"
+                        onClick={() => { setSpotModalOpen(false); setSpotModalShowAll(false); }}
+                      >
+                        <X className="w-3.5 h-3.5" /> Back
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Map — selected spot as path pin #1 (blue circle), others as normal markers */}
+                  <div className="h-[360px]">
+                    <MapView
+                      places={otherPlaces}
+                      path={[{ id: spotModalPlace.id, lat: spotModalPlace.lat, lon: spotModalPlace.lon, name: spotModalPlace.name }]}
+                      center={spotModalCenter}
+                    />
+                  </div>
+                </>
+              );
+            })()}
           </DialogContent>
         </Dialog>
       </main>

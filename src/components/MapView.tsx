@@ -18,6 +18,14 @@ interface Place {
   lon: number;
   type?: string;
   activityType?: string;
+  // Rich popup card data (optional — falls back to name-only if absent)
+  imageurlthumb?: string | null;
+  description?: string | null;
+  location_address?: string | null;
+  min_price?: number | null;
+  max_price?: number | null;
+  age_buckets?: string[] | null;
+  urlmoreinfo?: string | null;
 }
 
 interface PathItem {
@@ -35,6 +43,10 @@ interface MapViewProps {
   onMapClick?: (lat: number, lon: number) => void;
   overlay?: React.ReactNode;
   className?: string; // optional style override for wrapper
+  /** User's GPS location — renders a blue "you are here" dot */
+  userLocation?: { lat: number; lon: number } | null;
+  /** If set alongside userLocation, draws a radius circle (km) */
+  nearbyKm?: number | null;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -46,11 +58,15 @@ const MapView: React.FC<MapViewProps> = ({
   onMapClick,
   overlay,
   className,
+  userLocation,
+  nearbyKm,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const pathLayerRef = useRef<L.LayerGroup | null>(null);
+  const userLocationMarkerRef = useRef<L.Marker | null>(null);
+  const nearbyCircleRef = useRef<L.Circle | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -94,10 +110,46 @@ const MapView: React.FC<MapViewProps> = ({
       const icon = getMarkerIcon ? getMarkerIcon(place) : undefined;
       const marker = L.marker([place.lat, place.lon], icon ? { icon } : undefined);
 
-      marker.bindPopup(`
-        <strong>${place.name}</strong><br/>
-        ${place.type || place.activityType || ''}
-      `);
+      // Rich popup card — inline styles (Leaflet popup is plain DOM, no Tailwind)
+      const priceHtml = (() => {
+        if (place.min_price === 0 || place.min_price === null && place.max_price === null) return 'Free';
+        if (place.min_price !== null && place.min_price !== undefined) return `From $${place.min_price}`;
+        if (place.max_price !== null && place.max_price !== undefined) return `Up to $${place.max_price}`;
+        return null;
+      })();
+
+      const popupHtml = `
+        <div style="min-width:220px;max-width:280px;font-family:system-ui,sans-serif;line-height:1.4;overflow:hidden;">
+          ${place.imageurlthumb
+            ? `<div style="margin:-12px -20px 10px;overflow:hidden;height:140px;">
+                <img src="${place.imageurlthumb}" alt="" style="width:100%;height:140px;object-fit:cover;display:block;" />
+               </div>`
+            : ''}
+          <strong style="font-size:14px;display:block;margin-bottom:6px;color:#111;">${place.name}</strong>
+          ${place.location_address
+            ? `<div style="font-size:12px;color:#666;margin-bottom:4px;">📍 ${place.location_address}</div>`
+            : ''}
+          ${priceHtml
+            ? `<div style="font-size:12px;color:#666;margin-bottom:4px;">💰 ${priceHtml}</div>`
+            : ''}
+          ${place.age_buckets?.length
+            ? `<div style="font-size:12px;color:#666;margin-bottom:6px;">👶 ${place.age_buckets.join(', ')} yrs</div>`
+            : ''}
+          ${place.urlmoreinfo
+            ? `<a href="${place.urlmoreinfo}" target="_blank" rel="noopener noreferrer"
+                style="font-size:12px;color:#ec4899;text-decoration:none;font-weight:500;">
+                More info →
+               </a>`
+            : ''}
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, { maxWidth: 280 });
+
+      // After popup opens, call invalidateSize so the map tiles don't misalign
+      marker.on('popupopen', () => {
+        leafletRef.current?.invalidateSize();
+      });
 
       if (onSelect) {
         marker.on('click', () => onSelect(place.id));
@@ -174,6 +226,59 @@ const MapView: React.FC<MapViewProps> = ({
     // Fit bounds to path
     leafletRef.current.fitBounds(polyline.getBounds().pad(0.15));
   }, [path, onSelect]);
+
+  // User location marker — blue "you are here" dot
+  useEffect(() => {
+    if (!leafletRef.current) return;
+
+    // Remove previous marker
+    if (userLocationMarkerRef.current) {
+      userLocationMarkerRef.current.remove();
+      userLocationMarkerRef.current = null;
+    }
+
+    if (!userLocation) return;
+
+    const icon = L.divIcon({
+      html: `
+        <div style="
+          width: 18px; height: 18px;
+          background: #3b82f6;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.35), 0 2px 6px rgba(0,0,0,0.3);
+        "></div>`,
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+
+    userLocationMarkerRef.current = L.marker([userLocation.lat, userLocation.lon], { icon, zIndexOffset: 1000 })
+      .bindPopup('<strong>You are here</strong>')
+      .addTo(leafletRef.current);
+  }, [userLocation?.lat, userLocation?.lon]);
+
+  // Nearby radius circle — drawn when both userLocation and nearbyKm are set
+  useEffect(() => {
+    if (!leafletRef.current) return;
+
+    // Remove previous circle
+    if (nearbyCircleRef.current) {
+      nearbyCircleRef.current.remove();
+      nearbyCircleRef.current = null;
+    }
+
+    if (!userLocation || !nearbyKm) return;
+
+    nearbyCircleRef.current = L.circle([userLocation.lat, userLocation.lon], {
+      radius: nearbyKm * 1000, // metres
+      color: '#3b82f6',
+      weight: 1.5,
+      opacity: 0.6,
+      fillColor: '#3b82f6',
+      fillOpacity: 0.08,
+    }).addTo(leafletRef.current);
+  }, [userLocation?.lat, userLocation?.lon, nearbyKm]);
 
   // Recenter map when center prop changes (e.g., after GPS or selecting a point)
   useEffect(() => {

@@ -1,76 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare, User, LogOut, CalendarPlus, Plus } from "lucide-react";
+import { Check, Calendar, Sparkles, Users, Heart, Search, X, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import AppHeader from "@/components/AppHeader";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { t } = useLanguage();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    // Get current user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: t.common.error,
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: t.common.signOut,
-        description: "You have been signed out successfully",
-      });
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    if (error) {
-      toast({
-        title: t.common.error,
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   const features = [
     {
@@ -122,69 +61,7 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <span className="text-2xl font-bold text-primary">FamActify</span>
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Activities button linking to community page */}
-            <Button variant="ghost" onClick={() => navigate("/community")} className="sm:w-auto sm:px-4">
-              Activities
-            </Button>
-            
-            <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t.common.contribute}</span>
-            </Button>
-
-            <LanguageSwitcher />
-
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.full_name || user.email} />
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.user_metadata?.full_name || "User"}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    {t.header.profileSettings}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/saved-trips")}>
-                    {t.header.savedTrips}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                    {t.common.signOut}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button 
-                variant="default" 
-                onClick={handleGoogleSignIn}
-                size="icon"
-                className="sm:w-auto sm:px-4"
-              >
-                <User className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t.common.signIn}</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">

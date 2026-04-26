@@ -687,8 +687,8 @@ export default function CommunityActivities() {
         </div>
 
         {/* ── Rich Filters (DIS-01) ── */}
-        <div className="mb-6 space-y-3">
-          {/* Row 1: search + filters toggle */}
+        <div className="mb-6">
+          {/* Single row: search + filters toggle */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -718,90 +718,45 @@ export default function CommunityActivities() {
             </button>
           </div>
 
-          {/* Row 2: category quick-pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              onClick={() => setSelectedCategories([])}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedCategories.length === 0
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              All
-            </button>
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() =>
-                  setSelectedCategories(prev =>
-                    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
-                  )
-                }
-                className={cn(
-                  'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                  selectedCategories.includes(cat)
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background border-border hover:border-primary/50',
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Row 3: Together Mode quick-pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              onClick={() => setSelectedInvolvement('')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === ''
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              All modes
-            </button>
-            <button
-              onClick={() => setSelectedInvolvement('active_together')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === 'active_together'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              🤝 Together
-            </button>
-            <button
-              onClick={() => setSelectedInvolvement('supervise')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === 'supervise'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              👀 Watch from Side
-            </button>
-            <button
-              onClick={() => setSelectedInvolvement('drop_go')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === 'drop_go'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              🚗 Drop &amp; Go
-            </button>
-          </div>
-
-          {/* Advanced filter panel */}
+          {/* Expandable filter panel */}
           {filtersExpanded && (
-            <div className="rounded-lg border bg-card p-4 space-y-4">
+            <div className="mt-3 rounded-lg border bg-card p-4 space-y-4">
+
+              {/* Category */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Category</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategories([])}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                      selectedCategories.length === 0
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
+                    )}
+                  >
+                    All
+                  </button>
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() =>
+                        setSelectedCategories(prev =>
+                          prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
+                        )
+                      }
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        selectedCategories.includes(cat)
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Age */}
               <div>

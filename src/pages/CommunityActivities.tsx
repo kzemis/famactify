@@ -266,8 +266,8 @@ export default function CommunityActivities() {
   const [transitAccessible, setTransitAccessible] = useState(false);
   const [fencedArea, setFencedArea] = useState(false);
 
-  // City / area filter
-  const [selectedCity, setSelectedCity] = useState<string>('');
+  // City / area filter — multi-select
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
 
   // GPS / Nearby filter
@@ -275,18 +275,22 @@ export default function CommunityActivities() {
   const [nearbyKm, setNearbyKm] = useState<number | null>(null);
   const [locatingGPS, setLocatingGPS] = useState(false);
 
-  // Map view — Airbnb-style viewport loading
-  const [mapViewPlaces, setMapViewPlaces] = useState<SlimActivity[]>([]);
-  const [showSearchArea, setShowSearchArea] = useState(false);
-  const [isFetchingMapView, setIsFetchingMapView] = useState(false);
-  const mapBoundsRef = useRef<{ north: number; south: number; east: number; west: number } | null>(null);
-  const mapNeedsRefetch = useRef(true);
-
   // UI
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>('grid');
+
+  // Map view — auto-loading pins (viewport mode when no city, city mode when cities selected)
+  const [mapViewPlaces, setMapViewPlaces] = useState<SlimActivity[]>([]);
+  const [isFetchingMapView, setIsFetchingMapView] = useState(false);
+  const mapBoundsRef = useRef<{ north: number; south: number; east: number; west: number } | null>(null);
+  const mapFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Stable refs so callbacks always see latest values without re-creating
+  const selectedCitiesRef = useRef<string[]>([]);
+  selectedCitiesRef.current = selectedCities;
+  const viewModeRef = useRef<'grid' | 'map' | 'plan'>('grid');
+  viewModeRef.current = viewMode;
 
   // Session plan (shopping-cart pattern)
   interface PlanItem {
@@ -344,16 +348,22 @@ export default function CommunityActivities() {
           ...new Set((data || []).map((r: any) => r.city as string).filter(Boolean)),
         ].sort();
         setAvailableCities(cities);
-        setSelectedCity(''); // reset when switching countries
+        setSelectedCities([]); // reset when switching countries
       });
   }, [countryCode]);
 
-  // Reset map viewport refetch flag when switching to map view
+  // When switching to map view, immediately fetch pins for current bounds/cities
   useEffect(() => {
     if (viewMode === 'map') {
-      mapNeedsRefetch.current = true;
-      setShowSearchArea(false);
+      const cities = selectedCitiesRef.current;
+      const bounds = mapBoundsRef.current;
+      if (cities.length > 0) {
+        fetchMapViewPinsRef.current({ cities, bounds: null });
+      } else if (bounds) {
+        fetchMapViewPinsRef.current({ cities: [], bounds });
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode]);
 
   // ---------------------------------------------------------------------------
@@ -365,7 +375,7 @@ export default function CommunityActivities() {
    * Works on any query — call before .select()/.range() so both grid and map
    * queries share identical filter logic.
    */
-  const applyServerFilters = useCallback((q: any): any => {
+  const applyServerFilters = useCallback((q: any, opts?: { skipCity?: boolean }): any => {
     const now = new Date();
     const nowIso = now.toISOString();
 
@@ -440,15 +450,15 @@ export default function CommunityActivities() {
     if (transitAccessible)  q = q.or('transit_accessible.eq.true,tags.cs.{transit-friendly}');
     if (fencedArea)         q = q.or('fenced.eq.true,tags.cs.{fenced}');
 
-    // City / area filter
-    if (selectedCity) q = q.eq('city', selectedCity);
+    // City / area filter (can be skipped by fetchMapViewPins which handles city itself)
+    if (selectedCities.length > 0 && !opts?.skipCity) q = q.in('city', selectedCities);
 
     return q;
   }, [
     countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
     maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
     sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
-    selectedCity,
+    selectedCities,
   ]);
 
   /** Ref so loadMore always uses the latest applyServerFilters without stale closure */
@@ -469,8 +479,16 @@ export default function CommunityActivities() {
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setCurrentPage(0);
-      // Signal map view to re-fetch on next bounds update (filters changed)
-      mapNeedsRefetch.current = true;
+      // If currently in map view and filters change, re-fetch map pins immediately
+      if (viewModeRef.current === 'map') {
+        const cities = selectedCitiesRef.current;
+        const bounds = mapBoundsRef.current;
+        if (cities.length > 0) {
+          fetchMapViewPinsRef.current({ cities, bounds: null });
+        } else if (bounds) {
+          fetchMapViewPinsRef.current({ cities: [], bounds });
+        }
+      }
       try {
         const isNearby = nearbyKm !== null && userLocation !== null;
 
@@ -540,7 +558,7 @@ export default function CommunityActivities() {
     countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
     maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
     sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
-    nearbyKm, userLocation, selectedCity,
+    nearbyKm, userLocation, selectedCities,
   ]);
 
   /** Load the next page of grid results (appends to current activities) */
@@ -569,23 +587,42 @@ export default function CommunityActivities() {
   // Map view — Airbnb-style viewport-based pin loading
   // ---------------------------------------------------------------------------
 
-  /** Fetch pins visible in the given bbox, applying the current server filters */
+  /**
+   * Fetch map pins in two modes:
+   *  - City mode  (cities.length > 0): fetch all pins for selected cities, no bbox limit
+   *  - Viewport mode (cities empty):   fetch pins within bbox, debounced on pan/zoom
+   */
   const fetchMapViewPins = useCallback(async (
-    bounds: { north: number; south: number; east: number; west: number }
+    opts: { cities: string[]; bounds: { north: number; south: number; east: number; west: number } | null }
   ) => {
     setIsFetchingMapView(true);
-    setShowSearchArea(false);
     try {
-      const { data } = await applyServerFiltersRef.current(
-        supabase.from('activityspots').select(MAP_COLUMNS)
+      let q = applyServerFiltersRef.current(
+        supabase.from('activityspots').select(MAP_COLUMNS),
+        { skipCity: true } // city handled below so it doesn't AND with bbox
       )
         .not('location_lat', 'is', null)
-        .not('location_lon', 'is', null)
-        .gte('location_lat', bounds.south)
-        .lte('location_lat', bounds.north)
-        .gte('location_lon', bounds.west)
-        .lte('location_lon', bounds.east)
-        .limit(150);
+        .not('location_lon', 'is', null);
+
+      if (opts.cities.length > 0) {
+        // City mode: show every pin for the chosen cities (no bbox restriction)
+        q = q.in('city', opts.cities).limit(300);
+      } else if (opts.bounds) {
+        // Viewport mode: only pins visible in current map bbox
+        q = q
+          .gte('location_lat', opts.bounds.south)
+          .lte('location_lat', opts.bounds.north)
+          .gte('location_lon', opts.bounds.west)
+          .lte('location_lon', opts.bounds.east)
+          .limit(150);
+      } else {
+        // No cities and no bounds yet — nothing to show
+        setMapViewPlaces([]);
+        setIsFetchingMapView(false);
+        return;
+      }
+
+      const { data } = await q;
       setMapViewPlaces((data as SlimActivity[]) || []);
     } catch (err) {
       console.error('fetchMapViewPins error', err);
@@ -598,18 +635,35 @@ export default function CommunityActivities() {
   const fetchMapViewPinsRef = useRef(fetchMapViewPins);
   fetchMapViewPinsRef.current = fetchMapViewPins;
 
-  /** Called by MapView on every pan/zoom end and once on initial render */
+  /**
+   * Called by MapView on every pan/zoom end and once on initial render.
+   * - In city mode (cities selected): bounds are stored but no bbox fetch is done — the
+   *   city filter already shows all pins, so panning doesn't need a new fetch.
+   * - In viewport mode (no cities): debounce 350 ms then auto-fetch pins in new bbox.
+   */
   const handleMapBoundsChange = useCallback((
     bounds: { north: number; south: number; east: number; west: number }
   ) => {
     mapBoundsRef.current = bounds;
-    if (mapNeedsRefetch.current) {
-      mapNeedsRefetch.current = false;
-      fetchMapViewPinsRef.current(bounds);
-    } else {
-      setShowSearchArea(true);
-    }
+    if (selectedCitiesRef.current.length > 0) return; // city mode — bbox irrelevant
+    if (viewModeRef.current !== 'map') return;
+    if (mapFetchTimerRef.current) clearTimeout(mapFetchTimerRef.current);
+    mapFetchTimerRef.current = window.setTimeout(() => {
+      fetchMapViewPinsRef.current({ cities: [], bounds });
+    }, 350);
   }, []);
+
+  // When selectedCities changes while in map view, re-fetch pins immediately
+  useEffect(() => {
+    if (viewMode !== 'map') return;
+    const bounds = mapBoundsRef.current;
+    if (selectedCities.length > 0) {
+      fetchMapViewPinsRef.current({ cities: selectedCities, bounds: null });
+    } else if (bounds) {
+      fetchMapViewPinsRef.current({ cities: [], bounds });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCities]);
 
   // ---------------------------------------------------------------------------
   // Regional — distance options in correct units for current country
@@ -665,7 +719,7 @@ export default function CommunityActivities() {
   const activeFilterCount = useMemo(() => {
     let n = 0;
     if (searchQuery) n++;
-    if (selectedCity) n++;
+    if (selectedCities.length > 0) n++;
     if (selectedCategories.length > 0) n++;
     if (selectedAges.length > 0) n++;
     if (selectedInvolvement) n++;
@@ -682,11 +736,11 @@ export default function CommunityActivities() {
     if (timingFilter !== 'any') n++;
     if (durationFilter !== 'any') n++;
     return n;
-  }, [searchQuery, selectedCity, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
+  }, [searchQuery, selectedCities, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
-    setSelectedCity('');
+    setSelectedCities([]);
     setSelectedCategories([]);
     setSelectedAges([]);
     setSelectedInvolvement('');
@@ -960,28 +1014,32 @@ export default function CommunityActivities() {
             </button>
           </div>
 
-          {/* City quick-filter row — horizontal scroll, only when cities available */}
+          {/* City quick-filter row — compact multi-select chips, horizontal scroll */}
           {availableCities.length > 0 && (
             <div className="flex items-center gap-2 py-1.5 overflow-x-auto scrollbar-none border-t border-border/40">
               <span className="text-xs text-muted-foreground shrink-0">📍</span>
               <button
-                onClick={() => setSelectedCity('')}
+                onClick={() => setSelectedCities([])}
                 className={cn(
                   'px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-colors',
-                  selectedCity === ''
+                  selectedCities.length === 0
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-background border-border hover:border-primary/50',
                 )}
               >
-                All cities
+                All
               </button>
               {availableCities.map(city => (
                 <button
                   key={city}
-                  onClick={() => setSelectedCity(city)}
+                  onClick={() =>
+                    setSelectedCities(prev =>
+                      prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
+                    )
+                  }
                   className={cn(
                     'px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-colors',
-                    selectedCity === city
+                    selectedCities.includes(city)
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-background border-border hover:border-primary/50',
                   )}
@@ -997,29 +1055,32 @@ export default function CommunityActivities() {
             <div className="max-h-[60vh] overflow-y-auto pb-3">
               <div className="rounded-lg border bg-card p-4 space-y-4">
 
-              {/* City / Area (only when cities are available for this country) */}
+              {/* City / Area — multi-select (only when cities are available for this country) */}
               {availableCities.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">📍 City / Area</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">📍 City / Area</p>
+                    {selectedCities.length > 0 && (
+                      <button
+                        onClick={() => setSelectedCities([])}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Clear ({selectedCities.length})
+                      </button>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setSelectedCity('')}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        selectedCity === ''
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      All Cities
-                    </button>
                     {availableCities.map(city => (
                       <button
                         key={city}
-                        onClick={() => setSelectedCity(city)}
+                        onClick={() =>
+                          setSelectedCities(prev =>
+                            prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
+                          )
+                        }
                         className={cn(
                           'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                          selectedCity === city
+                          selectedCities.includes(city)
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'bg-background border-border hover:border-primary/50',
                         )}
@@ -1349,8 +1410,8 @@ export default function CommunityActivities() {
           )}
         </div>
 
-        {/* Results count */}
-        <div className="mb-4 text-sm text-muted-foreground">
+        {/* Results count — hidden in map view (map shows its own pin count) */}
+        <div className={cn('mb-4 text-sm text-muted-foreground', viewMode === 'map' && 'hidden')}>
           {loading ? '…' : (
             <>
               {activities.length < totalCount
@@ -1669,23 +1730,13 @@ export default function CommunityActivities() {
                   </div>
                 }
               />
-              {/* Airbnb-style "Search this area" — appears after panning/zooming */}
-              {(showSearchArea || isFetchingMapView) && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
-                  {isFetchingMapView ? (
-                    <div className="px-4 py-2 bg-white/95 backdrop-blur text-xs text-muted-foreground rounded-full shadow-lg border border-border flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
-                      Loading…
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => mapBoundsRef.current && fetchMapViewPins(mapBoundsRef.current)}
-                      className="px-4 py-2 bg-white/95 backdrop-blur text-sm font-semibold rounded-full shadow-lg border border-border hover:bg-gray-50 transition-colors flex items-center gap-1.5"
-                    >
-                      <Search className="w-3.5 h-3.5" />
-                      Search this area
-                    </button>
-                  )}
+              {/* Loading spinner — auto-fetches on pan/zoom, no manual button needed */}
+              {isFetchingMapView && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+                  <div className="px-4 py-2 bg-white/95 backdrop-blur text-xs text-muted-foreground rounded-full shadow-lg border border-border flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
+                    Loading…
+                  </div>
                 </div>
               )}
             </div>

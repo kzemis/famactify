@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { formatPriceRange, formatDistance, getDistanceOptions } from '@/lib/formatters';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
@@ -91,19 +92,14 @@ const PRICE_OPTIONS = [
   { value: '10',   label: 'Under $10' },
   { value: '20',   label: 'Under $20' },
 ];
-const DISTANCE_OPTIONS = [
-  { value: 2,  label: '2 km' },
-  { value: 5,  label: '5 km' },
-  { value: 10, label: '10 km' },
-  { value: 25, label: '25 km' },
-];
+// Distance options are now derived from regionConfig — see distanceOptions useMemo below
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export default function CommunityActivities() {
   const { t } = useLanguage();
-  const { countryCode } = useCountry();
+  const { countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
 
   // Data
@@ -313,6 +309,11 @@ export default function CommunityActivities() {
   };
 
   // ---------------------------------------------------------------------------
+  // Regional — distance options in correct units for current country
+  // ---------------------------------------------------------------------------
+  const distanceOptions = useMemo(() => getDistanceOptions(regionConfig), [regionConfig]);
+
+  // ---------------------------------------------------------------------------
   // Derived data — map places come from filtered list (fixes "ignored filters" bug)
   // ---------------------------------------------------------------------------
   const places = useMemo(() => {
@@ -399,14 +400,8 @@ export default function CommunityActivities() {
   // ---------------------------------------------------------------------------
   // Misc handlers
   // ---------------------------------------------------------------------------
-  const getPriceDisplay = (activity: ActivitySpot) => {
-    if (!activity.min_price && !activity.max_price) return 'Free';
-    if (activity.min_price === 0 && activity.max_price === 0) return 'Free';
-    if (activity.min_price && activity.max_price) return `€${activity.min_price} – €${activity.max_price}`;
-    if (activity.min_price) return `From €${activity.min_price}`;
-    if (activity.max_price) return `Up to €${activity.max_price}`;
-    return 'Price varies';
-  };
+  const getPriceDisplay = (activity: ActivitySpot) =>
+    formatPriceRange(activity.min_price, activity.max_price, regionConfig);
 
   const openLightbox = (images: string[], index: number) => {
     setLightboxImages(images);
@@ -707,7 +702,7 @@ export default function CommunityActivities() {
                   </button>
                   {/* Distance pills — only active after GPS obtained */}
                   {userLocation
-                    ? DISTANCE_OPTIONS.map(opt => (
+                    ? distanceOptions.map(opt => (
                         <button
                           key={opt.value}
                           onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
@@ -838,7 +833,7 @@ export default function CommunityActivities() {
                       {/* Distance badge if nearby filter active */}
                       {userLocation && typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
                         <div className="text-xs text-muted-foreground">
-                          📍 {haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon).toFixed(1)} km away
+                          📍 {formatDistance(haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon), regionConfig)} away
                         </div>
                       )}
 
@@ -960,7 +955,7 @@ export default function CommunityActivities() {
                       {locatingGPS ? '…' : 'Me'}
                     </Button>
                     {/* Distance quick-select in map overlay */}
-                    {userLocation && DISTANCE_OPTIONS.map(opt => (
+                    {userLocation && distanceOptions.map(opt => (
                       <Button
                         key={opt.value}
                         size="sm"

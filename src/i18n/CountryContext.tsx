@@ -2,6 +2,14 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export type CountryCode = 'US' | 'LV';
 
+export interface RegionConfig {
+  units: 'imperial' | 'metric';
+  clockFormat: '12h' | '24h';
+  dateFormat: 'MM/DD/YYYY' | 'DD/MM/YYYY';
+  currency: '$' | '€';
+  distanceUnit: 'mi' | 'km';
+}
+
 export interface Country {
   code: CountryCode;
   name: string;
@@ -9,6 +17,7 @@ export interface Country {
   region: 'EU' | 'US';          // legal region (EU = GDPR, US = CCPA/California)
   defaultLanguage: 'en' | 'lv'; // suggested language (never forced)
   requiresCookieConsent: boolean; // GDPR requires explicit consent
+  regionConfig: RegionConfig;
 }
 
 export const COUNTRIES: Record<CountryCode, Country> = {
@@ -18,7 +27,14 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     flag: '🇺🇸',
     region: 'US',
     defaultLanguage: 'en',
-    requiresCookieConsent: false, // CCPA does not require banner (no federal law)
+    requiresCookieConsent: false,
+    regionConfig: {
+      units: 'imperial',
+      clockFormat: '12h',
+      dateFormat: 'MM/DD/YYYY',
+      currency: '$',
+      distanceUnit: 'mi',
+    },
   },
   LV: {
     code: 'LV',
@@ -26,7 +42,14 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     flag: '🇱🇻',
     region: 'EU',
     defaultLanguage: 'lv',
-    requiresCookieConsent: true, // GDPR applies — must show consent banner
+    requiresCookieConsent: true,
+    regionConfig: {
+      units: 'metric',
+      clockFormat: '24h',
+      dateFormat: 'DD/MM/YYYY',
+      currency: '€',
+      distanceUnit: 'km',
+    },
   },
 };
 
@@ -36,6 +59,7 @@ interface CountryContextType {
   setCountry: (code: CountryCode) => void;
   isEU: boolean;
   isUS: boolean;
+  regionConfig: RegionConfig;
 }
 
 const CountryContext = createContext<CountryContextType | undefined>(undefined);
@@ -65,6 +89,7 @@ export const CountryProvider = ({ children }: { children: ReactNode }) => {
       setCountry,
       isEU: country.region === 'EU',
       isUS: country.region === 'US',
+      regionConfig: country.regionConfig,
     }}>
       {children}
     </CountryContext.Provider>

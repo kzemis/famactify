@@ -45,3 +45,28 @@ If the Supabase SQL editor times out or rejects a larger file, run these 250-row
 - `supabase/seeds/imports/chunks/import_activityspots_20260426_02_bay_area_hikes_part02.sql`
 - `supabase/seeds/imports/chunks/import_activityspots_20260426_03_latvia_activities_part01.sql`
 - `supabase/seeds/imports/chunks/import_activityspots_20260426_03_latvia_activities_part02.sql`
+
+## Tiny SQL Editor fallback
+
+Supabase SQL Editor may reject larger files with “Query is too large”. If so, use the 50-row chunks in:
+
+- `supabase/seeds/imports/chunks_50/`
+
+There are 40 files total, about 230–314 KB each. Run them in filename order. Manifest:
+
+- `supabase/seeds/imports/chunks_50/import_activityspots_20260426_chunks_50_manifest.json`
+
+## Direct database import option
+
+If you connect directly to Postgres, you can use:
+
+- `supabase/seeds/imports/import_activityspots_direct_20260426.mjs`
+
+It requires the `postgres` npm package and a Supabase DB connection string:
+
+```bash
+npm install postgres
+DATABASE_URL="postgresql://..." node supabase/seeds/imports/import_activityspots_direct_20260426.mjs
+```
+
+Use this only with the direct database connection string from Supabase, not the anon/public API key.

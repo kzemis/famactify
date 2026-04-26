@@ -1,0 +1,242 @@
+[
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part001.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 001",
+    "size_bytes": 292224
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part002.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 002",
+    "size_bytes": 291726
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part003.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 003",
+    "size_bytes": 296557
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part004.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 004",
+    "size_bytes": 292620
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part005.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 005",
+    "size_bytes": 295712
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part006.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 006",
+    "size_bytes": 295144
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part007.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 007",
+    "size_bytes": 295550
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part008.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 008",
+    "size_bytes": 294124
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part009.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 009",
+    "size_bytes": 295530
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part010.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 010",
+    "size_bytes": 293295
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part011.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 011",
+    "size_bytes": 295580
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part012.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 012",
+    "size_bytes": 294392
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part013.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 013",
+    "size_bytes": 294785
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part014.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 014",
+    "size_bytes": 291398
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part015.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 015",
+    "size_bytes": 297608
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part016.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 016",
+    "size_bytes": 289007
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part017.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 017",
+    "size_bytes": 294375
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part018.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 018",
+    "size_bytes": 292518
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part019.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 019",
+    "size_bytes": 299978
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_01_bay_area_events_part020.sql",
+    "rows": 50,
+    "label": "Bay Area official library/event activities part 020",
+    "size_bytes": 313530
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part001.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 001",
+    "size_bytes": 237272
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part002.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 002",
+    "size_bytes": 236584
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part003.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 003",
+    "size_bytes": 233450
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part004.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 004",
+    "size_bytes": 234894
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part005.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 005",
+    "size_bytes": 235917
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part006.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 006",
+    "size_bytes": 236128
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part007.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 007",
+    "size_bytes": 239446
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part008.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 008",
+    "size_bytes": 237514
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part009.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 009",
+    "size_bytes": 241229
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_02_bay_area_hikes_part010.sql",
+    "rows": 50,
+    "label": "Bay Area OSM hikes/trails part 010",
+    "size_bytes": 233831
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part001.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 001",
+    "size_bytes": 240605
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part002.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 002",
+    "size_bytes": 243507
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part003.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 003",
+    "size_bytes": 241606
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part004.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 004",
+    "size_bytes": 241206
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part005.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 005",
+    "size_bytes": 238886
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part006.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 006",
+    "size_bytes": 242251
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part007.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 007",
+    "size_bytes": 237438
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part008.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 008",
+    "size_bytes": 239278
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part009.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 009",
+    "size_bytes": 237149
+  },
+  {
+    "file": "supabase/seeds/imports/chunks_50/import_activityspots_20260426_03_latvia_activities_part010.sql",
+    "rows": 50,
+    "label": "Latvia OSM activities part 010",
+    "size_bytes": 238841
+  }
+]

@@ -1337,6 +1337,11 @@ export default function CommunityActivities() {
                 userLocation={userLocation}
                 nearbyKm={nearbyKm}
                 onSelect={(id) => setSelectedId(id)}
+                onAddToPlan={(id) => {
+                  const a = filteredActivities.find(x => x.id === id);
+                  if (a) addToPlan(a);
+                }}
+                planItemIds={planItems.map(p => p.activityId)}
                 overlay={
                   <div className="flex items-center gap-2">
                     {/* GPS locate button — centers map AND sets location for filter */}
@@ -1523,52 +1528,52 @@ export default function CommunityActivities() {
               </div>
             </div>
 
-            {/* Right: route map */}
+            {/* Right: route map — always visible; shows user/default location when plan is empty */}
             <div className="relative w-full lg:w-3/5 h-64 lg:h-full">
-              {planPath.length > 0 || showAllOnPlanMap ? (
-                <MapView
-                  places={showAllOnPlanMap ? places : []}
-                  path={planPath}
-                  className="h-full rounded-none border-0"
-                  center={planPath.length > 0 ? { lat: planPath[0].lat, lon: planPath[0].lon } : center}
-                  onSelect={(id) => setPlanMapSelectedId(id)}
-                  overlay={
-                    <div className="flex flex-col gap-1.5 items-end">
-                      <button
-                        onClick={() => setShowAllOnPlanMap(v => !v)}
-                        className={cn(
-                          'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-md transition-colors',
-                          showAllOnPlanMap
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background border border-border text-foreground hover:bg-accent'
-                        )}
-                        title="Show all activities on map so you can add nearby ones to your plan"
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                        {showAllOnPlanMap ? 'All activities shown' : 'Show all activities'}
-                      </button>
-                      {showAllOnPlanMap && (
-                        <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow">
-                          Click any pin to preview
-                        </p>
+              <MapView
+                places={showAllOnPlanMap ? places : []}
+                path={planPath}
+                className="h-full rounded-none border-0"
+                center={
+                  planPath.length > 0
+                    ? { lat: planPath[0].lat, lon: planPath[0].lon }
+                    : (userLocation ?? center)
+                }
+                userLocation={userLocation}
+                onSelect={(id) => setPlanMapSelectedId(id)}
+                onAddToPlan={(id) => {
+                  const a = filteredActivities.find(x => x.id === id);
+                  if (a) addToPlan(a);
+                }}
+                planItemIds={planItems.map(p => p.activityId)}
+                overlay={
+                  <div className="flex flex-col gap-1.5 items-end">
+                    <button
+                      onClick={() => setShowAllOnPlanMap(v => !v)}
+                      className={cn(
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-md transition-colors',
+                        showAllOnPlanMap
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background border border-border text-foreground hover:bg-accent'
                       )}
-                    </div>
-                  }
-                />
-              ) : (
-                <div className="h-full bg-muted flex flex-col items-center justify-center gap-3">
-                  <div className="text-center text-muted-foreground">
-                    <p className="text-4xl mb-2">🗺️</p>
-                    <p className="text-sm">Add activities with locations to see the route</p>
+                      title="Show all activities on map so you can add nearby ones to your plan"
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      {showAllOnPlanMap ? 'All activities shown' : 'Show all activities'}
+                    </button>
+                    {showAllOnPlanMap && (
+                      <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow">
+                        Click any pin to preview
+                      </p>
+                    )}
+                    {!showAllOnPlanMap && planPath.length === 0 && (
+                      <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow text-right max-w-[160px] leading-snug">
+                        Add activities to see route
+                      </p>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setShowAllOnPlanMap(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
-                  >
-                    <Layers className="w-4 h-4" /> Show all activities to pick from
-                  </button>
-                </div>
-              )}
+                }
+              />
 
               {/* Plan map activity preview card — appears when a pin is clicked */}
               {planMapSelectedId && (() => {
@@ -1597,7 +1602,7 @@ export default function CommunityActivities() {
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{sel.location_address}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatPriceRange(sel.min_price, sel.max_price, t)}
+                        {formatPriceRange(sel.min_price, sel.max_price, regionConfig)}
                         {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
                       </p>
                       {sel.age_buckets && sel.age_buckets.length > 0 && (

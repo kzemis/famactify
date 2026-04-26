@@ -48,6 +48,10 @@ interface MapViewProps {
   userLocation?: { lat: number; lon: number } | null;
   /** If set alongside userLocation, draws a radius circle (km) */
   nearbyKm?: number | null;
+  /** If provided, renders an "Add to plan" button inside each popup */
+  onAddToPlan?: (id: string) => void;
+  /** IDs of activities already in the plan — used to show "✓ In plan" state */
+  planItemIds?: string[];
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -61,6 +65,8 @@ const MapView: React.FC<MapViewProps> = ({
   className,
   userLocation,
   nearbyKm,
+  onAddToPlan,
+  planItemIds,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
@@ -75,6 +81,10 @@ const MapView: React.FC<MapViewProps> = ({
   onSelectRef.current = onSelect;
   const getMarkerIconRef = useRef(getMarkerIcon);
   getMarkerIconRef.current = getMarkerIcon;
+  const onAddToPlanRef = useRef(onAddToPlan);
+  onAddToPlanRef.current = onAddToPlan;
+  const planItemIdsRef = useRef(planItemIds);
+  planItemIdsRef.current = planItemIds;
 
   // Initialize map
   useEffect(() => {
@@ -126,6 +136,8 @@ const MapView: React.FC<MapViewProps> = ({
         return null;
       })();
 
+      const hasAddToPlan = !!onAddToPlanRef.current;
+
       const popupHtml = `
         <div style="min-width:220px;max-width:280px;font-family:system-ui,sans-serif;line-height:1.4;overflow:hidden;">
           ${place.imageurlthumb
@@ -149,6 +161,22 @@ const MapView: React.FC<MapViewProps> = ({
                 More info →
                </a>`
             : ''}
+          ${hasAddToPlan
+            ? `<button data-plan-id="${place.id}" style="
+                display:block;
+                margin-top:8px;
+                width:100%;
+                padding:6px 10px;
+                background:#ec4899;
+                color:white;
+                border:none;
+                border-radius:6px;
+                font-size:12px;
+                font-weight:600;
+                cursor:pointer;
+                text-align:center;
+              ">+ Add to plan</button>`
+            : ''}
         </div>
       `;
 
@@ -161,9 +189,28 @@ const MapView: React.FC<MapViewProps> = ({
         className: 'activity-name-tooltip',
       });
 
-      // After popup opens, call invalidateSize so the map tiles don't misalign
+      // After popup opens, call invalidateSize so the map tiles don't misalign.
+      // Also wire up the "Add to plan" button with current plan state.
       marker.on('popupopen', () => {
         leafletRef.current?.invalidateSize();
+        if (hasAddToPlan) {
+          // Use setTimeout to let the popup DOM render before querying it
+          setTimeout(() => {
+            const btn = document.querySelector<HTMLButtonElement>(`[data-plan-id="${place.id}"]`);
+            if (!btn) return;
+            // Update button label/colour based on current plan state
+            const inPlan = planItemIdsRef.current?.includes(place.id) ?? false;
+            btn.textContent = inPlan ? '✓ In plan' : '+ Add to plan';
+            btn.style.background = inPlan ? '#6b7280' : '#ec4899';
+            // Replace node to clear any stale listener from a previous open
+            const fresh = btn.cloneNode(true) as HTMLButtonElement;
+            btn.replaceWith(fresh);
+            fresh.addEventListener('click', () => {
+              onAddToPlanRef.current?.(place.id);
+              leafletRef.current?.closePopup();
+            });
+          }, 0);
+        }
       });
 
       if (onSelectRef.current) {

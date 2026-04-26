@@ -9,7 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
-  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer,
+  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer, Trash2, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,19 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
     Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ---------------------------------------------------------------------------
+// Time calculation helpers (session planner)
+// ---------------------------------------------------------------------------
+function parseHHMM(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+function minutesToHHMM(total: number): string {
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -153,7 +166,30 @@ export default function CommunityActivities() {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>('grid');
+
+  // Session plan (shopping-cart pattern)
+  interface PlanItem {
+    activityId: string;
+    name: string;
+    startTime: string;   // HH:MM
+    endTime: string;     // HH:MM
+    durationMinutes: number;
+    minPrice: number | null;
+    maxPrice: number | null;
+    address: string | null;
+    lat: number | null;
+    lon: number | null;
+    imageurlthumb: string | null;
+  }
+
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState('10:00');
+  const [sessionFinishTime, setSessionFinishTime] = useState('18:00');
+  const [planName, setPlanName] = useState('My Plan');
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [showAllOnPlanMap, setShowAllOnPlanMap] = useState(false);
+  const [planMapSelectedId, setPlanMapSelectedId] = useState<string | null>(null);
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -480,6 +516,108 @@ export default function CommunityActivities() {
   };
 
   // ---------------------------------------------------------------------------
+  // Plan helpers & actions
+  // ---------------------------------------------------------------------------
+  const recalcPlanTimes = (items: PlanItem[], startHHMM: string): PlanItem[] => {
+    let cursor = parseHHMM(startHHMM);
+    return items.map(item => {
+      const dur = item.durationMinutes || 60;
+      const startTime = minutesToHHMM(cursor);
+      const endTime = minutesToHHMM(cursor + dur);
+      cursor += dur;
+      return { ...item, startTime, endTime };
+    });
+  };
+
+  const addToPlan = (activity: ActivitySpot) => {
+    if (planItems.some(p => p.activityId === activity.id)) return;
+    const newItem: PlanItem = {
+      activityId: activity.id,
+      name: activity.name,
+      startTime: '00:00',
+      endTime: '00:00',
+      durationMinutes: activity.duration_minutes || 60,
+      minPrice: activity.min_price,
+      maxPrice: activity.max_price,
+      address: activity.location_address,
+      lat: activity.location_lat,
+      lon: activity.location_lon,
+      imageurlthumb: activity.imageurlthumb,
+    };
+    setPlanItems(prev => recalcPlanTimes([...prev, newItem], sessionStartTime));
+  };
+
+  const removeFromPlan = (activityId: string) => {
+    setPlanItems(prev => recalcPlanTimes(prev.filter(p => p.activityId !== activityId), sessionStartTime));
+  };
+
+  const movePlanItem = (index: number, direction: 'up' | 'down') => {
+    setPlanItems(prev => {
+      const arr = [...prev];
+      const swapIdx = direction === 'up' ? index - 1 : index + 1;
+      if (swapIdx < 0 || swapIdx >= arr.length) return prev;
+      [arr[index], arr[swapIdx]] = [arr[swapIdx], arr[index]];
+      return recalcPlanTimes(arr, sessionStartTime);
+    });
+  };
+
+  // Recalc times when session start changes
+  useEffect(() => {
+    setPlanItems(prev => recalcPlanTimes(prev, sessionStartTime));
+  }, [sessionStartTime]);
+
+  const planTotals = useMemo(() => {
+    const totalMinutes = planItems.reduce((s, p) => s + p.durationMinutes, 0);
+    const totalCost = planItems.reduce((s, p) => s + (p.minPrice || 0), 0);
+    const endMinutes = planItems.length > 0 ? parseHHMM(planItems[planItems.length - 1].endTime) : parseHHMM(sessionStartTime);
+    const finishMinutes = parseHHMM(sessionFinishTime);
+    const overrunsBy = endMinutes - finishMinutes;
+    return { totalMinutes, totalCost, overrunsBy };
+  }, [planItems, sessionFinishTime, sessionStartTime]);
+
+  const planPath = useMemo(() =>
+    planItems
+      .filter(p => typeof p.lat === 'number' && typeof p.lon === 'number')
+      .map(p => ({ id: p.activityId, lat: p.lat!, lon: p.lon!, name: p.name })),
+    [planItems]
+  );
+
+  const savePlan = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { navigate('/auth'); return; }
+    if (planItems.length === 0) { toast.error('Add at least one activity'); return; }
+    setSavingPlan(true);
+    try {
+      const events = planItems.map(p => ({
+        activityId: p.activityId,
+        name: p.name,
+        startTime: p.startTime,
+        endTime: p.endTime,
+        durationMinutes: p.durationMinutes,
+        minPrice: p.minPrice,
+        maxPrice: p.maxPrice,
+        address: p.address,
+        imageurlthumb: p.imageurlthumb,
+      }));
+      const { error } = await supabase.from('saved_trips').insert({
+        user_id: user.id,
+        name: planName,
+        events,
+        total_cost: planTotals.totalCost,
+        total_events: planItems.length,
+      });
+      if (error) throw error;
+      toast.success('Plan saved! View it in Saved Trips.');
+      setPlanItems([]);
+      setViewMode('grid');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
   // Misc handlers
   // ---------------------------------------------------------------------------
   const getPriceDisplay = (activity: ActivitySpot) =>
@@ -511,7 +649,7 @@ export default function CommunityActivities() {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className={cn('container mx-auto px-4 py-8', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
@@ -525,11 +663,20 @@ export default function CommunityActivities() {
           <div className="flex items-center gap-2">
             {/* View switcher */}
             <div className="inline-flex rounded-md border bg-card">
-              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>
-                Grid
-              </Button>
-              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>
-                Map
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
+              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>Map</Button>
+              <Button
+                variant={viewMode === 'plan' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('plan')}
+                className="relative"
+              >
+                🗓️ Plan
+                {planItems.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
+                    {planItems.length}
+                  </span>
+                )}
               </Button>
             </div>
             <Button onClick={() => navigate('/contribute')} size="lg">
@@ -540,8 +687,8 @@ export default function CommunityActivities() {
         </div>
 
         {/* ── Rich Filters (DIS-01) ── */}
-        <div className="mb-6 space-y-3">
-          {/* Row 1: search + filters toggle */}
+        <div className="mb-6">
+          {/* Single row: search + filters toggle */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -571,90 +718,45 @@ export default function CommunityActivities() {
             </button>
           </div>
 
-          {/* Row 2: category quick-pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              onClick={() => setSelectedCategories([])}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedCategories.length === 0
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              All
-            </button>
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() =>
-                  setSelectedCategories(prev =>
-                    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
-                  )
-                }
-                className={cn(
-                  'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                  selectedCategories.includes(cat)
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background border-border hover:border-primary/50',
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Row 3: Together Mode quick-pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              onClick={() => setSelectedInvolvement('')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === ''
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              All modes
-            </button>
-            <button
-              onClick={() => setSelectedInvolvement('active_together')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === 'active_together'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              🤝 Together
-            </button>
-            <button
-              onClick={() => setSelectedInvolvement('supervise')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === 'supervise'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              👀 Watch from Side
-            </button>
-            <button
-              onClick={() => setSelectedInvolvement('drop_go')}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                selectedInvolvement === 'drop_go'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              🚗 Drop &amp; Go
-            </button>
-          </div>
-
-          {/* Advanced filter panel */}
+          {/* Expandable filter panel */}
           {filtersExpanded && (
-            <div className="rounded-lg border bg-card p-4 space-y-4">
+            <div className="mt-3 rounded-lg border bg-card p-4 space-y-4">
+
+              {/* Category */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Category</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategories([])}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                      selectedCategories.length === 0
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
+                    )}
+                  >
+                    All
+                  </button>
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() =>
+                        setSelectedCategories(prev =>
+                          prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
+                        )
+                      }
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        selectedCategories.includes(cat)
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Age */}
               <div>
@@ -1118,8 +1220,45 @@ export default function CommunityActivities() {
                         </div>
                       )}
 
+                      {/* Plan button */}
+                      <div className="mt-auto pt-3 border-t flex gap-2">
+                        {planItems.some(p => p.activityId === activity.id) ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeFromPlan(activity.id); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                          >
+                            <span className="w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs flex items-center justify-center font-bold">
+                              {planItems.findIndex(p => p.activityId === activity.id) + 1}
+                            </span>
+                            In plan ✓
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); addToPlan(activity); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Add to plan
+                          </button>
+                        )}
+                        {activity.location_lat && activity.location_lon && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUserLocation({ lat: activity.location_lat!, lon: activity.location_lon! });
+                              setNearbyKm(2);
+                              setFiltersExpanded(true);
+                              toast.success(`Showing activities near ${activity.name}`);
+                            }}
+                            title="Show activities near this spot"
+                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-muted-foreground"
+                          >
+                            <Locate className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
                       {/* Actions */}
-                      <div className="flex gap-2 mt-auto pt-2">
+                      <div className="flex gap-2 pt-2">
                         {activity.urlmoreinfo && (
                           <Button variant="link" className="h-auto p-0 text-primary text-sm" asChild>
                             <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
@@ -1193,6 +1332,273 @@ export default function CommunityActivities() {
               {places.length} {places.length === 1 ? 'location' : 'locations'} shown
               {activeFilterCount > 0 && ' (filtered)'}
             </p>
+
+            {/* Selected activity card — appears when a map marker is clicked */}
+            {selectedId && (() => {
+              const sel = filteredActivities.find(a => a.id === selectedId);
+              if (!sel) return null;
+              const inPlan = planItems.some(p => p.activityId === sel.id);
+              return (
+                <div className="mt-3 flex items-start gap-3 p-3 rounded-lg border bg-card shadow-sm animate-in slide-in-from-bottom-2">
+                  {sel.imageurlthumb && (
+                    <img src={sel.imageurlthumb} alt={sel.name} className="w-16 h-16 rounded-md object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{sel.name}</p>
+                    {sel.location_address && (
+                      <p className="text-xs text-muted-foreground truncate">{sel.location_address}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatPriceRange(sel.min_price, sel.max_price, regionConfig)}
+                      {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      onClick={() => inPlan ? removeFromPlan(sel.id) : addToPlan(sel)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap',
+                        inPlan
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          : 'border border-border bg-background hover:bg-accent'
+                      )}
+                    >
+                      {inPlan
+                        ? `✓ In plan (${planItems.findIndex(p => p.activityId === sel.id) + 1})`
+                        : '+ Add to plan'}
+                    </button>
+                    <button
+                      onClick={() => setSelectedId(null)}
+                      className="px-3 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors text-center"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ── Plan View ── */}
+        {viewMode === 'plan' && (
+          <div className="flex flex-col lg:flex-row gap-0 rounded-xl border overflow-hidden" style={{ height: '70vh' }}>
+            {/* Left: plan list */}
+            <div className="w-full lg:w-2/5 flex flex-col bg-card border-r overflow-y-auto">
+              {/* Plan header */}
+              <div className="p-4 border-b space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={planName}
+                    onChange={(e) => setPlanName(e.target.value)}
+                    className="flex-1 text-lg font-semibold bg-transparent border-b border-border/50 focus:border-primary outline-none pb-1"
+                    placeholder="My Plan"
+                  />
+                  {planItems.length > 0 && (
+                    <button
+                      onClick={() => { if (window.confirm('Clear all activities from plan?')) { setPlanItems([]); } }}
+                      title="Clear entire plan"
+                      className="shrink-0 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-3 items-center text-sm">
+                  <label className="text-muted-foreground">Start</label>
+                  <input
+                    type="time"
+                    value={sessionStartTime}
+                    onChange={(e) => setSessionStartTime(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                  />
+                  <label className="text-muted-foreground">Finish by</label>
+                  <input
+                    type="time"
+                    value={sessionFinishTime}
+                    onChange={(e) => setSessionFinishTime(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                  />
+                </div>
+                {planTotals.overrunsBy > 0 && (
+                  <div className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">
+                    ⚠️ Plan overruns by {Math.ceil(planTotals.overrunsBy)} min — consider removing an activity or adjusting finish time
+                  </div>
+                )}
+              </div>
+
+              {/* Plan items */}
+              {planItems.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
+                  <span className="text-5xl">🗓️</span>
+                  <p className="text-muted-foreground">No activities added yet</p>
+                  <Button variant="outline" size="sm" onClick={() => setViewMode('grid')}>
+                    Browse activities →
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex-1 divide-y overflow-y-auto">
+                  {planItems.map((item, idx) => (
+                    <div key={item.activityId} className="p-4 flex gap-3 hover:bg-accent/30 transition-colors">
+                      {/* Number badge */}
+                      <div className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center mt-0.5">
+                        {idx + 1}
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.startTime}–{item.endTime} · {item.durationMinutes} min</p>
+                        {item.address && <p className="text-xs text-muted-foreground truncate">{item.address}</p>}
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <button onClick={() => movePlanItem(idx, 'up')} disabled={idx === 0} className="p-1 rounded hover:bg-accent disabled:opacity-30 transition-colors" title="Move up">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                        <button onClick={() => movePlanItem(idx, 'down')} disabled={idx === planItems.length - 1} className="p-1 rounded hover:bg-accent disabled:opacity-30 transition-colors" title="Move down">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <button onClick={() => removeFromPlan(item.activityId)} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer: totals + save */}
+              <div className="p-4 border-t bg-card space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Total: {planTotals.totalMinutes} min · {planItems.length} stops</span>
+                  {planTotals.totalCost > 0 && <span>Est. ${planTotals.totalCost}</span>}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setViewMode('grid')} className="flex-1">
+                    + Add more
+                  </Button>
+                  <Button size="sm" onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1">
+                    {savingPlan ? 'Saving…' : '💾 Save plan'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: route map */}
+            <div className="relative w-full lg:w-3/5 h-64 lg:h-full">
+              {planPath.length > 0 || showAllOnPlanMap ? (
+                <MapView
+                  places={showAllOnPlanMap ? places : []}
+                  path={planPath}
+                  className="h-full rounded-none border-0"
+                  center={planPath.length > 0 ? { lat: planPath[0].lat, lon: planPath[0].lon } : center}
+                  onSelect={(id) => setPlanMapSelectedId(id)}
+                  overlay={
+                    <div className="flex flex-col gap-1.5 items-end">
+                      <button
+                        onClick={() => setShowAllOnPlanMap(v => !v)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-md transition-colors',
+                          showAllOnPlanMap
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background border border-border text-foreground hover:bg-accent'
+                        )}
+                        title="Show all activities on map so you can add nearby ones to your plan"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        {showAllOnPlanMap ? 'All activities shown' : 'Show all activities'}
+                      </button>
+                      {showAllOnPlanMap && (
+                        <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow">
+                          Click any pin to preview
+                        </p>
+                      )}
+                    </div>
+                  }
+                />
+              ) : (
+                <div className="h-full bg-muted flex flex-col items-center justify-center gap-3">
+                  <div className="text-center text-muted-foreground">
+                    <p className="text-4xl mb-2">🗺️</p>
+                    <p className="text-sm">Add activities with locations to see the route</p>
+                  </div>
+                  <button
+                    onClick={() => setShowAllOnPlanMap(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
+                  >
+                    <Layers className="w-4 h-4" /> Show all activities to pick from
+                  </button>
+                </div>
+              )}
+
+              {/* Plan map activity preview card — appears when a pin is clicked */}
+              {planMapSelectedId && (() => {
+                const sel = filteredActivities.find(a => a.id === planMapSelectedId);
+                if (!sel) return null;
+                const inPlan = planItems.some(p => p.activityId === sel.id);
+                return (
+                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-card border-t border-border shadow-xl p-3 flex gap-3 items-start">
+                    {/* Thumbnail */}
+                    {sel.imageurlthumb ? (
+                      <img
+                        src={sel.imageurlthumb}
+                        alt={sel.name}
+                        className="w-16 h-16 rounded-md object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded-md shrink-0 flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{sel.name}</p>
+                      {sel.location_address && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{sel.location_address}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatPriceRange(sel.min_price, sel.max_price, t)}
+                        {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
+                      </p>
+                      {sel.age_buckets && sel.age_buckets.length > 0 && (
+                        <p className="text-xs text-muted-foreground">👧 {sel.age_buckets.join(', ')} yrs</p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant={inPlan ? 'secondary' : 'default'}
+                        className="text-xs h-7 px-2.5 whitespace-nowrap"
+                        onClick={() => {
+                          if (inPlan) {
+                            removeFromPlan(sel.id);
+                            toast.success(`Removed "${sel.name}" from plan`);
+                          } else {
+                            addToPlan(sel);
+                            toast.success(`Added "${sel.name}" to plan`);
+                          }
+                          setPlanMapSelectedId(null);
+                        }}
+                      >
+                        {inPlan ? '✓ In plan' : '+ Add to plan'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs h-7 px-2.5"
+                        onClick={() => setPlanMapSelectedId(null)}
+                      >
+                        <X className="w-3 h-3 mr-1" /> Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         )}
 
@@ -1257,6 +1663,41 @@ export default function CommunityActivities() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Sticky plan bar ── */}
+      {planItems.length > 0 && viewMode !== 'plan' && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg border-t">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-screen-xl">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-semibold">🗓️ {planItems.length} {planItems.length === 1 ? 'activity' : 'activities'}</span>
+              <span>⏱️ {Math.floor(planTotals.totalMinutes / 60)}h {planTotals.totalMinutes % 60}m</span>
+              {planTotals.totalCost > 0 && <span>💰 Est. ${planTotals.totalCost}</span>}
+              {planTotals.overrunsBy > 0 && (
+                <span className="px-2 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs font-bold">
+                  Overruns by {Math.round(planTotals.overrunsBy / 60 * 10) / 10}h
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPlanItems([])}
+                title="Clear plan"
+                className="p-1.5 rounded-md hover:bg-primary-foreground/20 text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setViewMode('plan')}
+                className="font-semibold"
+              >
+                View Plan →
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

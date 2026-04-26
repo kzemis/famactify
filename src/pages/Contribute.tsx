@@ -35,6 +35,7 @@ import MapView from '@/components/MapView';
 const ACTIVITY_TYPES = [
   'caffe/restaurant',
   'entertainment event',
+  'event',
   'hiking area',
   'ice-ring',
   'museum',
@@ -49,6 +50,29 @@ const ACTIVITY_TYPES = [
 ];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
 const ENVIRONMENTS = ['inside', 'outside', 'both'];
+const PRIMARY_CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
+const INVOLVEMENT_OPTIONS = [
+  { value: 'active_together', label: '🤝 Active Together' },
+  { value: 'supervise',       label: '👀 Watch from Side' },
+  { value: 'drop_go',         label: '🚗 Drop & Go' },
+];
+const TAGS_VOCABULARY = [
+  // Collections
+  'editors-pick', 'rainy-day', 'free', 'under-$10', 'under-$20', 'weekend-special',
+  // Logistics
+  'stroller-friendly', 'wheelchair-accessible', 'parking-easy', 'close-to-bart',
+  'transit-friendly', 'booking-needed-advance', 'drop-in', 'reservation-required', 'memberships-accepted',
+  // Family needs
+  'sensory-friendly', 'nursing-friendly', 'food-available', 'food-nearby',
+  'picnic-friendly', 'shade', 'fenced', 'sibling-friendly', 'carrier-friendly', 'low-cost',
+  // Interests
+  'animals', 'science', 'art', 'music', 'cooking', 'water', 'climbing', 'nature',
+  'sports', 'trains', 'dinosaurs', 'space', 'building',
+  // Age
+  'toddler', 'preschool', 'elementary', 'teen', 'all-ages',
+  // Environment
+  'indoor', 'outdoor', 'farm', 'beach', 'forest', 'urban',
+];
 
 function slugify(name: string): string {
   const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -78,7 +102,7 @@ export default function Contribute() {
     name: '',
     description: '',
     activityType: [] as string[],
-    ageBuckets: [],
+    ageBuckets: [] as string[],
     ageAllSelected: true,
     minPrice: '',
     maxPrice: '',
@@ -96,6 +120,16 @@ export default function Contribute() {
     imageurlthumb: '',
     urlmoreinfo: '',
     durationMinutes: 60,
+    primaryCategory: '',
+    involvement: '',
+    rainSuitable: false,
+    sensoryFriendly: false,
+    transitAccessible: false,
+    fenced: false,
+    tags: [] as string[],
+    sourceUrl: '',
+    sourceConfidence: '' as string,
+    familyFitScore: '' as string,
   });
 
   const toggleArrayField = (field: 'activityType' | 'ageBuckets', value: string) => {
@@ -337,7 +371,7 @@ export default function Contribute() {
         foodvenue_kidcorner: formData.kidsCorner || null,
         foodvenue_kidmenu: formData.playroom || null,
         schedule_openinghours: null,
-        duration_minutes: null,
+        duration_minutes: formData.durationMinutes || null,
         imageurlthumb: imageUrl,
         urlmoreinfo: formData.urlmoreinfo || null,
         trail_lengthkm: null,
@@ -345,7 +379,19 @@ export default function Contribute() {
         trail_routetype: null,
         event_starttime: null,
         event_endtime: null,
-        schema_version: '1.0.0',
+        // v3.1 fields
+        primary_category: formData.primaryCategory || null,
+        involvement: formData.involvement || null,
+        rain_suitable: formData.rainSuitable,
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        // v3.2 fields
+        sensory_friendly: formData.sensoryFriendly || null,
+        transit_accessible: formData.transitAccessible || null,
+        fenced: formData.fenced || null,
+        source_url: formData.sourceUrl || null,
+        source_confidence: formData.sourceConfidence ? parseInt(formData.sourceConfidence) : null,
+        family_fit_score: formData.familyFitScore ? parseInt(formData.familyFitScore) : null,
+        schema_version: 'v3.2',
         source,
         json
       };
@@ -384,6 +430,16 @@ export default function Contribute() {
         imageurlthumb: '',
         urlmoreinfo: '',
         durationMinutes: 60,
+        primaryCategory: '',
+        involvement: '',
+        rainSuitable: false,
+        sensoryFriendly: false,
+        transitAccessible: false,
+        fenced: false,
+        tags: [],
+        sourceUrl: '',
+        sourceConfidence: '',
+        familyFitScore: '',
       });
       setImageFiles([]);
       setImagePreviews([]);
@@ -765,6 +821,58 @@ export default function Contribute() {
                   />
                 </div>
 
+                {/* Primary Category */}
+                <div>
+                  <Label>Primary Category</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {PRIMARY_CATEGORIES.map(cat => (
+                      <Button
+                        key={cat}
+                        type="button"
+                        variant={formData.primaryCategory === cat ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, primaryCategory: prev.primaryCategory === cat ? '' : cat }))}
+                      >
+                        {cat}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Involvement */}
+                <div>
+                  <Label>Parent Involvement</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {INVOLVEMENT_OPTIONS.map(opt => (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={formData.involvement === opt.value ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, involvement: prev.involvement === opt.value ? '' : opt.value }))}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rain suitable */}
+                <div>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.rainSuitable}
+                      onChange={(e) => setFormData(prev => ({ ...prev, rainSuitable: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">🌧️ Good for rainy days</span>
+                      <p className="text-xs text-muted-foreground">Sheltered, indoor, or still enjoyable when it rains</p>
+                    </div>
+                  </label>
+                </div>
+
                 {/* Accessibility & Kid Amenities (second) */}
                 <div className="pt-2">
                   {/* Removed big section heading for a cleaner look */}
@@ -852,6 +960,33 @@ export default function Contribute() {
                           />
                           <span className="text-sm">{t.contribute.changingTable}</span>
                         </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.sensoryFriendly}
+                            onChange={(e) => setFormData(prev => ({ ...prev, sensoryFriendly: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">♾️ Sensory Friendly</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.transitAccessible}
+                            onChange={(e) => setFormData(prev => ({ ...prev, transitAccessible: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">🚌 Transit Accessible</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.fenced}
+                            onChange={(e) => setFormData(prev => ({ ...prev, fenced: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">🔒 Fenced Area</span>
+                        </label>
                       </div>
                     </div>
                   </div>
@@ -931,6 +1066,36 @@ export default function Contribute() {
                   </div>
                 </div>
 
+                {/* Tags multi-select */}
+                <div>
+                  <Label>Tags</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Select all that apply — helps families discover this activity</p>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                    {TAGS_VOCABULARY.map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          tags: prev.tags.includes(tag)
+                            ? prev.tags.filter(t => t !== tag)
+                            : [...prev.tags, tag]
+                        }))}
+                        className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                          formData.tags.includes(tag)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background text-foreground border-border hover:border-primary'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  {formData.tags.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">{formData.tags.length} tag{formData.tags.length !== 1 ? 's' : ''} selected</p>
+                  )}
+                </div>
+
                 {/* Price range slider (seventh) */}
                 <div>
                   <Label>{t.contribute.priceRange || 'Price range'}</Label>
@@ -955,6 +1120,56 @@ export default function Contribute() {
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>{formData.minPrice || '0'}</span>
                       <span>{formData.maxPrice || '0'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Source / data quality */}
+                <div className="border-t pt-4 space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Source & Data Quality (optional)</p>
+                  <div>
+                    <Label htmlFor="sourceUrl">Source URL</Label>
+                    <Input
+                      id="sourceUrl"
+                      type="url"
+                      value={formData.sourceUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sourceUrl: e.target.value }))}
+                      placeholder="https://official-venue-page.com"
+                      className="placeholder:italic placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="sourceConfidence">Source Confidence (1–5)</Label>
+                      <select
+                        id="sourceConfidence"
+                        value={formData.sourceConfidence}
+                        onChange={(e) => setFormData(prev => ({ ...prev, sourceConfidence: e.target.value }))}
+                        className="w-full mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="">— pick —</option>
+                        <option value="5">5 — Official page, all details</option>
+                        <option value="4">4 — Official + secondary</option>
+                        <option value="3">3 — Aggregator, partial</option>
+                        <option value="2">2 — Social / community</option>
+                        <option value="1">1 — Unverified</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="familyFitScore">Family Fit Score (1–5)</Label>
+                      <select
+                        id="familyFitScore"
+                        value={formData.familyFitScore}
+                        onChange={(e) => setFormData(prev => ({ ...prev, familyFitScore: e.target.value }))}
+                        className="w-full mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="">— pick —</option>
+                        <option value="5">5 — Built for kids/families</option>
+                        <option value="4">4 — Very kid-friendly</option>
+                        <option value="3">3 — Some kid-friendly features</option>
+                        <option value="2">2 — Kids tolerated</option>
+                        <option value="1">1 — Not suitable</option>
+                      </select>
                     </div>
                   </div>
                 </div>

@@ -9,10 +9,11 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
-  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate,
+  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
@@ -73,6 +74,15 @@ interface ActivitySpot {
   country_code: string | null;
   duration_minutes: number | null;
   json: any;
+  // v3.2 schema fields
+  sensory_friendly: boolean | null;
+  transit_accessible: boolean | null;
+  fenced: boolean | null;
+  // event fields
+  event_starttime: string | null;
+  event_endtime: string | null;
+  ticket_url: string | null;
+  organizer: string | null;
 }
 
 const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
@@ -87,19 +97,14 @@ const PRICE_OPTIONS = [
   { value: '10',   label: 'Under $10' },
   { value: '20',   label: 'Under $20' },
 ];
-const DISTANCE_OPTIONS = [
-  { value: 2,  label: '2 km' },
-  { value: 5,  label: '5 km' },
-  { value: 10, label: '10 km' },
-  { value: 25, label: '25 km' },
-];
+// Distance options are now derived from regionConfig — see distanceOptions useMemo below
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export default function CommunityActivities() {
   const { t } = useLanguage();
-  const { countryCode } = useCountry();
+  const { countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
 
   // Data
@@ -109,13 +114,35 @@ export default function CommunityActivities() {
 
   // Rich filters (DIS-01)
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    // PLN-07: pre-populate from URL param ?category=Sport
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get('category');
+    if (catParam && CATEGORIES.includes(catParam)) return [catParam];
+    return [];
+  });
   const [selectedAges, setSelectedAges] = useState<string[]>([]);
   const [selectedInvolvement, setSelectedInvolvement] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('any');
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [rainSuitable, setRainSuitable] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Events filter
+  const [eventsOnly, setEventsOnly] = useState(false);
+
+  // Timing filter (PLN-11): Anytime / Now / Later Today / Tomorrow / This Weekend
+  const [timingFilter, setTimingFilter] = useState<'any' | 'now' | 'today' | 'tomorrow' | 'weekend'>('any');
+
+  // Duration filter (PLN-12): Any / <1h / 1-2h / 2-4h / Full day
+  const [durationFilter, setDurationFilter] = useState<'any' | '<60' | '60-120' | '120-240' | '240+'>('any');
+
+  // Accessibility filters (DIS-15)
+  const [wheelchairAccessible, setWheelchairAccessible] = useState(false);
+  const [strollerFriendly, setStrollerFriendly] = useState(false);
+  const [sensoryFriendly, setSensoryFriendly] = useState(false);
+  const [transitAccessible, setTransitAccessible] = useState(false);
+  const [fencedArea, setFencedArea] = useState(false);
 
   // GPS / Nearby filter
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -205,10 +232,67 @@ export default function CommunityActivities() {
     activities, searchQuery, selectedCategories, selectedAges,
     selectedInvolvement, maxPrice, indoorOnly, rainSuitable,
     userLocation, nearbyKm,
+    wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea,
+    eventsOnly, timingFilter, durationFilter,
   ]);
 
   const filterActivities = () => {
     let filtered = [...activities];
+
+    const now = new Date().toISOString();
+
+    // Default: filter out past events from normal view
+    filtered = filtered.filter(a =>
+      // Keep if no event_endtime (regular activity)
+      !a.event_endtime ||
+      // Keep if event hasn't ended yet
+      a.event_endtime > now
+    );
+
+    // Events-only filter: only show upcoming events
+    if (eventsOnly) {
+      filtered = filtered.filter(a =>
+        a.event_starttime !== null && a.event_starttime > now
+      );
+    }
+
+    // Timing filter (PLN-11) — applies to events (event_starttime); regular venues always pass
+    if (timingFilter !== 'any') {
+      const n = new Date();
+      const todayStart = new Date(n); todayStart.setHours(0, 0, 0, 0);
+      const todayEnd   = new Date(n); todayEnd.setHours(23, 59, 59, 999);
+      const tomorrowStart = new Date(todayEnd); tomorrowStart.setDate(tomorrowStart.getDate() + 1); tomorrowStart.setHours(0, 0, 0, 0);
+      const tomorrowEnd   = new Date(tomorrowStart); tomorrowEnd.setHours(23, 59, 59, 999);
+      const daysUntilSat  = n.getDay() === 0 ? 6 : 6 - n.getDay();
+      const weekendStart  = new Date(n); weekendStart.setDate(weekendStart.getDate() + daysUntilSat); weekendStart.setHours(0, 0, 0, 0);
+      const weekendEnd    = new Date(weekendStart); weekendEnd.setDate(weekendEnd.getDate() + 1); weekendEnd.setHours(23, 59, 59, 999);
+
+      filtered = filtered.filter(a => {
+        if (!a.event_starttime) return true; // permanent venues always available
+        const start = new Date(a.event_starttime);
+        switch (timingFilter) {
+          case 'now':      return start >= n && start <= new Date(n.getTime() + 2 * 3600_000);
+          case 'today':    return start >= todayStart && start <= todayEnd;
+          case 'tomorrow': return start >= tomorrowStart && start <= tomorrowEnd;
+          case 'weekend':  return start >= weekendStart && start <= weekendEnd;
+          default:         return true;
+        }
+      });
+    }
+
+    // Duration filter (PLN-12) — activities without duration_minutes always pass
+    if (durationFilter !== 'any') {
+      filtered = filtered.filter(a => {
+        if (!a.duration_minutes) return true; // unknown → don't exclude
+        switch (durationFilter) {
+          case '<60':     return a.duration_minutes < 60;
+          case '60-120':  return a.duration_minutes >= 60  && a.duration_minutes <= 120;
+          case '120-240': return a.duration_minutes >  120 && a.duration_minutes <= 240;
+          case '240+':    return a.duration_minutes > 240;
+          default:        return true;
+        }
+      });
+    }
 
     // Text search
     if (searchQuery) {
@@ -261,6 +345,34 @@ export default function CommunityActivities() {
       filtered = filtered.filter(a => a.rain_suitable === true);
     }
 
+    // Accessibility filters (DIS-15)
+    // Check both v3.2 boolean columns AND tags[] — backward compat with older records
+    if (wheelchairAccessible) {
+      filtered = filtered.filter(a =>
+        a.accessibility_wheelchair === true || a.tags?.includes('wheelchair-accessible'),
+      );
+    }
+    if (strollerFriendly) {
+      filtered = filtered.filter(a =>
+        a.accessibility_stroller === true || a.tags?.includes('stroller-friendly'),
+      );
+    }
+    if (sensoryFriendly) {
+      filtered = filtered.filter(a =>
+        a.sensory_friendly === true || a.tags?.includes('sensory-friendly'),
+      );
+    }
+    if (transitAccessible) {
+      filtered = filtered.filter(a =>
+        a.transit_accessible === true || a.tags?.includes('transit-friendly'),
+      );
+    }
+    if (fencedArea) {
+      filtered = filtered.filter(a =>
+        a.fenced === true || a.tags?.includes('fenced'),
+      );
+    }
+
     // Nearby (GPS distance) — only filters activities that HAVE coordinates
     if (nearbyKm !== null && userLocation) {
       filtered = filtered.filter(a => {
@@ -271,6 +383,11 @@ export default function CommunityActivities() {
 
     setFilteredActivities(filtered);
   };
+
+  // ---------------------------------------------------------------------------
+  // Regional — distance options in correct units for current country
+  // ---------------------------------------------------------------------------
+  const distanceOptions = useMemo(() => getDistanceOptions(regionConfig), [regionConfig]);
 
   // ---------------------------------------------------------------------------
   // Derived data — map places come from filtered list (fixes "ignored filters" bug)
@@ -306,8 +423,16 @@ export default function CommunityActivities() {
     if (indoorOnly) n++;
     if (rainSuitable) n++;
     if (nearbyKm !== null) n++;
+    if (wheelchairAccessible) n++;
+    if (strollerFriendly) n++;
+    if (sensoryFriendly) n++;
+    if (transitAccessible) n++;
+    if (fencedArea) n++;
+    if (eventsOnly) n++;
+    if (timingFilter !== 'any') n++;
+    if (durationFilter !== 'any') n++;
     return n;
-  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm]);
+  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -319,6 +444,14 @@ export default function CommunityActivities() {
     setRainSuitable(false);
     setNearbyKm(null);
     setUserLocation(null);
+    setWheelchairAccessible(false);
+    setStrollerFriendly(false);
+    setSensoryFriendly(false);
+    setTransitAccessible(false);
+    setFencedArea(false);
+    setEventsOnly(false);
+    setTimingFilter('any');
+    setDurationFilter('any');
   };
 
   // ---------------------------------------------------------------------------
@@ -349,14 +482,8 @@ export default function CommunityActivities() {
   // ---------------------------------------------------------------------------
   // Misc handlers
   // ---------------------------------------------------------------------------
-  const getPriceDisplay = (activity: ActivitySpot) => {
-    if (!activity.min_price && !activity.max_price) return 'Free';
-    if (activity.min_price === 0 && activity.max_price === 0) return 'Free';
-    if (activity.min_price && activity.max_price) return `€${activity.min_price} – €${activity.max_price}`;
-    if (activity.min_price) return `From €${activity.min_price}`;
-    if (activity.max_price) return `Up to €${activity.max_price}`;
-    return 'Price varies';
-  };
+  const getPriceDisplay = (activity: ActivitySpot) =>
+    formatPriceRange(activity.min_price, activity.max_price, regionConfig);
 
   const openLightbox = (images: string[], index: number) => {
     setLightboxImages(images);
@@ -475,6 +602,54 @@ export default function CommunityActivities() {
                 {cat}
               </button>
             ))}
+          </div>
+
+          {/* Row 3: Together Mode quick-pills */}
+          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              onClick={() => setSelectedInvolvement('')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === ''
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              All modes
+            </button>
+            <button
+              onClick={() => setSelectedInvolvement('active_together')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === 'active_together'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              🤝 Together
+            </button>
+            <button
+              onClick={() => setSelectedInvolvement('supervise')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === 'supervise'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              👀 Watch from Side
+            </button>
+            <button
+              onClick={() => setSelectedInvolvement('drop_go')}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                selectedInvolvement === 'drop_go'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background border-border hover:border-primary/50',
+              )}
+            >
+              🚗 Drop &amp; Go
+            </button>
           </div>
 
           {/* Advanced filter panel */}
@@ -607,6 +782,102 @@ export default function CommunityActivities() {
                   >
                     <Home className="w-3.5 h-3.5" /> Indoor only
                   </button>
+                  <button
+                    onClick={() => setEventsOnly(v => !v)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                      eventsOnly
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
+                    )}
+                  >
+                    🎟️ Upcoming Events only
+                  </button>
+                </div>
+              </div>
+
+              {/* Accessibility & Practical (DIS-15) */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Accessibility & Practical</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { state: wheelchairAccessible, set: setWheelchairAccessible, label: '♿ Wheelchair' },
+                    { state: strollerFriendly,     set: setStrollerFriendly,     label: '🚼 Stroller friendly' },
+                    { state: sensoryFriendly,      set: setSensoryFriendly,      label: '🤫 Sensory friendly' },
+                    { state: transitAccessible,    set: setTransitAccessible,    label: '🚇 Transit accessible' },
+                    { state: fencedArea,           set: setFencedArea,           label: '🔒 Fenced area' },
+                  ].map(({ state, set, label }) => (
+                    <button
+                      key={label}
+                      onClick={() => set(v => !v)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        state
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Timing (PLN-11) */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> When
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: 'any',      label: 'Anytime' },
+                    { value: 'now',      label: '⚡ Going Now' },
+                    { value: 'today',    label: '☀️ Later Today' },
+                    { value: 'tomorrow', label: '📅 Tomorrow' },
+                    { value: 'weekend',  label: '🎉 This Weekend' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTimingFilter(opt.value)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        timingFilter === opt.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration (PLN-12) */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <Timer className="w-3.5 h-3.5" /> How long?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: 'any',     label: 'Any length' },
+                    { value: '<60',     label: '⚡ Under 1h' },
+                    { value: '60-120',  label: '⏱️ 1–2 hours' },
+                    { value: '120-240', label: '🕑 2–4 hours' },
+                    { value: '240+',    label: '🌅 Full day' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setDurationFilter(opt.value)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        durationFilter === opt.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -630,7 +901,7 @@ export default function CommunityActivities() {
                   </button>
                   {/* Distance pills — only active after GPS obtained */}
                   {userLocation
-                    ? DISTANCE_OPTIONS.map(opt => (
+                    ? distanceOptions.map(opt => (
                         <button
                           key={opt.value}
                           onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
@@ -750,6 +1021,19 @@ export default function CommunityActivities() {
                         )}
                       </div>
 
+                      {/* Involvement badge (TOG-03) */}
+                      {activity.involvement && (
+                        <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold w-fit',
+                          activity.involvement === 'active_together' ? 'bg-green-100 text-green-700' :
+                          activity.involvement === 'supervise'       ? 'bg-blue-100  text-blue-700'  :
+                                                                       'bg-gray-100  text-gray-600'
+                        )}>
+                          {activity.involvement === 'active_together' ? '🤝 Together' :
+                           activity.involvement === 'supervise'       ? '👀 Watch from Side' :
+                                                                        '🚗 Drop & Go'}
+                        </span>
+                      )}
+
                       {/* Location */}
                       {activity.location_address && (
                         <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -761,9 +1045,16 @@ export default function CommunityActivities() {
                       {/* Distance badge if nearby filter active */}
                       {userLocation && typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
                         <div className="text-xs text-muted-foreground">
-                          📍 {haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon).toFixed(1)} km away
+                          📍 {formatDistance(haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon), regionConfig)} away
                         </div>
                       )}
+
+                      {/* Event date badge — replaces duration badge for events */}
+                      {activity.event_starttime ? (
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                          🎟️ {formatDate(activity.event_starttime, regionConfig)} {formatTime(activity.event_starttime, regionConfig)}
+                        </div>
+                      ) : null}
 
                       {/* Price */}
                       <div className="flex items-center gap-2 text-sm">
@@ -798,12 +1089,34 @@ export default function CommunityActivities() {
                         </div>
                       )}
 
-                      {/* Accessibility */}
-                      <div className="flex gap-2">
-                        {activity.accessibility_wheelchair && <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>}
-                        {activity.accessibility_stroller && <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>}
-                        {activity.facilities_restrooms && <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>}
-                      </div>
+                      {/* Accessibility & practical badges */}
+                      {(activity.accessibility_wheelchair || activity.tags?.includes('wheelchair-accessible') ||
+                        activity.accessibility_stroller || activity.tags?.includes('stroller-friendly') ||
+                        activity.sensory_friendly || activity.tags?.includes('sensory-friendly') ||
+                        activity.transit_accessible || activity.tags?.includes('transit-friendly') ||
+                        activity.fenced || activity.tags?.includes('fenced') ||
+                        activity.facilities_restrooms) && (
+                        <div className="flex flex-wrap gap-1">
+                          {(activity.accessibility_wheelchair || activity.tags?.includes('wheelchair-accessible')) && (
+                            <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>
+                          )}
+                          {(activity.accessibility_stroller || activity.tags?.includes('stroller-friendly')) && (
+                            <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>
+                          )}
+                          {(activity.sensory_friendly || activity.tags?.includes('sensory-friendly')) && (
+                            <Badge variant="outline" className="text-xs">🤫 Sensory friendly</Badge>
+                          )}
+                          {(activity.transit_accessible || activity.tags?.includes('transit-friendly')) && (
+                            <Badge variant="outline" className="text-xs">🚇 Transit</Badge>
+                          )}
+                          {(activity.fenced || activity.tags?.includes('fenced')) && (
+                            <Badge variant="outline" className="text-xs">🔒 Fenced</Badge>
+                          )}
+                          {activity.facilities_restrooms && (
+                            <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
+                          )}
+                        </div>
+                      )}
 
                       {/* Actions */}
                       <div className="flex gap-2 mt-auto pt-2">
@@ -861,7 +1174,7 @@ export default function CommunityActivities() {
                       {locatingGPS ? '…' : 'Me'}
                     </Button>
                     {/* Distance quick-select in map overlay */}
-                    {userLocation && DISTANCE_OPTIONS.map(opt => (
+                    {userLocation && distanceOptions.map(opt => (
                       <Button
                         key={opt.value}
                         size="sm"

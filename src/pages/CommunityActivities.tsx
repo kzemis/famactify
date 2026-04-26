@@ -278,7 +278,19 @@ export default function CommunityActivities() {
   const places = useMemo(() => {
     return filteredActivities
       .filter(a => typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
-      .map(a => ({ id: a.id, name: a.name, lat: a.location_lat!, lon: a.location_lon! }));
+      .map(a => ({
+        id: a.id,
+        name: a.name,
+        lat: a.location_lat!,
+        lon: a.location_lon!,
+        imageurlthumb: a.imageurlthumb,
+        description: a.description,
+        location_address: a.location_address,
+        min_price: a.min_price,
+        max_price: a.max_price,
+        age_buckets: a.age_buckets,
+        urlmoreinfo: a.urlmoreinfo,
+      }));
   }, [filteredActivities]);
 
   // ---------------------------------------------------------------------------
@@ -837,11 +849,6 @@ export default function CommunityActivities() {
                 onSelect={(id) => setSelectedId(id)}
                 overlay={
                   <div className="flex items-center gap-2">
-                    {selectedId && (
-                      <div className="text-xs bg-background/80 rounded px-2 py-1 border">
-                        {filteredActivities.find(a => a.id === selectedId)?.name}
-                      </div>
-                    )}
                     {/* GPS locate button — centers map AND sets location for filter */}
                     <Button
                       size="sm"

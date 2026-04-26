@@ -18,6 +18,14 @@ interface Place {
   lon: number;
   type?: string;
   activityType?: string;
+  // Rich popup card data (optional — falls back to name-only if absent)
+  imageurlthumb?: string | null;
+  description?: string | null;
+  location_address?: string | null;
+  min_price?: number | null;
+  max_price?: number | null;
+  age_buckets?: string[] | null;
+  urlmoreinfo?: string | null;
 }
 
 interface PathItem {
@@ -102,10 +110,46 @@ const MapView: React.FC<MapViewProps> = ({
       const icon = getMarkerIcon ? getMarkerIcon(place) : undefined;
       const marker = L.marker([place.lat, place.lon], icon ? { icon } : undefined);
 
-      marker.bindPopup(`
-        <strong>${place.name}</strong><br/>
-        ${place.type || place.activityType || ''}
-      `);
+      // Rich popup card — inline styles (Leaflet popup is plain DOM, no Tailwind)
+      const priceHtml = (() => {
+        if (place.min_price === 0 || place.min_price === null && place.max_price === null) return 'Free';
+        if (place.min_price !== null && place.min_price !== undefined) return `From $${place.min_price}`;
+        if (place.max_price !== null && place.max_price !== undefined) return `Up to $${place.max_price}`;
+        return null;
+      })();
+
+      const popupHtml = `
+        <div style="min-width:220px;max-width:280px;font-family:system-ui,sans-serif;line-height:1.4;overflow:hidden;">
+          ${place.imageurlthumb
+            ? `<div style="margin:-12px -20px 10px;overflow:hidden;height:140px;">
+                <img src="${place.imageurlthumb}" alt="" style="width:100%;height:140px;object-fit:cover;display:block;" />
+               </div>`
+            : ''}
+          <strong style="font-size:14px;display:block;margin-bottom:6px;color:#111;">${place.name}</strong>
+          ${place.location_address
+            ? `<div style="font-size:12px;color:#666;margin-bottom:4px;">📍 ${place.location_address}</div>`
+            : ''}
+          ${priceHtml
+            ? `<div style="font-size:12px;color:#666;margin-bottom:4px;">💰 ${priceHtml}</div>`
+            : ''}
+          ${place.age_buckets?.length
+            ? `<div style="font-size:12px;color:#666;margin-bottom:6px;">👶 ${place.age_buckets.join(', ')} yrs</div>`
+            : ''}
+          ${place.urlmoreinfo
+            ? `<a href="${place.urlmoreinfo}" target="_blank" rel="noopener noreferrer"
+                style="font-size:12px;color:#ec4899;text-decoration:none;font-weight:500;">
+                More info →
+               </a>`
+            : ''}
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, { maxWidth: 280 });
+
+      // After popup opens, call invalidateSize so the map tiles don't misalign
+      marker.on('popupopen', () => {
+        leafletRef.current?.invalidateSize();
+      });
 
       if (onSelect) {
         marker.on('click', () => onSelect(place.id));

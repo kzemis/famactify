@@ -41,6 +41,8 @@ import CuratedLists from "./pages/CuratedLists";
 import CuratedListDetail from "./pages/CuratedListDetail";
 import AdminLists from "./pages/AdminLists";
 import AdminListEdit from "./pages/AdminListEdit";
+import LongHorizonPlanner from "./pages/LongHorizonPlanner";
+import BalanceTracker from "./pages/BalanceTracker";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +89,8 @@ const App = () => (
           <Route path="/admin/lists" element={<ProtectedRoute><AdminLists /></ProtectedRoute>} />
           <Route path="/admin/lists/new" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
           <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
+          <Route path="/plan/horizon" element={<ProtectedRoute><LongHorizonPlanner /></ProtectedRoute>} />
+          <Route path="/balance" element={<ProtectedRoute><BalanceTracker /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

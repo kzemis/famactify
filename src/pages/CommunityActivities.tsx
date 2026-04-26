@@ -114,7 +114,13 @@ export default function CommunityActivities() {
 
   // Rich filters (DIS-01)
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    // PLN-07: pre-populate from URL param ?category=Sport
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get('category');
+    if (catParam && CATEGORIES.includes(catParam)) return [catParam];
+    return [];
+  });
   const [selectedAges, setSelectedAges] = useState<string[]>([]);
   const [selectedInvolvement, setSelectedInvolvement] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('any');

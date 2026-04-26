@@ -9,7 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
-  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate,
+  Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -125,6 +125,12 @@ export default function CommunityActivities() {
   // Events filter
   const [eventsOnly, setEventsOnly] = useState(false);
 
+  // Timing filter (PLN-11): Anytime / Now / Later Today / Tomorrow / This Weekend
+  const [timingFilter, setTimingFilter] = useState<'any' | 'now' | 'today' | 'tomorrow' | 'weekend'>('any');
+
+  // Duration filter (PLN-12): Any / <1h / 1-2h / 2-4h / Full day
+  const [durationFilter, setDurationFilter] = useState<'any' | '<60' | '60-120' | '120-240' | '240+'>('any');
+
   // Accessibility filters (DIS-15)
   const [wheelchairAccessible, setWheelchairAccessible] = useState(false);
   const [strollerFriendly, setStrollerFriendly] = useState(false);
@@ -221,7 +227,7 @@ export default function CommunityActivities() {
     selectedInvolvement, maxPrice, indoorOnly, rainSuitable,
     userLocation, nearbyKm,
     wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea,
-    eventsOnly,
+    eventsOnly, timingFilter, durationFilter,
   ]);
 
   const filterActivities = () => {
@@ -242,6 +248,44 @@ export default function CommunityActivities() {
       filtered = filtered.filter(a =>
         a.event_starttime !== null && a.event_starttime > now
       );
+    }
+
+    // Timing filter (PLN-11) — applies to events (event_starttime); regular venues always pass
+    if (timingFilter !== 'any') {
+      const n = new Date();
+      const todayStart = new Date(n); todayStart.setHours(0, 0, 0, 0);
+      const todayEnd   = new Date(n); todayEnd.setHours(23, 59, 59, 999);
+      const tomorrowStart = new Date(todayEnd); tomorrowStart.setDate(tomorrowStart.getDate() + 1); tomorrowStart.setHours(0, 0, 0, 0);
+      const tomorrowEnd   = new Date(tomorrowStart); tomorrowEnd.setHours(23, 59, 59, 999);
+      const daysUntilSat  = n.getDay() === 0 ? 6 : 6 - n.getDay();
+      const weekendStart  = new Date(n); weekendStart.setDate(weekendStart.getDate() + daysUntilSat); weekendStart.setHours(0, 0, 0, 0);
+      const weekendEnd    = new Date(weekendStart); weekendEnd.setDate(weekendEnd.getDate() + 1); weekendEnd.setHours(23, 59, 59, 999);
+
+      filtered = filtered.filter(a => {
+        if (!a.event_starttime) return true; // permanent venues always available
+        const start = new Date(a.event_starttime);
+        switch (timingFilter) {
+          case 'now':      return start >= n && start <= new Date(n.getTime() + 2 * 3600_000);
+          case 'today':    return start >= todayStart && start <= todayEnd;
+          case 'tomorrow': return start >= tomorrowStart && start <= tomorrowEnd;
+          case 'weekend':  return start >= weekendStart && start <= weekendEnd;
+          default:         return true;
+        }
+      });
+    }
+
+    // Duration filter (PLN-12) — activities without duration_minutes always pass
+    if (durationFilter !== 'any') {
+      filtered = filtered.filter(a => {
+        if (!a.duration_minutes) return true; // unknown → don't exclude
+        switch (durationFilter) {
+          case '<60':     return a.duration_minutes < 60;
+          case '60-120':  return a.duration_minutes >= 60  && a.duration_minutes <= 120;
+          case '120-240': return a.duration_minutes >  120 && a.duration_minutes <= 240;
+          case '240+':    return a.duration_minutes > 240;
+          default:        return true;
+        }
+      });
     }
 
     // Text search
@@ -379,8 +423,10 @@ export default function CommunityActivities() {
     if (transitAccessible) n++;
     if (fencedArea) n++;
     if (eventsOnly) n++;
+    if (timingFilter !== 'any') n++;
+    if (durationFilter !== 'any') n++;
     return n;
-  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly]);
+  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -398,6 +444,8 @@ export default function CommunityActivities() {
     setTransitAccessible(false);
     setFencedArea(false);
     setEventsOnly(false);
+    setTimingFilter('any');
+    setDurationFilter('any');
   };
 
   // ---------------------------------------------------------------------------
@@ -716,6 +764,64 @@ export default function CommunityActivities() {
                       )}
                     >
                       {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Timing (PLN-11) */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> When
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: 'any',      label: 'Anytime' },
+                    { value: 'now',      label: '⚡ Going Now' },
+                    { value: 'today',    label: '☀️ Later Today' },
+                    { value: 'tomorrow', label: '📅 Tomorrow' },
+                    { value: 'weekend',  label: '🎉 This Weekend' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTimingFilter(opt.value)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        timingFilter === opt.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration (PLN-12) */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <Timer className="w-3.5 h-3.5" /> How long?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: 'any',     label: 'Any length' },
+                    { value: '<60',     label: '⚡ Under 1h' },
+                    { value: '60-120',  label: '⏱️ 1–2 hours' },
+                    { value: '120-240', label: '🕑 2–4 hours' },
+                    { value: '240+',    label: '🌅 Full day' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setDurationFilter(opt.value)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        durationFilter === opt.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      {opt.label}
                     </button>
                   ))}
                 </div>

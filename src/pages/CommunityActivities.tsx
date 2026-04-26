@@ -864,10 +864,10 @@ export default function CommunityActivities() {
               )}
             </div>
 
-            {/* City quick-filter pill — opens filter panel at city section */}
+            {/* City quick-filter pill — toggles filter panel */}
             {availableCities.length > 0 && (
               <button
-                onClick={() => setFiltersExpanded(true)}
+                onClick={() => setFiltersExpanded(v => !v)}
                 className={cn(
                   'flex items-center gap-1 px-2.5 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
                   selectedCities.length > 0
@@ -911,7 +911,17 @@ export default function CommunityActivities() {
 
           {/* Filter panel — expands inside sticky bar, scrollable on mobile */}
           {filtersExpanded && (
-            <div className="max-h-[60vh] overflow-y-auto pb-3">
+            <div className="max-h-[72vh] overflow-y-auto pb-3">
+              {/* Sticky close bar — always visible at top of scroll container */}
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border flex items-center justify-between py-2 mb-3">
+                <span className="text-sm font-semibold text-foreground">Filters</span>
+                <button
+                  onClick={() => setFiltersExpanded(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <X className="w-4 h-4" /> Done
+                </button>
+              </div>
               <div className="rounded-lg border bg-card p-4 space-y-4">
 
               {/* City / Area — multi-select (only when cities are available for this country) */}

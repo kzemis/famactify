@@ -1680,19 +1680,18 @@ export default function CommunityActivities() {
                       {/* Add / Remove from plan */}
                       <Button
                         size="sm"
-                        variant={inPlan ? 'secondary' : 'default'}
+                        variant="default"
                         className="gap-1.5"
                         onClick={() => {
-                          if (inPlan) {
-                            removeFromPlan(spotModalPlace.id);
-                            toast.success(`Removed from plan`);
-                          } else if (spotModalActivity) {
+                          if (!inPlan && spotModalActivity) {
                             addToPlan(spotModalActivity);
-                            toast.success(`Added "${spotModalPlace.name}" to plan`);
                           }
+                          setSpotModalOpen(false);
+                          setSpotModalShowAll(false);
+                          setViewMode('plan');
                         }}
                       >
-                        {inPlan ? '✓ In plan' : '+ Add to plan'}
+                        {inPlan ? '🗓️ Go to Plan' : '+ Add & Go to Plan'}
                       </Button>
 
                       {/* Show all activities toggle */}

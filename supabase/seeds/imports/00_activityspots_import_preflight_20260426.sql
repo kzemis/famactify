@@ -26,7 +26,15 @@ ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS source_confidence smal
 ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS family_fit_score smallint DEFAULT NULL;
 ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS ticket_url text;
 ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS organizer text;
+ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS created_by text DEFAULT 'user';
+ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS created_by_reference jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS urlmoreinfo_status text DEFAULT 'unknown';
+ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS urlmoreinfo_checked_at timestamptz;
+ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS urlmoreinfo_http_status int;
+ALTER TABLE public.activityspots ADD COLUMN IF NOT EXISTS urlmoreinfo_final_url text;
 
 CREATE INDEX IF NOT EXISTS idx_activityspots_country_code ON public.activityspots(country_code);
 CREATE INDEX IF NOT EXISTS idx_activityspots_country_city ON public.activityspots(country_code, city);
 CREATE INDEX IF NOT EXISTS idx_activityspots_event_starttime ON public.activityspots(event_starttime) WHERE event_starttime IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_activityspots_created_by ON public.activityspots(created_by);
+CREATE INDEX IF NOT EXISTS idx_activityspots_urlmoreinfo_status ON public.activityspots(urlmoreinfo_status) WHERE urlmoreinfo IS NOT NULL;

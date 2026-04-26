@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User, Plus, Map } from "lucide-react";
+import { User, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -13,8 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import CountrySwitcher from "@/components/CountrySwitcher";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const AppHeader = () => {
@@ -70,15 +69,15 @@ const AppHeader = () => {
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
         {/* Brand */}
         <span
-          className="text-2xl font-bold text-primary cursor-pointer"
+          className="text-2xl font-bold text-primary cursor-pointer select-none"
           onClick={() => navigate("/")}
         >
           FamActify
         </span>
-        
-        {/* Right side controls + Activities */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          {/* Activities: list icon on mobile, labeled on larger screens */}
+
+        {/* Right side controls */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Activities */}
           <Button variant="default" onClick={() => navigate('/activities')} size="icon" className="sm:w-auto sm:px-4">
             <Map className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Activities</span>
@@ -88,23 +87,18 @@ const AppHeader = () => {
           {proposalCount > 0 && (
             <button
               onClick={() => navigate('/proposals')}
-              className="relative flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+              className="relative flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
             >
-              💌 Kids ask
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+              💌
+              <span className="hidden sm:inline">Kids ask</span>
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
                 {proposalCount}
               </span>
             </button>
           )}
 
-          {/* Contribute: plus icon remains */}
-          <Button variant="outline" onClick={() => navigate("/contribute")} size="icon" className="sm:w-auto sm:px-4">
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t.common.contribute}</span>
-          </Button>
-
-          <CountrySwitcher />
-          <LanguageSwitcher />
+          {/* Merged region + language picker */}
+          <LocaleSwitcher />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

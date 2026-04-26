@@ -19,9 +19,6 @@ const Landing = () => {
         <div className="container relative mx-auto px-4 py-10 md:py-20">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
             <div className="space-y-6">
-              <div className="inline-block rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                Family activity registry
-              </div>
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                 Discover &amp; Plan{" "}
                 <span className="text-primary">Memorable Family Activities</span>

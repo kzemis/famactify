@@ -32,6 +32,7 @@ interface PathItem {
   id: string;
   lat: number;
   lon: number;
+  name?: string;  // shown as label beneath the numbered pin
 }
 
 interface MapViewProps {
@@ -146,6 +147,13 @@ const MapView: React.FC<MapViewProps> = ({
 
       marker.bindPopup(popupHtml, { maxWidth: 280 });
 
+      // Name tooltip on hover — shows activity name without needing to click
+      marker.bindTooltip(place.name, {
+        direction: 'right',
+        offset: [10, 0],
+        className: 'activity-name-tooltip',
+      });
+
       // After popup opens, call invalidateSize so the map tiles don't misalign
       marker.on('popupopen', () => {
         leafletRef.current?.invalidateSize();
@@ -171,46 +179,68 @@ const MapView: React.FC<MapViewProps> = ({
 
     pathLayerRef.current.clearLayers();
 
-    if (!path || path.length < 2) return;
+    if (!path || path.length < 1) return;
 
     const validPath = path.filter(p => typeof p.lat === 'number' && typeof p.lon === 'number');
-    if (validPath.length < 2) return;
+    if (validPath.length < 1) return;
 
     const latlngs: L.LatLngExpression[] = validPath.map(p => [p.lat, p.lon]);
 
-    // Create dashed polyline
-    const polyline = L.polyline(latlngs, {
-      color: '#0ea5e9',
-      weight: 4,
-      opacity: 0.8,
-      dashArray: '6 8',
-    });
-    polyline.addTo(pathLayerRef.current);
+    // Dashed polyline — only when 2+ stops
+    let polyline: L.Polyline | null = null;
+    if (validPath.length >= 2) {
+      polyline = L.polyline(latlngs, {
+        color: '#0ea5e9',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '6 8',
+      });
+      polyline.addTo(pathLayerRef.current);
+    }
 
-    // Add numbered markers
+    // Numbered markers with name label beneath
     validPath.forEach((point, idx) => {
+      const label = point.name
+        ? `<div style="
+            margin-top: 3px;
+            background: white;
+            color: #1e293b;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            white-space: nowrap;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            pointer-events: none;
+          ">${point.name}</div>`
+        : '';
+
       const html = `
-        <div style="
-          width: 28px;
-          height: 28px;
-          background: #0ea5e9;
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 14px;
-          box-shadow: 0 0 0 3px white, 0 2px 4px rgba(0,0,0,0.3);
-        ">
-          ${idx + 1}
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div style="
+            width: 28px;
+            height: 28px;
+            background: #0ea5e9;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 0 0 3px white, 0 2px 4px rgba(0,0,0,0.3);
+          ">${idx + 1}</div>
+          ${label}
         </div>
       `;
 
       const icon = L.divIcon({
         html,
         className: 'session-order-marker',
-        iconSize: [28, 28],
+        iconSize: [28, point.name ? 52 : 28],
         iconAnchor: [14, 14],
       });
 
@@ -223,8 +253,13 @@ const MapView: React.FC<MapViewProps> = ({
       marker.addTo(pathLayerRef.current!);
     });
 
-    // Fit bounds to path
-    leafletRef.current.fitBounds(polyline.getBounds().pad(0.15));
+    // Fit bounds
+    if (polyline) {
+      leafletRef.current.fitBounds(polyline.getBounds().pad(0.15));
+    } else {
+      // Single point — just center on it
+      leafletRef.current.setView([validPath[0].lat, validPath[0].lon], 14);
+    }
   }, [path, onSelect]);
 
   // User location marker — blue "you are here" dot

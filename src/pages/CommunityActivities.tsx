@@ -189,6 +189,7 @@ export default function CommunityActivities() {
   const [planName, setPlanName] = useState('My Plan');
   const [savingPlan, setSavingPlan] = useState(false);
   const [showAllOnPlanMap, setShowAllOnPlanMap] = useState(false);
+  const [planMapSelectedId, setPlanMapSelectedId] = useState<string | null>(null);
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -577,7 +578,7 @@ export default function CommunityActivities() {
   const planPath = useMemo(() =>
     planItems
       .filter(p => typeof p.lat === 'number' && typeof p.lon === 'number')
-      .map(p => ({ id: p.activityId, lat: p.lat!, lon: p.lon! })),
+      .map(p => ({ id: p.activityId, lat: p.lat!, lon: p.lon!, name: p.name })),
     [planItems]
   );
 
@@ -1530,23 +1531,14 @@ export default function CommunityActivities() {
             </div>
 
             {/* Right: route map */}
-            <div className="w-full lg:w-3/5 h-64 lg:h-full">
+            <div className="relative w-full lg:w-3/5 h-64 lg:h-full">
               {planPath.length > 0 || showAllOnPlanMap ? (
                 <MapView
                   places={showAllOnPlanMap ? places : []}
                   path={planPath}
                   className="h-full rounded-none border-0"
                   center={planPath.length > 0 ? { lat: planPath[0].lat, lon: planPath[0].lon } : center}
-                  onSelect={(id) => {
-                    const sel = filteredActivities.find(a => a.id === id);
-                    if (!sel) return;
-                    if (planItems.some(p => p.activityId === id)) {
-                      toast.info(`"${sel.name}" is already in your plan`);
-                    } else {
-                      addToPlan(sel);
-                      toast.success(`Added "${sel.name}" to plan`);
-                    }
-                  }}
+                  onSelect={(id) => setPlanMapSelectedId(id)}
                   overlay={
                     <div className="flex flex-col gap-1.5 items-end">
                       <button
@@ -1564,7 +1556,7 @@ export default function CommunityActivities() {
                       </button>
                       {showAllOnPlanMap && (
                         <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow">
-                          Click any pin to add to plan
+                          Click any pin to preview
                         </p>
                       )}
                     </div>
@@ -1584,6 +1576,73 @@ export default function CommunityActivities() {
                   </button>
                 </div>
               )}
+
+              {/* Plan map activity preview card — appears when a pin is clicked */}
+              {planMapSelectedId && (() => {
+                const sel = filteredActivities.find(a => a.id === planMapSelectedId);
+                if (!sel) return null;
+                const inPlan = planItems.some(p => p.activityId === sel.id);
+                return (
+                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-card border-t border-border shadow-xl p-3 flex gap-3 items-start">
+                    {/* Thumbnail */}
+                    {sel.imageurlthumb ? (
+                      <img
+                        src={sel.imageurlthumb}
+                        alt={sel.name}
+                        className="w-16 h-16 rounded-md object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded-md shrink-0 flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{sel.name}</p>
+                      {sel.location_address && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{sel.location_address}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatPriceRange(sel.min_price, sel.max_price, t)}
+                        {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
+                      </p>
+                      {sel.age_buckets && sel.age_buckets.length > 0 && (
+                        <p className="text-xs text-muted-foreground">👧 {sel.age_buckets.join(', ')} yrs</p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant={inPlan ? 'secondary' : 'default'}
+                        className="text-xs h-7 px-2.5 whitespace-nowrap"
+                        onClick={() => {
+                          if (inPlan) {
+                            removeFromPlan(sel.id);
+                            toast.success(`Removed "${sel.name}" from plan`);
+                          } else {
+                            addToPlan(sel);
+                            toast.success(`Added "${sel.name}" to plan`);
+                          }
+                          setPlanMapSelectedId(null);
+                        }}
+                      >
+                        {inPlan ? '✓ In plan' : '+ Add to plan'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs h-7 px-2.5"
+                        onClick={() => setPlanMapSelectedId(null)}
+                      >
+                        <X className="w-3 h-3 mr-1" /> Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

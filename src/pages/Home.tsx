@@ -84,7 +84,7 @@ const Home = () => {
         <div className="mt-6">
           <Button
             size="lg"
-            onClick={() => navigate("/community")}
+            onClick={() => navigate("/activities")}
             className="w-full"
           >
             Activity catalog

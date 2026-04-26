@@ -48,6 +48,10 @@ interface MapViewProps {
   userLocation?: { lat: number; lon: number } | null;
   /** If set alongside userLocation, draws a radius circle (km) */
   nearbyKm?: number | null;
+  /** If provided, renders an "Add to plan" button inside each popup */
+  onAddToPlan?: (id: string) => void;
+  /** IDs of activities already in the plan — used to show "✓ In plan" state */
+  planItemIds?: string[];
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -61,6 +65,8 @@ const MapView: React.FC<MapViewProps> = ({
   className,
   userLocation,
   nearbyKm,
+  onAddToPlan,
+  planItemIds,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
@@ -68,6 +74,17 @@ const MapView: React.FC<MapViewProps> = ({
   const pathLayerRef = useRef<L.LayerGroup | null>(null);
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const nearbyCircleRef = useRef<L.Circle | null>(null);
+
+  // Keep callback refs stable so the markers effect doesn't re-fire (and re-fitBounds)
+  // every time the parent re-renders with a new inline function reference.
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const getMarkerIconRef = useRef(getMarkerIcon);
+  getMarkerIconRef.current = getMarkerIcon;
+  const onAddToPlanRef = useRef(onAddToPlan);
+  onAddToPlanRef.current = onAddToPlan;
+  const planItemIdsRef = useRef(planItemIds);
+  planItemIdsRef.current = planItemIds;
 
   // Initialize map
   useEffect(() => {
@@ -108,7 +125,7 @@ const MapView: React.FC<MapViewProps> = ({
     const markerBounds: L.LatLngExpression[] = [];
 
     validPlaces.forEach((place) => {
-      const icon = getMarkerIcon ? getMarkerIcon(place) : undefined;
+      const icon = getMarkerIconRef.current ? getMarkerIconRef.current(place) : undefined;
       const marker = L.marker([place.lat, place.lon], icon ? { icon } : undefined);
 
       // Rich popup card — inline styles (Leaflet popup is plain DOM, no Tailwind)
@@ -118,6 +135,8 @@ const MapView: React.FC<MapViewProps> = ({
         if (place.max_price !== null && place.max_price !== undefined) return `Up to $${place.max_price}`;
         return null;
       })();
+
+      const hasAddToPlan = !!onAddToPlanRef.current;
 
       const popupHtml = `
         <div style="min-width:220px;max-width:280px;font-family:system-ui,sans-serif;line-height:1.4;overflow:hidden;">
@@ -142,6 +161,22 @@ const MapView: React.FC<MapViewProps> = ({
                 More info →
                </a>`
             : ''}
+          ${hasAddToPlan
+            ? `<button data-plan-id="${place.id}" style="
+                display:block;
+                margin-top:8px;
+                width:100%;
+                padding:6px 10px;
+                background:#ec4899;
+                color:white;
+                border:none;
+                border-radius:6px;
+                font-size:12px;
+                font-weight:600;
+                cursor:pointer;
+                text-align:center;
+              ">+ Add to plan</button>`
+            : ''}
         </div>
       `;
 
@@ -154,13 +189,32 @@ const MapView: React.FC<MapViewProps> = ({
         className: 'activity-name-tooltip',
       });
 
-      // After popup opens, call invalidateSize so the map tiles don't misalign
+      // After popup opens, call invalidateSize so the map tiles don't misalign.
+      // Also wire up the "Add to plan" button with current plan state.
       marker.on('popupopen', () => {
         leafletRef.current?.invalidateSize();
+        if (hasAddToPlan) {
+          // Use setTimeout to let the popup DOM render before querying it
+          setTimeout(() => {
+            const btn = document.querySelector<HTMLButtonElement>(`[data-plan-id="${place.id}"]`);
+            if (!btn) return;
+            // Update button label/colour based on current plan state
+            const inPlan = planItemIdsRef.current?.includes(place.id) ?? false;
+            btn.textContent = inPlan ? '✓ In plan' : '+ Add to plan';
+            btn.style.background = inPlan ? '#6b7280' : '#ec4899';
+            // Replace node to clear any stale listener from a previous open
+            const fresh = btn.cloneNode(true) as HTMLButtonElement;
+            btn.replaceWith(fresh);
+            fresh.addEventListener('click', () => {
+              onAddToPlanRef.current?.(place.id);
+              leafletRef.current?.closePopup();
+            });
+          }, 0);
+        }
       });
 
-      if (onSelect) {
-        marker.on('click', () => onSelect(place.id));
+      if (onSelectRef.current) {
+        marker.on('click', () => onSelectRef.current?.(place.id));
       }
 
       marker.addTo(markersLayerRef.current!);
@@ -171,7 +225,8 @@ const MapView: React.FC<MapViewProps> = ({
     if (markerBounds.length > 1 && !path) {
       leafletRef.current.fitBounds(markerBounds);
     }
-  }, [places, onSelect, getMarkerIcon, path]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places, path]); // onSelect/getMarkerIcon intentionally omitted — using refs above
 
   // Update path
   useEffect(() => {

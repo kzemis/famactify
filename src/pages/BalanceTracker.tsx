@@ -242,7 +242,7 @@ export default function BalanceTracker() {
                           {planned === 0 && done > 0 && <span> saved</span>}
                         </span>
                         <Link
-                          to={`/community?category=${name}`}
+                          to={`/activities?category=${name}`}
                           className="text-xs text-primary hover:underline shrink-0"
                         >
                           Find more →

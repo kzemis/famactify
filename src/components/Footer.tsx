@@ -68,7 +68,7 @@ const Footer = () => {
   const footerLinks = {
     product: [
       { label: t.footer.activityPlanner, href: "/onboarding/interests" },
-      { label: t.footer.communityActivities, href: "/community" },
+      { label: t.footer.communityActivities, href: "/activities" },
       { label: t.footer.contributeActivity, href: "/contribute" },
       { label: t.footer.myPlannedTrips, href: "/saved-trips" },
     ],

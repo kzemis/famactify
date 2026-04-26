@@ -257,7 +257,7 @@ const EditActivity: React.FC = () => {
         .eq('id', row.id);
       if (error) throw error;
       toast.success('Activity updated');
-      navigate('/community');
+      navigate('/activities');
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || 'Failed to save');
@@ -491,7 +491,7 @@ const EditActivity: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => navigate('/community')}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => navigate('/activities')}>Cancel</Button>
                 <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
               </div>
             </div>

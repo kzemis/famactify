@@ -174,7 +174,7 @@ export default function LongHorizonPlanner() {
 
                 {/* Find activities link */}
                 <Link
-                  to={`/community?category=${name}`}
+                  to={`/activities?category=${name}`}
                   className="ml-auto text-xs text-primary hover:underline shrink-0"
                 >
                   Find activities →

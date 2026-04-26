@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CountrySwitcher from "@/components/CountrySwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const AppHeader = () => {
@@ -78,8 +79,9 @@ const AppHeader = () => {
             <span className="hidden sm:inline">{t.common.contribute}</span>
           </Button>
 
-           <LanguageSwitcher />
-          {user && (
+          <CountrySwitcher />
+          <LanguageSwitcher />
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -111,6 +113,16 @@ const AppHeader = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              className="sm:px-4"
+              onClick={() => navigate("/auth")}
+            >
+              <User className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t.common.signIn}</span>
+            </Button>
           )}
         </div>
       </div>

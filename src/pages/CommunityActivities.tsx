@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X, Map as MapIcon } from 'lucide-react';
+import { Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X, Map as MapIcon, SlidersHorizontal, CloudRain, Home } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useCountry } from '@/i18n/CountryContext';
 
 interface ActivitySpot {
   id: string;
@@ -36,18 +38,38 @@ interface ActivitySpot {
   foodvenue_kidmenu: boolean | null;
   source: string | null;
   created_at: string;
+  // v3.1 schema fields (from migration 20260425_160000)
+  primary_category: string | null;
+  involvement: string | null;
+  city: string | null;
+  age_min: number | null;
+  age_max: number | null;
+  location_environment: string | null;
+  rain_suitable: boolean | null;
+  booking_required: boolean | null;
+  tags: string[] | null;
+  highlights: string[] | null;
+  excitement_score: number | null;
+  country_code: string | null;
+  duration_minutes: number | null;
   json: any;
 }
 
 export default function CommunityActivities() {
   const { t } = useLanguage();
+  const { countryCode } = useCountry();
   const navigate = useNavigate();
   const [activities, setActivities] = useState<ActivitySpot[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivitySpot[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedAge, setSelectedAge] = useState<string>('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedAges, setSelectedAges] = useState<string[]>([]);
+  const [selectedInvolvement, setSelectedInvolvement] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('any');
+  const [indoorOnly, setIndoorOnly] = useState(false);
+  const [rainSuitable, setRainSuitable] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -61,21 +83,32 @@ export default function CommunityActivities() {
   const [spotModalCenter, setSpotModalCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
   const [spotModalPlace, setSpotModalPlace] = useState<{ id: string; name: string; lat: number; lon: number } | undefined>(undefined);
 
-  const activityTypes = ['outdoor', 'indoor', 'museum', 'park', 'playground', 'sports', 'arts', 'educational', 'entertainment'];
-  const ageBuckets = ['0-2', '3-5', '6-8', '9-12', '13+'];
+  const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
+  const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
+  const INVOLVEMENT_OPTIONS = [
+    { value: 'active_together', label: '🤝 Active Together' },
+    { value: 'supervise',       label: '👀 Watch from Side' },
+    { value: 'drop_go',         label: '🚗 Drop & Go' },
+  ];
+  const PRICE_OPTIONS = [
+    { value: 'free', label: 'Free' },
+    { value: '10',   label: 'Under $10' },
+    { value: '20',   label: 'Under $20' },
+  ];
 
   useEffect(() => {
     fetchActivities();
-    
-    // Set up real-time subscription
+
+    // Set up real-time subscription — filter by country so new inserts are relevant
     const channel = supabase
-      .channel('activityspots-changes')
+      .channel(`activityspots-changes-${countryCode}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'activityspots'
+          table: 'activityspots',
+          filter: `country_code=eq.${countryCode}`,
         },
         (payload) => {
           console.log('New activity added:', payload);
@@ -87,11 +120,11 @@ export default function CommunityActivities() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [countryCode]);
 
   useEffect(() => {
     filterActivities();
-  }, [activities, searchQuery, selectedType, selectedAge]);
+  }, [activities, searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable]);
 
   useEffect(() => {
     const fetchSpots = async () => {
@@ -100,6 +133,7 @@ export default function CommunityActivities() {
       const { data, error } = await supabase
         .from('activityspots')
         .select('id,name,location_lat,location_lon,location_address,imageurlthumb,description')
+        .eq('country_code', countryCode)
         .order('name', { ascending: true });
       if (error) {
         setError(error.message);
@@ -108,16 +142,20 @@ export default function CommunityActivities() {
       }
       const withCoords = (data || []).filter(s => typeof s.location_lat === 'number' && typeof s.location_lon === 'number');
       setSpots(withCoords as ActivitySpot[]);
-      // initial center: first spot or default Riga
+      // initial center: first spot or country default
       if (withCoords.length > 0) {
         setCenter({ lat: withCoords[0].location_lat!, lon: withCoords[0].location_lon! });
       } else {
-        setCenter({ lat: 56.9496, lon: 24.1052 });
+        // US default: SF Bay Area; LV default: Riga
+        setCenter(countryCode === 'US'
+          ? { lat: 37.7749, lon: -122.4194 }
+          : { lat: 56.9496, lon: 24.1052 }
+        );
       }
       setLoading(false);
     };
     fetchSpots();
-  }, []);
+  }, [countryCode]);
 
   const places = useMemo(() => {
     return spots.map(s => ({ id: s.id, name: s.name, lat: s.location_lat!, lon: s.location_lon! }));
@@ -129,6 +167,7 @@ export default function CommunityActivities() {
       const { data, error } = await supabase
         .from('activityspots')
         .select('*')
+        .eq('country_code', countryCode)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -145,30 +184,80 @@ export default function CommunityActivities() {
   const filterActivities = () => {
     let filtered = [...activities];
 
-    // Search filter
+    // Text search across name, description, address, tags
     if (searchQuery) {
-      filtered = filtered.filter(activity =>
-        activity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        activity.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        activity.location_address?.toLowerCase().includes(searchQuery.toLowerCase())
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q) ||
+        a.location_address?.toLowerCase().includes(q) ||
+        a.tags?.some(tag => tag.toLowerCase().includes(q))
       );
     }
 
-    // Activity type filter
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(activity =>
-        activity.activity_type.includes(selectedType)
+    // Primary category (multi-select OR: show if any selected cat matches)
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(a =>
+        a.primary_category && selectedCategories.includes(a.primary_category)
       );
     }
 
-    // Age filter
-    if (selectedAge !== 'all') {
-      filtered = filtered.filter(activity =>
-        activity.age_buckets.includes(selectedAge)
+    // Age buckets (multi-select OR: show if any selected bucket overlaps)
+    if (selectedAges.length > 0) {
+      filtered = filtered.filter(a =>
+        a.age_buckets?.some(bucket => selectedAges.includes(bucket))
       );
+    }
+
+    // Involvement
+    if (selectedInvolvement) {
+      filtered = filtered.filter(a => a.involvement === selectedInvolvement);
+    }
+
+    // Budget (filter on min_price — if activity has no price data, include it)
+    if (maxPrice === 'free') {
+      filtered = filtered.filter(a => a.min_price === 0 || a.min_price === null);
+    } else if (maxPrice === '10') {
+      filtered = filtered.filter(a => a.min_price === null || a.min_price <= 10);
+    } else if (maxPrice === '20') {
+      filtered = filtered.filter(a => a.min_price === null || a.min_price <= 20);
+    }
+
+    // Indoor only
+    if (indoorOnly) {
+      filtered = filtered.filter(a =>
+        a.location_environment === 'indoor' || a.location_environment === 'both'
+      );
+    }
+
+    // Rain suitable
+    if (rainSuitable) {
+      filtered = filtered.filter(a => a.rain_suitable === true);
     }
 
     setFilteredActivities(filtered);
+  };
+
+  const activeFilterCount = useMemo(() => {
+    let n = 0;
+    if (searchQuery) n++;
+    if (selectedCategories.length > 0) n++;
+    if (selectedAges.length > 0) n++;
+    if (selectedInvolvement) n++;
+    if (maxPrice !== 'any') n++;
+    if (indoorOnly) n++;
+    if (rainSuitable) n++;
+    return n;
+  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategories([]);
+    setSelectedAges([]);
+    setSelectedInvolvement('');
+    setMaxPrice('any');
+    setIndoorOnly(false);
+    setRainSuitable(false);
   };
 
   const getPriceDisplay = (activity: ActivitySpot) => {
@@ -233,50 +322,224 @@ export default function CommunityActivities() {
           </div>
         </div>
 
-        {/* Filters hidden for now */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search activities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        {/* ── Rich Filters (DIS-01) ── */}
+        <div className="mb-6 space-y-3">
+          {/* Row 1: search + filters toggle */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search activities…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <button
+              onClick={() => setFiltersExpanded(v => !v)}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0",
+                filtersExpanded || activeFilterCount > (searchQuery ? 1 : 0)
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border hover:border-primary/50"
+              )}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline">Filters</span>
+              {activeFilterCount > (searchQuery ? 1 : 0) && (
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs font-bold">
+                  {activeFilterCount - (searchQuery ? 1 : 0)}
+                </span>
+              )}
+            </button>
           </div>
-          
-          <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Activity Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {activityTypes.map(type => (
-                <SelectItem key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <Select value={selectedAge} onValueChange={setSelectedAge}>
-            <SelectTrigger>
-              <SelectValue placeholder="Age Group" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Ages</SelectItem>
-              {ageBuckets.map(age => (
-                <SelectItem key={age} value={age}>
-                  {age} years
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div> */}
+          {/* Row 2: category quick-pills (always visible, horizontal scroll on mobile) */}
+          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              onClick={() => setSelectedCategories([])}
+              className={cn(
+                "shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                selectedCategories.length === 0
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border hover:border-primary/50"
+              )}
+            >
+              All
+            </button>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() =>
+                  setSelectedCategories(prev =>
+                    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                  )
+                }
+                className={cn(
+                  "shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                  selectedCategories.includes(cat)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:border-primary/50"
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
 
-        {/* Results Count */}
+          {/* Advanced filter panel (expanded) */}
+          {filtersExpanded && (
+            <div className="rounded-lg border bg-card p-4 space-y-4">
+              {/* Age */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Age Group</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedAges([])}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      selectedAges.length === 0
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    )}
+                  >
+                    All Ages
+                  </button>
+                  {AGE_BUCKETS.map(age => (
+                    <button
+                      key={age}
+                      onClick={() =>
+                        setSelectedAges(prev =>
+                          prev.includes(age) ? prev.filter(a => a !== age) : [...prev, age]
+                        )
+                      }
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                        selectedAges.includes(age)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border hover:border-primary/50"
+                      )}
+                    >
+                      {age} yrs
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Involvement */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Involvement</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedInvolvement('')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      selectedInvolvement === ''
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    )}
+                  >
+                    Any
+                  </button>
+                  {INVOLVEMENT_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSelectedInvolvement(opt.value)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                        selectedInvolvement === opt.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border hover:border-primary/50"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Budget */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Budget</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setMaxPrice('any')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      maxPrice === 'any'
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    )}
+                  >
+                    Any
+                  </button>
+                  {PRICE_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setMaxPrice(opt.value)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                        maxPrice === opt.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border hover:border-primary/50"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Environment toggles */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Environment</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setRainSuitable(v => !v)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      rainSuitable
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    )}
+                  >
+                    <CloudRain className="w-3.5 h-3.5" /> Rain suitable
+                  </button>
+                  <button
+                    onClick={() => setIndoorOnly(v => !v)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                      indoorOnly
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    )}
+                  >
+                    <Home className="w-3.5 h-3.5" /> Indoor only
+                  </button>
+                </div>
+              </div>
+
+              {/* Clear all */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" /> Clear all filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Results count */}
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredActivities.length} {filteredActivities.length === 1 ? 'activity' : 'activities'}
+          {filteredActivities.length} {filteredActivities.length === 1 ? 'activity' : 'activities'}
+          {activeFilterCount > 0 && (
+            <button onClick={clearFilters} className="ml-2 text-primary hover:underline">
+              Clear filters
+            </button>
+          )}
         </div>
 
         {/* Grid View */}

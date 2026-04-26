@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { formatPriceRange, formatDistance, getDistanceOptions } from '@/lib/formatters';
+import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
@@ -78,6 +78,11 @@ interface ActivitySpot {
   sensory_friendly: boolean | null;
   transit_accessible: boolean | null;
   fenced: boolean | null;
+  // event fields
+  event_starttime: string | null;
+  event_endtime: string | null;
+  ticket_url: string | null;
+  organizer: string | null;
 }
 
 const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
@@ -116,6 +121,9 @@ export default function CommunityActivities() {
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [rainSuitable, setRainSuitable] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Events filter
+  const [eventsOnly, setEventsOnly] = useState(false);
 
   // Accessibility filters (DIS-15)
   const [wheelchairAccessible, setWheelchairAccessible] = useState(false);
@@ -213,10 +221,28 @@ export default function CommunityActivities() {
     selectedInvolvement, maxPrice, indoorOnly, rainSuitable,
     userLocation, nearbyKm,
     wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea,
+    eventsOnly,
   ]);
 
   const filterActivities = () => {
     let filtered = [...activities];
+
+    const now = new Date().toISOString();
+
+    // Default: filter out past events from normal view
+    filtered = filtered.filter(a =>
+      // Keep if no event_endtime (regular activity)
+      !a.event_endtime ||
+      // Keep if event hasn't ended yet
+      a.event_endtime > now
+    );
+
+    // Events-only filter: only show upcoming events
+    if (eventsOnly) {
+      filtered = filtered.filter(a =>
+        a.event_starttime !== null && a.event_starttime > now
+      );
+    }
 
     // Text search
     if (searchQuery) {
@@ -352,8 +378,9 @@ export default function CommunityActivities() {
     if (sensoryFriendly) n++;
     if (transitAccessible) n++;
     if (fencedArea) n++;
+    if (eventsOnly) n++;
     return n;
-  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea]);
+  }, [searchQuery, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -370,6 +397,7 @@ export default function CommunityActivities() {
     setSensoryFriendly(false);
     setTransitAccessible(false);
     setFencedArea(false);
+    setEventsOnly(false);
   };
 
   // ---------------------------------------------------------------------------
@@ -652,6 +680,17 @@ export default function CommunityActivities() {
                   >
                     <Home className="w-3.5 h-3.5" /> Indoor only
                   </button>
+                  <button
+                    onClick={() => setEventsOnly(v => !v)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                      eventsOnly
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50',
+                    )}
+                  >
+                    🎟️ Upcoming Events only
+                  </button>
                 </div>
               </div>
 
@@ -836,6 +875,13 @@ export default function CommunityActivities() {
                           📍 {formatDistance(haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon), regionConfig)} away
                         </div>
                       )}
+
+                      {/* Event date badge — replaces duration badge for events */}
+                      {activity.event_starttime ? (
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                          🎟️ {formatDate(activity.event_starttime, regionConfig)} {formatTime(activity.event_starttime, regionConfig)}
+                        </div>
+                      ) : null}
 
                       {/* Price */}
                       <div className="flex items-center gap-2 text-sm">

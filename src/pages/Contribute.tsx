@@ -35,6 +35,7 @@ import MapView from '@/components/MapView';
 const ACTIVITY_TYPES = [
   'caffe/restaurant',
   'entertainment event',
+  'event',
   'hiking area',
   'ice-ring',
   'museum',

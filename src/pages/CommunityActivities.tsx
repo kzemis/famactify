@@ -36,6 +36,19 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 // ---------------------------------------------------------------------------
+// Time calculation helpers (session planner)
+// ---------------------------------------------------------------------------
+function parseHHMM(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+function minutesToHHMM(total: number): string {
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+// ---------------------------------------------------------------------------
 // Types & constants
 // ---------------------------------------------------------------------------
 interface ActivitySpot {
@@ -153,7 +166,28 @@ export default function CommunityActivities() {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>('grid');
+
+  // Session plan (shopping-cart pattern)
+  interface PlanItem {
+    activityId: string;
+    name: string;
+    startTime: string;   // HH:MM
+    endTime: string;     // HH:MM
+    durationMinutes: number;
+    minPrice: number | null;
+    maxPrice: number | null;
+    address: string | null;
+    lat: number | null;
+    lon: number | null;
+    imageurlthumb: string | null;
+  }
+
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState('10:00');
+  const [sessionFinishTime, setSessionFinishTime] = useState('18:00');
+  const [planName, setPlanName] = useState('My Plan');
+  const [savingPlan, setSavingPlan] = useState(false);
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -480,6 +514,108 @@ export default function CommunityActivities() {
   };
 
   // ---------------------------------------------------------------------------
+  // Plan helpers & actions
+  // ---------------------------------------------------------------------------
+  const recalcPlanTimes = (items: PlanItem[], startHHMM: string): PlanItem[] => {
+    let cursor = parseHHMM(startHHMM);
+    return items.map(item => {
+      const dur = item.durationMinutes || 60;
+      const startTime = minutesToHHMM(cursor);
+      const endTime = minutesToHHMM(cursor + dur);
+      cursor += dur;
+      return { ...item, startTime, endTime };
+    });
+  };
+
+  const addToPlan = (activity: ActivitySpot) => {
+    if (planItems.some(p => p.activityId === activity.id)) return;
+    const newItem: PlanItem = {
+      activityId: activity.id,
+      name: activity.name,
+      startTime: '00:00',
+      endTime: '00:00',
+      durationMinutes: activity.duration_minutes || 60,
+      minPrice: activity.min_price,
+      maxPrice: activity.max_price,
+      address: activity.location_address,
+      lat: activity.location_lat,
+      lon: activity.location_lon,
+      imageurlthumb: activity.imageurlthumb,
+    };
+    setPlanItems(prev => recalcPlanTimes([...prev, newItem], sessionStartTime));
+  };
+
+  const removeFromPlan = (activityId: string) => {
+    setPlanItems(prev => recalcPlanTimes(prev.filter(p => p.activityId !== activityId), sessionStartTime));
+  };
+
+  const movePlanItem = (index: number, direction: 'up' | 'down') => {
+    setPlanItems(prev => {
+      const arr = [...prev];
+      const swapIdx = direction === 'up' ? index - 1 : index + 1;
+      if (swapIdx < 0 || swapIdx >= arr.length) return prev;
+      [arr[index], arr[swapIdx]] = [arr[swapIdx], arr[index]];
+      return recalcPlanTimes(arr, sessionStartTime);
+    });
+  };
+
+  // Recalc times when session start changes
+  useEffect(() => {
+    setPlanItems(prev => recalcPlanTimes(prev, sessionStartTime));
+  }, [sessionStartTime]);
+
+  const planTotals = useMemo(() => {
+    const totalMinutes = planItems.reduce((s, p) => s + p.durationMinutes, 0);
+    const totalCost = planItems.reduce((s, p) => s + (p.minPrice || 0), 0);
+    const endMinutes = planItems.length > 0 ? parseHHMM(planItems[planItems.length - 1].endTime) : parseHHMM(sessionStartTime);
+    const finishMinutes = parseHHMM(sessionFinishTime);
+    const overrunsBy = endMinutes - finishMinutes;
+    return { totalMinutes, totalCost, overrunsBy };
+  }, [planItems, sessionFinishTime, sessionStartTime]);
+
+  const planPath = useMemo(() =>
+    planItems
+      .filter(p => typeof p.lat === 'number' && typeof p.lon === 'number')
+      .map(p => ({ id: p.activityId, lat: p.lat!, lon: p.lon! })),
+    [planItems]
+  );
+
+  const savePlan = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { navigate('/auth'); return; }
+    if (planItems.length === 0) { toast.error('Add at least one activity'); return; }
+    setSavingPlan(true);
+    try {
+      const events = planItems.map(p => ({
+        activityId: p.activityId,
+        name: p.name,
+        startTime: p.startTime,
+        endTime: p.endTime,
+        durationMinutes: p.durationMinutes,
+        minPrice: p.minPrice,
+        maxPrice: p.maxPrice,
+        address: p.address,
+        imageurlthumb: p.imageurlthumb,
+      }));
+      const { error } = await supabase.from('saved_trips').insert({
+        user_id: user.id,
+        name: planName,
+        events,
+        total_cost: planTotals.totalCost,
+        total_events: planItems.length,
+      });
+      if (error) throw error;
+      toast.success('Plan saved! View it in Saved Trips.');
+      setPlanItems([]);
+      setViewMode('grid');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
   // Misc handlers
   // ---------------------------------------------------------------------------
   const getPriceDisplay = (activity: ActivitySpot) =>
@@ -511,7 +647,7 @@ export default function CommunityActivities() {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className={cn('container mx-auto px-4 py-8', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
@@ -525,11 +661,20 @@ export default function CommunityActivities() {
           <div className="flex items-center gap-2">
             {/* View switcher */}
             <div className="inline-flex rounded-md border bg-card">
-              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>
-                Grid
-              </Button>
-              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>
-                Map
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>Grid</Button>
+              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')}>Map</Button>
+              <Button
+                variant={viewMode === 'plan' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('plan')}
+                className="relative"
+              >
+                🗓️ Plan
+                {planItems.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
+                    {planItems.length}
+                  </span>
+                )}
               </Button>
             </div>
             <Button onClick={() => navigate('/contribute')} size="lg">
@@ -1118,8 +1263,45 @@ export default function CommunityActivities() {
                         </div>
                       )}
 
+                      {/* Plan button */}
+                      <div className="mt-auto pt-3 border-t flex gap-2">
+                        {planItems.some(p => p.activityId === activity.id) ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeFromPlan(activity.id); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                          >
+                            <span className="w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs flex items-center justify-center font-bold">
+                              {planItems.findIndex(p => p.activityId === activity.id) + 1}
+                            </span>
+                            In plan ✓
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); addToPlan(activity); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Add to plan
+                          </button>
+                        )}
+                        {activity.location_lat && activity.location_lon && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUserLocation({ lat: activity.location_lat!, lon: activity.location_lon! });
+                              setNearbyKm(2);
+                              setFiltersExpanded(true);
+                              toast.success(`Showing activities near ${activity.name}`);
+                            }}
+                            title="Show activities near this spot"
+                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-muted-foreground"
+                          >
+                            <Locate className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
                       {/* Actions */}
-                      <div className="flex gap-2 mt-auto pt-2">
+                      <div className="flex gap-2 pt-2">
                         {activity.urlmoreinfo && (
                           <Button variant="link" className="h-auto p-0 text-primary text-sm" asChild>
                             <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
@@ -1196,6 +1378,121 @@ export default function CommunityActivities() {
           </div>
         )}
 
+        {/* ── Plan View ── */}
+        {viewMode === 'plan' && (
+          <div className="flex flex-col lg:flex-row gap-0 rounded-xl border overflow-hidden" style={{ height: '70vh' }}>
+            {/* Left: plan list */}
+            <div className="w-full lg:w-2/5 flex flex-col bg-card border-r overflow-y-auto">
+              {/* Plan header */}
+              <div className="p-4 border-b space-y-3">
+                <input
+                  type="text"
+                  value={planName}
+                  onChange={(e) => setPlanName(e.target.value)}
+                  className="w-full text-lg font-semibold bg-transparent border-b border-border/50 focus:border-primary outline-none pb-1"
+                  placeholder="My Plan"
+                />
+                <div className="flex gap-3 items-center text-sm">
+                  <label className="text-muted-foreground">Start</label>
+                  <input
+                    type="time"
+                    value={sessionStartTime}
+                    onChange={(e) => setSessionStartTime(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                  />
+                  <label className="text-muted-foreground">Finish by</label>
+                  <input
+                    type="time"
+                    value={sessionFinishTime}
+                    onChange={(e) => setSessionFinishTime(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                  />
+                </div>
+                {planTotals.overrunsBy > 0 && (
+                  <div className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">
+                    ⚠️ Plan overruns by {Math.ceil(planTotals.overrunsBy)} min — consider removing an activity or adjusting finish time
+                  </div>
+                )}
+              </div>
+
+              {/* Plan items */}
+              {planItems.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
+                  <span className="text-5xl">🗓️</span>
+                  <p className="text-muted-foreground">No activities added yet</p>
+                  <Button variant="outline" size="sm" onClick={() => setViewMode('grid')}>
+                    Browse activities →
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex-1 divide-y overflow-y-auto">
+                  {planItems.map((item, idx) => (
+                    <div key={item.activityId} className="p-4 flex gap-3 hover:bg-accent/30 transition-colors">
+                      {/* Number badge */}
+                      <div className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center mt-0.5">
+                        {idx + 1}
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.startTime}–{item.endTime} · {item.durationMinutes} min</p>
+                        {item.address && <p className="text-xs text-muted-foreground truncate">{item.address}</p>}
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <button onClick={() => movePlanItem(idx, 'up')} disabled={idx === 0} className="p-1 rounded hover:bg-accent disabled:opacity-30 transition-colors" title="Move up">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                        <button onClick={() => movePlanItem(idx, 'down')} disabled={idx === planItems.length - 1} className="p-1 rounded hover:bg-accent disabled:opacity-30 transition-colors" title="Move down">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <button onClick={() => removeFromPlan(item.activityId)} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer: totals + save */}
+              <div className="p-4 border-t bg-card space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Total: {planTotals.totalMinutes} min · {planItems.length} stops</span>
+                  {planTotals.totalCost > 0 && <span>Est. ${planTotals.totalCost}</span>}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setViewMode('grid')} className="flex-1">
+                    + Add more
+                  </Button>
+                  <Button size="sm" onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1">
+                    {savingPlan ? 'Saving…' : '💾 Save plan'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: route map */}
+            <div className="w-full lg:w-3/5 h-64 lg:h-full">
+              {planPath.length > 0 ? (
+                <MapView
+                  places={[]}
+                  path={planPath}
+                  className="h-full rounded-none border-0"
+                  center={planPath.length > 0 ? { lat: planPath[0].lat, lon: planPath[0].lon } : undefined}
+                />
+              ) : (
+                <div className="h-full bg-muted flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p className="text-4xl mb-2">🗺️</p>
+                    <p className="text-sm">Add activities with locations to see the route</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Focused Spot Modal ── */}
         <Dialog open={spotModalOpen} onOpenChange={setSpotModalOpen}>
           <DialogContent className="sm:max-w-lg">
@@ -1257,6 +1554,32 @@ export default function CommunityActivities() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Sticky plan bar ── */}
+      {planItems.length > 0 && viewMode !== 'plan' && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg border-t">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-screen-xl">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-semibold">🗓️ {planItems.length} {planItems.length === 1 ? 'activity' : 'activities'}</span>
+              <span>⏱️ {Math.floor(planTotals.totalMinutes / 60)}h {planTotals.totalMinutes % 60}m</span>
+              {planTotals.totalCost > 0 && <span>💰 Est. ${planTotals.totalCost}</span>}
+              {planTotals.overrunsBy > 0 && (
+                <span className="px-2 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs font-bold">
+                  Overruns by {Math.round(planTotals.overrunsBy / 60 * 10) / 10}h
+                </span>
+              )}
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setViewMode('plan')}
+              className="font-semibold"
+            >
+              View Plan →
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

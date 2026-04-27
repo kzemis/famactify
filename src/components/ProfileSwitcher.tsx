@@ -8,13 +8,15 @@ import { cn } from '@/lib/utils';
 import { Plus, Check, Trash2, X } from 'lucide-react';
 
 const MODE_LABELS: Record<FamilyMode, string> = {
-  parent: 'Full view',
-  'little-explorer': 'Little Explorer',
+  parent:           'Parent / Adult',
+  kid:              'Kid (6+)',
+  'little-explorer':'Little Explorer',
 };
 
 const MODE_EMOJIS: Record<FamilyMode, string> = {
-  parent: '🧭',
-  'little-explorer': '🌟',
+  parent:           '🧭',
+  kid:              '🧒',
+  'little-explorer':'🌟',
 };
 
 // Fun emoji options for kid avatars
@@ -137,30 +139,31 @@ export default function ProfileSwitcher() {
                   onKeyDown={e => e.key === 'Enter' && handleAdd()}
                 />
 
-                {/* Mode — toggle: Full view vs Little Explorer */}
-                <div className="flex gap-1.5">
-                  {(['parent', 'little-explorer'] as FamilyMode[]).map(m => (
+                {/* Mode — 3 options */}
+                <div className="flex flex-col gap-1.5">
+                  {(['parent', 'kid', 'little-explorer'] as FamilyMode[]).map(m => (
                     <button
                       key={m}
                       onClick={() => {
                         setForm(f => ({
                           ...f, mode: m,
                           emoji: m === 'parent' ? PARENT_EMOJIS[0] : KID_EMOJIS[0],
-                          color: m === 'parent' ? 'bg-primary' : 'bg-orange-500',
+                          color: m === 'parent' ? 'bg-primary' : m === 'kid' ? 'bg-blue-500' : 'bg-orange-500',
                         }));
                       }}
                       className={cn(
-                        'flex-1 text-xs py-1.5 px-2 rounded-md border transition-colors',
+                        'w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-md border transition-colors text-left',
                         form.mode === m ? 'bg-primary text-primary-foreground border-primary' : 'hover:border-primary/50'
                       )}
                     >
-                      {MODE_EMOJIS[m]} {MODE_LABELS[m]}
+                      <span>{MODE_EMOJIS[m]}</span>
+                      <span className="font-medium">{MODE_LABELS[m]}</span>
+                      <span className={cn('ml-auto opacity-70 text-[10px]', form.mode === m && 'opacity-90')}>
+                        {m === 'parent' ? 'Full access' : m === 'kid' ? 'Same UI, wish goes to parent' : 'Big cards · age ≤5'}
+                      </span>
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground -mt-1">
-                  {form.mode === 'little-explorer' ? 'Big colorful cards · age ≤5' : 'Full app access'}
-                </p>
 
                 {/* Emoji picker */}
                 <div className="flex flex-wrap gap-1">

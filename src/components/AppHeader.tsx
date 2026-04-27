@@ -96,7 +96,12 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
           {/* Kid proposals — goes straight to plan view */}
           {proposalCount > 0 && (
             <button
-              onClick={() => navigate('/activities?view=plan')}
+              onClick={() => {
+                // Always fire the event so CommunityActivities switches tab
+                // even when already on /activities?view=plan (navigate() is a no-op then)
+                window.dispatchEvent(new CustomEvent('famactify:show-kid-wish'));
+                navigate('/activities?view=plan');
+              }}
               className="relative flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
               title="Kids' wishlist — open in plan"
             >

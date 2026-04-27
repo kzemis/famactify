@@ -243,7 +243,7 @@ export default function CommunityActivities() {
   const { t } = useLanguage();
   const { countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
-  const { isKid, mode, currentProfile } = useFamilyMode();
+  const { isKid, isLittleExplorer, mode, currentProfile } = useFamilyMode();
 
   // Data — paginated grid + slim map dataset
   const [activities, setActivities] = useState<ActivitySpot[]>([]);        // current page(s) for grid
@@ -359,6 +359,16 @@ export default function CommunityActivities() {
     };
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);
+  }, []);
+
+  // AppHeader badge click — switch to plan view even if already on this page
+  useEffect(() => {
+    const handler = () => {
+      setViewMode('plan');
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener('famactify:show-kid-wish', handler);
+    return () => window.removeEventListener('famactify:show-kid-wish', handler);
   }, []);
 
   // Lightbox
@@ -814,6 +824,14 @@ export default function CommunityActivities() {
     setPlanItems(prev => recalcPlanTimes(prev.filter(p => p.activityId !== activityId), sessionStartTime));
   };
 
+  /** Dismiss a wishlist item without adding it (marks declined) */
+  const dismissProposal = (proposalId: string) => {
+    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const updated = all.map(p => p.id === proposalId ? { ...p, status: 'declined' } : p);
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+  };
+
   /** Add a kid's wishlist proposal to the plan, mark it approved */
   const addProposalToPlan = async (proposal: KidProposalItem) => {
     // Try the already-loaded slim dataset first
@@ -901,6 +919,31 @@ export default function CommunityActivities() {
     }
   };
 
+  /** Kid (6+) submits their plan to the parent's "Kids' Wish" inbox */
+  const submitKidPlan = () => {
+    if (planItems.length === 0) { toast.error('Add at least one activity first'); return; }
+    setSavingPlan(true);
+    const planId = crypto.randomUUID();
+    const existing: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const proposals = planItems.map(item => ({
+      id: crypto.randomUUID(),
+      activityId: item.activityId,
+      activityName: item.name,
+      activityImage: item.imageurlthumb,
+      message: `${currentProfile?.name ?? 'Kid'} wants to do this!`,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      source: 'planner',
+      planId,
+    }));
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify([...existing, ...proposals]));
+    window.dispatchEvent(new Event('storage'));
+    setPlanItems([]);
+    setViewMode('grid');
+    setSavingPlan(false);
+    toast.success('Plan sent to parent! 💌 They\'ll see it in Kids\' Wish');
+  };
+
   // ---------------------------------------------------------------------------
   // Misc handlers
   // ---------------------------------------------------------------------------
@@ -963,7 +1006,7 @@ export default function CommunityActivities() {
       message: `${currentProfile?.name ?? 'Kid'} wants to go!`,
       createdAt: new Date().toISOString(),
       status: 'pending',
-      source: mode === 'little-explorer' ? 'little' : 'planner',
+      source: isLittleExplorer ? 'little' : 'planner',
       planId: null,
     };
     localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
@@ -976,43 +1019,39 @@ export default function CommunityActivities() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className={cn('min-h-screen', isKid ? 'bg-gradient-to-b from-orange-50 to-pink-50' : 'bg-background')}>
+    <div className={cn('min-h-screen', isLittleExplorer ? 'bg-gradient-to-b from-orange-50 to-pink-50' : 'bg-background')}>
       <AppHeader hidden={headerHidden} />
 
       <main className={cn('container mx-auto px-4 py-4', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
-        {/* Header — kid vs parent */}
-        {isKid ? (
+        {/* Header */}
+        {isLittleExplorer ? (
+          /* Little Explorer — big fun greeting */
           <div className="mb-4 text-center py-4">
-            {mode === 'little-explorer' ? (
-              <>
-                <p className="text-5xl mb-2">🌟</p>
-                <h1 className="text-3xl font-black text-orange-500">
-                  Hi {currentProfile?.name ?? 'Explorer'}!
-                </h1>
-                <p className="text-lg text-muted-foreground mt-1">What do you want to do today? ✨</p>
-              </>
-            ) : (
-              <>
-                <p className="text-4xl mb-2">{currentProfile?.emoji ?? '🧒'}</p>
-                <h1 className="text-2xl font-bold">
-                  Hey {currentProfile?.name ?? 'there'}! 👋
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">Pick activities you want to do — your parent will see your list 💌</p>
-              </>
-            )}
+            <p className="text-5xl mb-2">🌟</p>
+            <h1 className="text-3xl font-black text-orange-500">
+              Hi {currentProfile?.name ?? 'Explorer'}!
+            </h1>
+            <p className="text-lg text-muted-foreground mt-1">What do you want to do today? ✨</p>
           </div>
         ) : (
+          /* Parent & Kid (6+) — normal header */
           <div className="flex items-start justify-between gap-2 mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Activities</h1>
+              <h1 className="text-2xl font-bold">
+                {mode === 'kid' ? `${currentProfile?.emoji ?? '🧒'} Activities` : 'Activities'}
+              </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Browse family-friendly activities, build a day plan
+                {mode === 'kid'
+                  ? 'Build your plan and send it to a parent 💌'
+                  : 'Browse family-friendly activities, build a day plan'}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Contribute</span>
-            </Button>
+            {mode === 'parent' && (
+              <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Contribute</span>
+              </Button>
+            )}
           </div>
         )}
 
@@ -1028,17 +1067,20 @@ export default function CommunityActivities() {
               <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('grid'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
                 <LayoutGrid className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Grid</span>
               </Button>
-              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('map'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
-                <MapIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Map</span>
-              </Button>
-              {mode !== 'little-explorer' && (
+              {!isLittleExplorer && (
+                <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('map'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
+                  <MapIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Map</span>
+                </Button>
+              )}
+              {!isLittleExplorer && (
                 <Button
                   variant={viewMode === 'plan' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => { setViewMode('plan'); window.scrollTo({ top: 0 }); }}
                   className="relative gap-1.5 px-2.5"
                 >
-                  <Clock className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Plan</span>
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-xs">{mode === 'kid' ? 'My Plan' : 'Plan'}</span>
                   {planItems.length > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
                       {planItems.length}
@@ -1069,7 +1111,7 @@ export default function CommunityActivities() {
             </div>
 
             {/* City quick-filter pill — toggles filter panel (hidden for little-explorer) */}
-            {availableCities.length > 0 && mode !== 'little-explorer' && (
+            {availableCities.length > 0 && !isLittleExplorer && (
               <button
                 onClick={() => setFiltersExpanded(v => !v)}
                 className={cn(
@@ -1093,7 +1135,7 @@ export default function CommunityActivities() {
             )}
 
             {/* Filters button — hidden for little-explorer */}
-            {mode !== 'little-explorer' && (
+            {!isLittleExplorer && (
               <button
                 onClick={() => setFiltersExpanded(v => !v)}
                 className={cn(
@@ -1116,7 +1158,7 @@ export default function CommunityActivities() {
 
 
           {/* Filter panel — expands inside sticky bar, scrollable on mobile (hidden for little-explorer) */}
-          {filtersExpanded && mode !== 'little-explorer' && (
+          {filtersExpanded && !isLittleExplorer && (
             <div className="max-h-[72vh] overflow-y-auto pb-3">
               {/* Single sticky row: Filters title + clear all + close */}
               <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border flex items-center justify-between py-2 mb-3">
@@ -1530,14 +1572,9 @@ export default function CommunityActivities() {
                 Clear Filters
               </Button>
             </div>
-          ) : isKid ? (
-            /* ── Kid Mode Grid ─────────────────────────────────────────────── */
-            <div className={cn(
-              'grid gap-5',
-              mode === 'little-explorer'
-                ? 'grid-cols-1 sm:grid-cols-2'
-                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-            )}>
+          ) : isLittleExplorer ? (
+            /* ── Little Explorer Grid (≤5) — big colourful tap cards ───────── */
+            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2">
               {activities.map((activity) => {
                 const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
                 const visual = getActivityVisual(activity);
@@ -1584,42 +1621,6 @@ export default function CommunityActivities() {
                   );
                 }
 
-                // kid-planner mode
-                return (
-                  <div key={activity.id} className="rounded-2xl overflow-hidden border-2 border-orange-100 shadow-sm hover:shadow-md transition-shadow bg-white">
-                    {/* Image */}
-                    <div className="relative h-44">
-                      {displayImage ? (
-                        <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className={cn('h-44 flex items-center justify-center', visual.className)}>
-                          <FallbackIcon className="w-16 h-16 opacity-60" />
-                        </div>
-                      )}
-                      <span className="absolute top-2.5 right-2.5 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-xl">
-                        {categoryEmoji}
-                      </span>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-base line-clamp-2 mb-1">{activity.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {priceLabel}
-                        {activity.duration_minutes ? ` · ${Math.round(activity.duration_minutes / 60 * 10) / 10}h` : ''}
-                      </p>
-                      <button
-                        onClick={() => wishlistActivity(activity)}
-                        className={cn(
-                          'w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 select-none',
-                          isWishlisted
-                            ? 'bg-red-500 text-white'
-                            : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                        )}
-                      >
-                        {isWishlisted ? '❤️ Wishlisted!' : '❤️ Add to wishlist'}
-                      </button>
-                    </div>
-                  </div>
-                );
               })}
             </div>
           ) : (
@@ -2030,12 +2031,23 @@ export default function CommunityActivities() {
                     <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold shrink-0">
                       {kidsProposals.length}
                     </span>
+                    <button
+                      onClick={() => {
+                        const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+                        const updated = all.map(p => p.status === 'pending' ? { ...p, status: 'declined' } : p);
+                        localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
+                        window.dispatchEvent(new Event('storage'));
+                      }}
+                      className="ml-auto text-xs text-orange-500 hover:text-orange-700 hover:underline transition-colors"
+                    >
+                      Clear all
+                    </button>
                   </div>
                   <div className="divide-y divide-orange-100">
                     {kidsProposals.map(p => {
                       const inPlan = planItems.some(item => item.activityId === p.activityId);
                       return (
-                        <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
                           {p.activityImage ? (
                             <img src={p.activityImage} alt={p.activityName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
                           ) : (
@@ -2052,6 +2064,14 @@ export default function CommunityActivities() {
                               + Add
                             </button>
                           )}
+                          {/* Dismiss from wishlist */}
+                          <button
+                            onClick={() => dismissProposal(p.id)}
+                            className="shrink-0 p-1 rounded hover:bg-orange-200 text-orange-400 hover:text-orange-700 transition-colors"
+                            title="Remove from wishlist"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       );
                     })}
@@ -2101,19 +2121,35 @@ export default function CommunityActivities() {
                 </div>
               )}
 
-              {/* Footer: totals + save */}
+              {/* Footer: totals + save / submit */}
               <div className="p-4 border-t bg-card space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Total: {planTotals.totalMinutes} min · {planItems.length} stops</span>
-                  {planTotals.totalCost > 0 && <span>Est. ${planTotals.totalCost}</span>}
+                <div className="text-sm text-muted-foreground">
+                  Total: {planTotals.totalMinutes} min · {planItems.length} stops
                 </div>
+                {/* Missing-coords note */}
+                {planItems.length > planPath.length && (
+                  <p className="text-xs text-muted-foreground">
+                    📍 {planItems.length - planPath.length} stop{planItems.length - planPath.length > 1 ? 's' : ''} without coordinates — not shown on map
+                  </p>
+                )}
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setViewMode('grid')} className="flex-1">
                     + Add more
                   </Button>
-                  <Button size="sm" onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1">
-                    {savingPlan ? 'Saving…' : '💾 Save plan'}
-                  </Button>
+                  {mode === 'kid' ? (
+                    <Button
+                      size="sm"
+                      onClick={submitKidPlan}
+                      disabled={savingPlan || planItems.length === 0}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      {savingPlan ? 'Sending…' : '💌 Send to parent'}
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1">
+                      {savingPlan ? 'Saving…' : '💾 Save plan'}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

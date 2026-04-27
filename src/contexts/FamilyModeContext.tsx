@@ -11,7 +11,7 @@
  */
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type FamilyMode = 'parent' | 'little-explorer';
+export type FamilyMode = 'parent' | 'kid' | 'little-explorer';
 
 export interface FamilyProfile {
   id: string;
@@ -26,7 +26,8 @@ interface FamilyModeContextType {
   profiles: FamilyProfile[];
   currentProfile: FamilyProfile | null;
   isParent: boolean;
-  isKid: boolean;
+  isKid: boolean;          // any non-parent (kid or little-explorer)
+  isLittleExplorer: boolean; // ≤5 simplified view
   mode: FamilyMode;
   setCurrentProfile: (profileId: string) => void;
   addProfile: (profile: Omit<FamilyProfile, 'id'>) => void;
@@ -64,7 +65,8 @@ export function FamilyModeProvider({ children }: { children: ReactNode }) {
   const currentProfile = profiles.find(p => p.id === currentProfileId) ?? profiles[0] ?? null;
   const mode: FamilyMode = currentProfile?.mode ?? 'parent';
   const isParent = mode === 'parent';
-  const isKid = mode === 'little-explorer';
+  const isKid = mode !== 'parent';                      // kid OR little-explorer
+  const isLittleExplorer = mode === 'little-explorer';  // simplified UI only
 
   useEffect(() => { saveProfiles(profiles); }, [profiles]);
   useEffect(() => {
@@ -93,7 +95,7 @@ export function FamilyModeProvider({ children }: { children: ReactNode }) {
 
   return (
     <FamilyModeContext.Provider value={{
-      profiles, currentProfile, isParent, isKid, mode,
+      profiles, currentProfile, isParent, isKid, isLittleExplorer, mode,
       setCurrentProfile, addProfile, removeProfile, updateProfile,
     }}>
       {children}

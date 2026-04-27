@@ -2,10 +2,11 @@
  * ProfileSwitcher — Netflix-style "Who's watching?" dropdown in the header.
  * Shows current profile avatar; clicking opens a popover to switch or add profiles.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFamilyMode, FamilyMode, FamilyProfile } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
-import { Plus, Check, Trash2, X } from 'lucide-react';
+import { Plus, Check, Trash2, X, UserCircle2 } from 'lucide-react';
 
 const MODE_LABELS: Record<FamilyMode, string> = {
   parent:           'Parent / Adult',
@@ -34,17 +35,36 @@ interface AddProfileFormState {
   mode: FamilyMode;
 }
 
-export default function ProfileSwitcher() {
+interface ProfileSwitcherProps {
+  /** Render trigger as a plain icon-only button (for compact mobile headers) */
+  iconOnly?: boolean;
+}
+
+export default function ProfileSwitcher({ iconOnly = false }: ProfileSwitcherProps) {
   const { profiles, currentProfile, setCurrentProfile, addProfile, removeProfile } = useFamilyMode();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<AddProfileFormState>({
     name: '', emoji: '🦁', color: 'bg-orange-500', mode: 'parent',
   });
 
+  // Allow external callers (e.g. landing page CTA) to open the dropdown
+  // and jump straight to the "Add family member" form.
+  useEffect(() => {
+    const handler = () => { setOpen(true); setAdding(true); };
+    window.addEventListener('famactify:open-profile-switcher', handler);
+    return () => window.removeEventListener('famactify:open-profile-switcher', handler);
+  }, []);
+
   const handleSwitch = (id: string) => {
     setCurrentProfile(id);
     setOpen(false);
+    // Auto-navigate to activities when switching to a kid profile
+    const profile = profiles.find(p => p.id === id);
+    if (profile && profile.mode !== 'parent') {
+      navigate('/activities');
+    }
   };
 
   const handleAdd = () => {
@@ -56,20 +76,30 @@ export default function ProfileSwitcher() {
 
   return (
     <div className="relative">
-      {/* Current profile pill */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className={cn(
-          'flex items-center gap-1.5 px-2 py-1 rounded-full text-sm font-medium transition-colors',
-          currentProfile?.mode === 'parent'
-            ? 'bg-primary/10 hover:bg-primary/20 text-primary'
-            : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
-        )}
-      >
-        <span className="text-base leading-none">{currentProfile?.emoji ?? '👤'}</span>
-        <span className="hidden sm:inline max-w-[80px] truncate">{currentProfile?.name ?? 'Profile'}</span>
-        <span className="text-xs opacity-60">▾</span>
-      </button>
+      {/* Trigger — icon-only (mobile) vs pill (desktop) */}
+      {iconOnly ? (
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground"
+          title={currentProfile?.name ?? 'Profile'}
+        >
+          <UserCircle2 className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(v => !v)}
+          className={cn(
+            'flex items-center gap-1.5 px-2 py-1 rounded-full text-sm font-medium transition-colors',
+            currentProfile?.mode === 'parent'
+              ? 'bg-primary/10 hover:bg-primary/20 text-primary'
+              : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
+          )}
+        >
+          <span className="text-base leading-none">{currentProfile?.emoji ?? '👤'}</span>
+          <span className="max-w-[80px] truncate">{currentProfile?.name ?? 'Profile'}</span>
+          <span className="text-xs opacity-60">▾</span>
+        </button>
+      )}
 
       {/* Dropdown */}
       {open && (

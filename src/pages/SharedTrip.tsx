@@ -69,6 +69,25 @@ const SharedTrip = () => {
     });
   };
 
+  // Update document meta tags dynamically (helps Telegram / Discord previews)
+  useEffect(() => {
+    if (!trip) return;
+    document.title = `🗺️ ${trip.name} — FamActify`;
+    const setMeta = (property: string, content: string) => {
+      let el = document.querySelector(`meta[property="${property}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute('property', property); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    const events: any[] = Array.isArray(trip.events) ? trip.events : [];
+    const desc = `A family plan with ${trip.total_events} ${trip.total_events === 1 ? 'activity' : 'activities'}. Open in FamActify to view the route.`;
+    const img  = events.find((e: any) => e.image || e.imageurlthumb);
+    setMeta('og:title',       `🗺️ ${trip.name}`);
+    setMeta('og:description', desc);
+    setMeta('og:url',         window.location.href);
+    if (img) setMeta('og:image', img.image || img.imageurlthumb);
+    return () => { document.title = 'FamActify'; };
+  }, [trip]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex flex-col">

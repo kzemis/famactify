@@ -1,6 +1,6 @@
 {
   "rewrites": [
+    { "source": "/trip/:shareToken", "destination": "/api/trip/[shareToken]" },
     { "source": "(.*)", "destination": "/index.html" }
   ]
 }
-

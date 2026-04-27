@@ -29,9 +29,8 @@ const PrivacyPolicy = () => {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">2. How We Use Your Information</h2>
               <p className="text-muted-foreground">
-                We use the information we collect to provide, maintain, and improve our services, including 
-                personalized activity recommendations. We also use your information to communicate with you 
-                about updates, offers, and support.
+                We use the information we collect to provide, maintain, and improve our services. We also use
+                your information to communicate with you about updates and support.
               </p>
             </section>
 
@@ -80,17 +79,16 @@ const PrivacyPolicy = () => {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">8. Changes to This Policy</h2>
               <p className="text-muted-foreground">
-                We may update this Privacy Policy from time to time. We will notify you of significant changes 
-                via email or through the platform. Your continued use of our service constitutes acceptance of 
-                the updated policy.
+                We may update this Privacy Policy from time to time. We will notify you of significant changes
+                through the platform. Your continued use of our service constitutes acceptance of the updated policy.
               </p>
             </section>
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">9. Contact Us</h2>
               <p className="text-muted-foreground">
-                If you have any questions about this Privacy Policy or our data practices, please contact us at 
-                privacy@famactify.com or through our contact page.
+                If you have any questions about this Privacy Policy or our data practices, please reach out
+                through the contact page.
               </p>
             </section>
           </div>

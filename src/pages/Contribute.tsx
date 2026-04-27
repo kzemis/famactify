@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useCountry } from '@/i18n/CountryContext';
 import MapPicker from '@/components/MapPicker';
 import MapView from '@/components/MapView';
 
@@ -80,8 +81,28 @@ function slugify(name: string): string {
   return base ? `${base}-${rand}` : `spot-${rand}`;
 }
 
+// Country-specific defaults for placeholders and map center
+const COUNTRY_DEFAULTS: Record<string, {
+  namePlaceholder: string;
+  addressPlaceholder: string;
+  center: { lat: number; lon: number };
+}> = {
+  US: {
+    namePlaceholder: 'e.g., Golden Gate Park Playground',
+    addressPlaceholder: 'e.g., 501 Stanyan St, San Francisco, CA',
+    center: { lat: 37.7749, lon: -122.4194 },
+  },
+  LV: {
+    namePlaceholder: 'e.g., Mežaparks Adventure Park',
+    addressPlaceholder: 'e.g., Mežaparks, Riga',
+    center: { lat: 56.9496, lon: 24.1052 },
+  },
+};
+
 export default function Contribute() {
   const { t } = useLanguage();
+  const { countryCode } = useCountry();
+  const countryDefaults = COUNTRY_DEFAULTS[countryCode] ?? COUNTRY_DEFAULTS.LV;
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -577,7 +598,7 @@ export default function Contribute() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder={t.contribute.activityNamePlaceholder}
+                placeholder={countryDefaults.namePlaceholder}
                 className="placeholder:italic placeholder:text-muted-foreground"
                 required
               />
@@ -654,7 +675,7 @@ export default function Contribute() {
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder={t.contribute.addressPlaceholder}
+                  placeholder={countryDefaults.addressPlaceholder}
                   className="pl-10 pr-10 placeholder:italic placeholder:text-muted-foreground"
                 />
                 {/* GPS icon button inside the input (right side) */}
@@ -673,7 +694,7 @@ export default function Contribute() {
                 <div className="relative w-full h-48">
                   <MapView
                     places={formData.lat && formData.lon ? [{ id: 'picked', name: formData.name || 'Selected location', lat: formData.lat, lon: formData.lon }] : []}
-                    center={formData.lat && formData.lon ? { lat: formData.lat, lon: formData.lon } : undefined}
+                    center={formData.lat && formData.lon ? { lat: formData.lat, lon: formData.lon } : countryDefaults.center}
                     className="h-48 rounded-lg border border-border"
                     overlay={
                       <Button variant="outline" size="sm" type="button" onClick={() => setMapOpen(true)} className="shadow-sm">
@@ -709,6 +730,7 @@ export default function Contribute() {
                     onOpenChange={setMapOpen}
                     lat={formData.lat}
                     lon={formData.lon}
+                    defaultCenter={countryDefaults.center}
                     onPick={(lat, lon, address) => setFormData(prev => ({ ...prev, lat, lon, address: address || prev.address }))}
                     title={t.contribute.openMap}
                     description={'Click on the map to set the exact location.'}

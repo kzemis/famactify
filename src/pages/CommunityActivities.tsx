@@ -844,16 +844,16 @@ export default function CommunityActivities() {
           <div className="flex items-center gap-2 py-2">
             {/* View switcher */}
             <div className="inline-flex rounded-md border bg-card shrink-0">
-              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} className="gap-1.5 px-2.5">
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('grid'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
                 <LayoutGrid className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Grid</span>
               </Button>
-              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('map')} className="gap-1.5 px-2.5">
+              <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('map'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
                 <MapIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Map</span>
               </Button>
               <Button
                 variant={viewMode === 'plan' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode('plan')}
+                onClick={() => { setViewMode('plan'); window.scrollTo({ top: 0 }); }}
                 className="relative gap-1.5 px-2.5"
               >
                 <Clock className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Plan</span>

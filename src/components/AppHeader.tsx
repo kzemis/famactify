@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { User, Map } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -16,7 +17,11 @@ import { useToast } from "@/hooks/use-toast";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const AppHeader = () => {
+interface AppHeaderProps {
+  hidden?: boolean; // scroll-hide support — caller controls visibility
+}
+
+const AppHeader = ({ hidden = false }: AppHeaderProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -65,7 +70,11 @@ const AppHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className={cn(
+      'sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
+      'transition-transform duration-300 ease-in-out',
+      hidden ? '-translate-y-full' : 'translate-y-0',
+    )}>
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
         {/* Brand */}
         <span

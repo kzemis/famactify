@@ -5,9 +5,21 @@ import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
 import AppHeader from "@/components/AppHeader";
+import { useEffect, useState } from "react";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [kidProposalCount, setKidProposalCount] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => {
+      const proposals = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+      setKidProposalCount(proposals.filter((p: any) => p.status === 'pending').length);
+    };
+    refresh();
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,7 +76,7 @@ const Landing = () => {
           <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
             FamActify helps families discover activities, plan days out, and share great spots with the community.
           </p>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
             {/* CTA 1 — Browse & Plan */}
             <Card
@@ -86,7 +98,55 @@ const Landing = () => {
               </Button>
             </Card>
 
-            {/* CTA 2 — Contribute */}
+            {/* CTA 2 — Kids Mode ✨ */}
+            <Card
+              className="p-7 flex flex-col gap-4 cursor-pointer hover:shadow-xl transition-all group border-orange-200 hover:border-orange-400 bg-gradient-to-br from-orange-50/60 to-yellow-50/60 relative overflow-hidden"
+              onClick={() => navigate("/kids")}
+            >
+              {kidProposalCount > 0 && (
+                <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
+                  💌 {kidProposalCount} waiting
+                </span>
+              )}
+              <div className="h-14 w-14 rounded-2xl bg-orange-100 flex items-center justify-center text-3xl group-hover:bg-orange-200 transition-colors">
+                🧒
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1 text-orange-700">Kids Can Plan Too!</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Little ones tap big cards and ask for activities. Older kids build a
+                  full day plan and send it to you for approval. No account needed.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="mt-auto self-start bg-orange-500 hover:bg-orange-600 text-white border-0 group-hover:bg-orange-600 transition-colors"
+              >
+                Try Kid Mode 🎉
+              </Button>
+            </Card>
+
+            {/* CTA 3 — Get a Day Plan */}
+            <Card
+              className="p-7 flex flex-col gap-4 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all group border-primary/30"
+              onClick={() => navigate("/activities")}
+            >
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                <Calendar className="h-7 w-7" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">Build a Day Plan</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Planning a Saturday out, a rainy day or a holiday?
+                  Pick activities and build a timed itinerary with a route map.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" className="mt-auto self-start group-hover:border-primary group-hover:text-primary transition-colors">
+                Plan a day →
+              </Button>
+            </Card>
+
+            {/* CTA 4 — Contribute */}
             <Card
               className="p-7 flex flex-col gap-4 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all group"
               onClick={() => navigate("/contribute")}
@@ -106,26 +166,6 @@ const Landing = () => {
               </Button>
             </Card>
 
-            {/* CTA 3 — Get a Day Plan */}
-            <Card
-              className="p-7 flex flex-col gap-4 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all group border-primary/30"
-              onClick={() => navigate("/activities")}
-            >
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
-                <Calendar className="h-7 w-7" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-1">Get a Day Plan</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Planning a Saturday out, a rainy day or a holiday?
-                  Pick activities and build a timed itinerary with a route map.
-                </p>
-              </div>
-              <Button variant="outline" size="sm" className="mt-auto self-start group-hover:border-primary group-hover:text-primary transition-colors">
-                Plan a day →
-              </Button>
-            </Card>
-
           </div>
         </div>
       </section>
@@ -134,7 +174,7 @@ const Landing = () => {
       <section className="py-16 bg-muted/40">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-10">Why families use FamActify</h2>
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
               {
                 icon: <MapPin className="h-5 w-5" />,
@@ -145,6 +185,11 @@ const Landing = () => {
                 icon: <Calendar className="h-5 w-5" />,
                 title: "Day planner built in",
                 desc: "Add activities to your plan, reorder them, see the total time and route on a map.",
+              },
+              {
+                icon: <span className="text-lg">🧒</span>,
+                title: "Kids participate too",
+                desc: "Little ones ask for activities with one tap. Older kids build full day plans for parent approval — no account needed.",
               },
               {
                 icon: <Users className="h-5 w-5" />,

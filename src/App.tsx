@@ -2,10 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { CountryProvider } from "@/i18n/CountryContext";
+import { FamilyModeProvider } from "@/contexts/FamilyModeContext";
+import { PlanBoardProvider } from "@/contexts/PlanBoardContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -36,19 +38,19 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditActivity from "./pages/EditActivity";
 import SessionPlanner from "./pages/SessionPlanner";
-import KidView from "./pages/KidView";
 import CuratedLists from "./pages/CuratedLists";
 import CuratedListDetail from "./pages/CuratedListDetail";
 import AdminLists from "./pages/AdminLists";
 import AdminListEdit from "./pages/AdminListEdit";
 import LongHorizonPlanner from "./pages/LongHorizonPlanner";
 import BalanceTracker from "./pages/BalanceTracker";
-import ParentInbox from "./pages/ParentInbox";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <FamilyModeProvider>
+    <PlanBoardProvider>
     <LanguageProvider>
       <CountryProvider>
       <TooltipProvider>
@@ -84,7 +86,7 @@ const App = () => (
           <Route path="/events-calendar" element={<EventsCalendar />} />
           <Route path="/cats" element={<CatComparison />} />
           <Route path="/plan" element={<ProtectedRoute><SessionPlanner /></ProtectedRoute>} />
-          <Route path="/kids" element={<KidView />} />
+          <Route path="/kids" element={<Navigate to="/activities" replace />} />
           <Route path="/lists" element={<CuratedLists />} />
           <Route path="/lists/:slug" element={<CuratedListDetail />} />
           <Route path="/admin/lists" element={<ProtectedRoute><AdminLists /></ProtectedRoute>} />
@@ -92,7 +94,7 @@ const App = () => (
           <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
           <Route path="/plan/horizon" element={<ProtectedRoute><LongHorizonPlanner /></ProtectedRoute>} />
           <Route path="/balance" element={<ProtectedRoute><BalanceTracker /></ProtectedRoute>} />
-          <Route path="/proposals" element={<ProtectedRoute><ParentInbox /></ProtectedRoute>} />
+          <Route path="/proposals" element={<Navigate to="/activities?view=plan" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
@@ -101,6 +103,8 @@ const App = () => (
       </TooltipProvider>
       </CountryProvider>
     </LanguageProvider>
+    </PlanBoardProvider>
+    </FamilyModeProvider>
   </QueryClientProvider>
 );
 

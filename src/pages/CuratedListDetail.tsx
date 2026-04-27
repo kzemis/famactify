@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, MapPin, Euro } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
+import { cleanDisplayText } from '@/lib/text';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -220,9 +221,9 @@ export default function CuratedListDetail() {
                       <p className="text-xs text-primary italic mb-1">"{item.note}"</p>
                     )}
 
-                    {activity.description && (
+                    {cleanDisplayText(activity.description) && (
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        {activity.description}
+                        {cleanDisplayText(activity.description)}
                       </p>
                     )}
 

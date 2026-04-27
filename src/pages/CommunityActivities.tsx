@@ -15,12 +15,14 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { cleanDisplayText } from '@/lib/text';
 import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
+import { useFamilyMode } from '@/contexts/FamilyModeContext';
 
 // ---------------------------------------------------------------------------
 // Pagination & column constants (module-level)
@@ -167,6 +169,16 @@ const CATEGORY_VISUALS: Record<string, { label: string; className: string; Icon:
   },
 };
 
+// Kid mode — emoji per category
+const KID_CATEGORY_EMOJIS: Record<string, string> = {
+  Nature:    '🌿',
+  Education: '🔬',
+  Culture:   '🎨',
+  Fun:       '🎉',
+  Social:    '🤝',
+  Sport:     '🏃',
+};
+
 function getActivityVisual(activity: ActivityVisualInput) {
   const category = activity.primary_category && CATEGORY_VISUALS[activity.primary_category]
     ? activity.primary_category
@@ -217,6 +229,13 @@ const PRICE_OPTIONS = [
 ];
 // Distance options are now derived from regionConfig — see distanceOptions useMemo below
 
+interface KidProposalItem {
+  id: string;
+  activityId: string;
+  activityName: string;
+  activityImage: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -224,6 +243,7 @@ export default function CommunityActivities() {
   const { t } = useLanguage();
   const { countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
+  const { isKid, mode, currentProfile } = useFamilyMode();
 
   // Data — paginated grid + slim map dataset
   const [activities, setActivities] = useState<ActivitySpot[]>([]);        // current page(s) for grid
@@ -313,6 +333,33 @@ export default function CommunityActivities() {
   const [savingPlan, setSavingPlan] = useState(false);
   const [showAllOnPlanMap, setShowAllOnPlanMap] = useState(false);
   const [planMapSelectedId, setPlanMapSelectedId] = useState<string | null>(null);
+
+  // Kid mode — wishlisted activity IDs (synced from localStorage proposals)
+  const [wishlisted, setWishlisted] = useState<Set<string>>(() => {
+    const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    return new Set(proposals.filter(p => p.status === 'pending').map((p: any) => p.activityId as string));
+  });
+
+  // Parent plan view — pending kid proposals shown as wishlist section
+  const [kidsProposals, setKidsProposals] = useState<KidProposalItem[]>(() => {
+    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    return all.filter(p => p.status === 'pending').map(p => ({
+      id: p.id, activityId: p.activityId, activityName: p.activityName, activityImage: p.activityImage ?? null,
+    }));
+  });
+
+  // Keep kidsProposals in sync with storage events (from kid mode)
+  useEffect(() => {
+    const sync = () => {
+      const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+      setKidsProposals(all.filter(p => p.status === 'pending').map(p => ({
+        id: p.id, activityId: p.activityId, activityName: p.activityName, activityImage: p.activityImage ?? null,
+      })));
+      setWishlisted(new Set(all.filter(p => p.status === 'pending').map(p => p.activityId as string)));
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -767,6 +814,27 @@ export default function CommunityActivities() {
     setPlanItems(prev => recalcPlanTimes(prev.filter(p => p.activityId !== activityId), sessionStartTime));
   };
 
+  /** Add a kid's wishlist proposal to the plan, mark it approved */
+  const addProposalToPlan = async (proposal: KidProposalItem) => {
+    // Try the already-loaded slim dataset first
+    const slim = allActivitiesForMap.find(a => a.id === proposal.activityId);
+    if (slim) {
+      addToPlan(slim);
+    } else {
+      const { data } = await supabase
+        .from('activityspots')
+        .select('id, name, duration_minutes, min_price, max_price, location_address, location_lat, location_lon, imageurlthumb')
+        .eq('id', proposal.activityId)
+        .single();
+      if (data) addToPlan(data as any);
+    }
+    // Mark proposal approved so it leaves the wishlist
+    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const updated = all.map(p => p.id === proposal.id ? { ...p, status: 'approved' } : p);
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+  };
+
   const movePlanItem = (index: number, direction: 'up' | 'down') => {
     setPlanItems(prev => {
       const arr = [...prev];
@@ -874,26 +942,79 @@ export default function CommunityActivities() {
   };
 
   // ---------------------------------------------------------------------------
+  // Kid mode — wishlist / propose to parent
+  // ---------------------------------------------------------------------------
+  const wishlistActivity = useCallback((activity: { id: string; name: string; imageurlthumb: string | null }) => {
+    const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    if (wishlisted.has(activity.id)) {
+      // Toggle off
+      const filtered = proposals.filter((p: any) => p.activityId !== activity.id);
+      localStorage.setItem('famactify-kid-proposals', JSON.stringify(filtered));
+      window.dispatchEvent(new Event('storage'));
+      setWishlisted(prev => { const s = new Set(prev); s.delete(activity.id); return s; });
+      toast('Removed from wishlist 💔');
+      return;
+    }
+    const newProposal = {
+      id: crypto.randomUUID(),
+      activityId: activity.id,
+      activityName: activity.name,
+      activityImage: activity.imageurlthumb,
+      message: `${currentProfile?.name ?? 'Kid'} wants to go!`,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      source: mode === 'little-explorer' ? 'little' : 'planner',
+      planId: null,
+    };
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
+    window.dispatchEvent(new Event('storage'));
+    setWishlisted(prev => new Set([...prev, activity.id]));
+    toast.success(`Added to wishlist! 🌟 Parent will see your pick.`);
+  }, [wishlisted, currentProfile, mode]);
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn('min-h-screen', isKid ? 'bg-gradient-to-b from-orange-50 to-pink-50' : 'bg-background')}>
       <AppHeader hidden={headerHidden} />
 
       <main className={cn('container mx-auto px-4 py-4', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">Activities</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Browse family-friendly activities, build a day plan
-            </p>
+        {/* Header — kid vs parent */}
+        {isKid ? (
+          <div className="mb-4 text-center py-4">
+            {mode === 'little-explorer' ? (
+              <>
+                <p className="text-5xl mb-2">🌟</p>
+                <h1 className="text-3xl font-black text-orange-500">
+                  Hi {currentProfile?.name ?? 'Explorer'}!
+                </h1>
+                <p className="text-lg text-muted-foreground mt-1">What do you want to do today? ✨</p>
+              </>
+            ) : (
+              <>
+                <p className="text-4xl mb-2">{currentProfile?.emoji ?? '🧒'}</p>
+                <h1 className="text-2xl font-bold">
+                  Hey {currentProfile?.name ?? 'there'}! 👋
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">Pick activities you want to do — your parent will see your list 💌</p>
+              </>
+            )}
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Contribute</span>
-          </Button>
-        </div>
+        ) : (
+          <div className="flex items-start justify-between gap-2 mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">Activities</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Browse family-friendly activities, build a day plan
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Contribute</span>
+            </Button>
+          </div>
+        )}
 
         {/* ── Sticky toolbar: always visible; moves to top-0 when AppHeader hides ── */}
         <div className={cn(
@@ -910,19 +1031,21 @@ export default function CommunityActivities() {
               <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('map'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
                 <MapIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Map</span>
               </Button>
-              <Button
-                variant={viewMode === 'plan' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => { setViewMode('plan'); window.scrollTo({ top: 0 }); }}
-                className="relative gap-1.5 px-2.5"
-              >
-                <Clock className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Plan</span>
-                {planItems.length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
-                    {planItems.length}
-                  </span>
-                )}
-              </Button>
+              {mode !== 'little-explorer' && (
+                <Button
+                  variant={viewMode === 'plan' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => { setViewMode('plan'); window.scrollTo({ top: 0 }); }}
+                  className="relative gap-1.5 px-2.5"
+                >
+                  <Clock className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Plan</span>
+                  {planItems.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
+                      {planItems.length}
+                    </span>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Search */}
@@ -945,8 +1068,8 @@ export default function CommunityActivities() {
               )}
             </div>
 
-            {/* City quick-filter pill — toggles filter panel */}
-            {availableCities.length > 0 && (
+            {/* City quick-filter pill — toggles filter panel (hidden for little-explorer) */}
+            {availableCities.length > 0 && mode !== 'little-explorer' && (
               <button
                 onClick={() => setFiltersExpanded(v => !v)}
                 className={cn(
@@ -969,29 +1092,31 @@ export default function CommunityActivities() {
               </button>
             )}
 
-            {/* Filters button */}
-            <button
-              onClick={() => setFiltersExpanded(v => !v)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
-                filtersExpanded || activeFilterCount > (searchQuery ? 1 : 0)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:border-primary/50',
-              )}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span className="hidden sm:inline">Filters</span>
-              {activeFilterCount > (searchQuery ? 1 : 0) && (
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs font-bold">
-                  {activeFilterCount - (searchQuery ? 1 : 0)}
-                </span>
-              )}
-            </button>
+            {/* Filters button — hidden for little-explorer */}
+            {mode !== 'little-explorer' && (
+              <button
+                onClick={() => setFiltersExpanded(v => !v)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
+                  filtersExpanded || activeFilterCount > (searchQuery ? 1 : 0)
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background border-border hover:border-primary/50',
+                )}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">Filters</span>
+                {activeFilterCount > (searchQuery ? 1 : 0) && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs font-bold">
+                    {activeFilterCount - (searchQuery ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
 
-          {/* Filter panel — expands inside sticky bar, scrollable on mobile */}
-          {filtersExpanded && (
+          {/* Filter panel — expands inside sticky bar, scrollable on mobile (hidden for little-explorer) */}
+          {filtersExpanded && mode !== 'little-explorer' && (
             <div className="max-h-[72vh] overflow-y-auto pb-3">
               {/* Single sticky row: Filters title + clear all + close */}
               <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border flex items-center justify-between py-2 mb-3">
@@ -1405,12 +1530,106 @@ export default function CommunityActivities() {
                 Clear Filters
               </Button>
             </div>
+          ) : isKid ? (
+            /* ── Kid Mode Grid ─────────────────────────────────────────────── */
+            <div className={cn(
+              'grid gap-5',
+              mode === 'little-explorer'
+                ? 'grid-cols-1 sm:grid-cols-2'
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            )}>
+              {activities.map((activity) => {
+                const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
+                const visual = getActivityVisual(activity);
+                const FallbackIcon = visual.Icon;
+                const categoryEmoji = KID_CATEGORY_EMOJIS[activity.primary_category ?? ''] ?? '⭐';
+                const isWishlisted = wishlisted.has(activity.id);
+                const priceLabel = activity.min_price === 0 || activity.min_price == null
+                  ? '🆓 Free!'
+                  : `💰 From $${activity.min_price}`;
+
+                if (mode === 'little-explorer') {
+                  return (
+                    <div key={activity.id} className="rounded-3xl overflow-hidden shadow-lg bg-white hover:shadow-xl transition-shadow">
+                      {/* Big image */}
+                      <div className="relative h-64">
+                        {displayImage ? (
+                          <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className={cn('h-64 flex items-center justify-center text-8xl', visual.className)}>
+                            {categoryEmoji}
+                          </div>
+                        )}
+                        {/* Category emoji badge */}
+                        <span className="absolute top-3 right-3 w-14 h-14 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-3xl">
+                          {categoryEmoji}
+                        </span>
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-2xl font-black leading-tight mb-2 line-clamp-2">{activity.name}</h3>
+                        <p className="text-lg text-muted-foreground mb-4">{priceLabel}</p>
+                        <button
+                          onClick={() => wishlistActivity(activity)}
+                          className={cn(
+                            'w-full py-4 rounded-2xl text-xl font-black transition-all active:scale-95 shadow-md select-none',
+                            isWishlisted
+                              ? 'bg-red-500 text-white shadow-red-200'
+                              : 'bg-gradient-to-r from-pink-400 to-orange-400 text-white hover:opacity-90 hover:scale-[1.02]'
+                          )}
+                        >
+                          {isWishlisted ? '❤️ Wish sent to parent!' : '❤️ I want this!'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // kid-planner mode
+                return (
+                  <div key={activity.id} className="rounded-2xl overflow-hidden border-2 border-orange-100 shadow-sm hover:shadow-md transition-shadow bg-white">
+                    {/* Image */}
+                    <div className="relative h-44">
+                      {displayImage ? (
+                        <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className={cn('h-44 flex items-center justify-center', visual.className)}>
+                          <FallbackIcon className="w-16 h-16 opacity-60" />
+                        </div>
+                      )}
+                      <span className="absolute top-2.5 right-2.5 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-xl">
+                        {categoryEmoji}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-base line-clamp-2 mb-1">{activity.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {priceLabel}
+                        {activity.duration_minutes ? ` · ${Math.round(activity.duration_minutes / 60 * 10) / 10}h` : ''}
+                      </p>
+                      <button
+                        onClick={() => wishlistActivity(activity)}
+                        className={cn(
+                          'w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 select-none',
+                          isWishlisted
+                            ? 'bg-red-500 text-white'
+                            : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                        )}
+                      >
+                        {isWishlisted ? '❤️ Wishlisted!' : '❤️ Add to wishlist'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
+            /* ── Parent Grid ────────────────────────────────────────────────── */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => {
                 const images = activity.json?.images || [];
                 const hasMultipleImages = images.length > 1;
                 const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
+                const displayDescription = cleanDisplayText(activity.description);
                 const fallbackVisual = getActivityVisual(activity);
                 const FallbackIcon = fallbackVisual.Icon;
 
@@ -1458,8 +1677,8 @@ export default function CommunityActivities() {
                     <div className="p-4 flex flex-col gap-3 flex-1">
                       <div>
                         <h3 className="font-semibold text-base line-clamp-2 mb-1">{activity.name}</h3>
-                        {activity.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{activity.description}</p>
+                        {displayDescription && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{displayDescription}</p>
                         )}
                       </div>
 
@@ -1803,11 +2022,50 @@ export default function CommunityActivities() {
                 )}
               </div>
 
+              {/* Kids' Wishlist — pending proposals from little explorers */}
+              {kidsProposals.length > 0 && (
+                <div className="border-b bg-orange-50">
+                  <div className="px-4 py-2.5 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
+                    <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold shrink-0">
+                      {kidsProposals.length}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-orange-100">
+                    {kidsProposals.map(p => {
+                      const inPlan = planItems.some(item => item.activityId === p.activityId);
+                      return (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                          {p.activityImage ? (
+                            <img src={p.activityImage} alt={p.activityName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-orange-200 flex items-center justify-center text-base shrink-0">🎪</div>
+                          )}
+                          <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
+                          {inPlan ? (
+                            <span className="text-xs text-primary font-semibold shrink-0">✓ In plan</span>
+                          ) : (
+                            <button
+                              onClick={() => addProposalToPlan(p)}
+                              className="shrink-0 px-2.5 py-1 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition-colors"
+                            >
+                              + Add
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Plan items */}
               {planItems.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
                   <span className="text-5xl">🗓️</span>
-                  <p className="text-muted-foreground">No activities added yet</p>
+                  <p className="text-muted-foreground">
+                    {kidsProposals.length > 0 ? 'Tap + to add kids\' picks above' : 'No activities added yet'}
+                  </p>
                   <Button variant="outline" size="sm" onClick={() => setViewMode('grid')}>
                     Browse activities →
                   </Button>

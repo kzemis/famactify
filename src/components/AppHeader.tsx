@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 interface AppHeaderProps {
   hidden?: boolean; // scroll-hide support — caller controls visibility
@@ -92,19 +93,23 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
             <span className="hidden sm:inline">Activities</span>
           </Button>
 
-          {/* Kid proposals inbox badge (TOG-04) */}
+          {/* Kid proposals — goes straight to plan view */}
           {proposalCount > 0 && (
             <button
-              onClick={() => navigate('/proposals')}
+              onClick={() => navigate('/activities?view=plan')}
               className="relative flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+              title="Kids' wishlist — open in plan"
             >
               💌
-              <span className="hidden sm:inline">Kids ask</span>
+              <span className="hidden sm:inline">Kids wish</span>
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
                 {proposalCount}
               </span>
             </button>
           )}
+
+          {/* Family profile switcher — Netflix-style */}
+          <ProfileSwitcher />
 
           {/* Merged region + language picker */}
           <LocaleSwitcher />

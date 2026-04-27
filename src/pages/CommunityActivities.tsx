@@ -249,6 +249,8 @@ export default function CommunityActivities() {
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [rainSuitable, setRainSuitable] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [toolbarHidden, setToolbarHidden] = useState(false);
+  const lastScrollYRef = useRef(0);
 
   // Events filter
   const [eventsOnly, setEventsOnly] = useState(false);
@@ -343,6 +345,20 @@ export default function CommunityActivities() {
       });
   }, [countryCode]);
 
+  // Scroll-aware toolbar: hide on scroll-down, reveal on scroll-up
+  useEffect(() => {
+    const handleScroll = () => {
+      if (filtersExpanded) return; // never hide while filters are open
+      const y = window.scrollY;
+      const prev = lastScrollYRef.current;
+      if (y < 80) setToolbarHidden(false);          // near top — always show
+      else if (y - prev > 6) setToolbarHidden(true); // scrolling down
+      else if (prev - y > 6) setToolbarHidden(false);// scrolling up
+      lastScrollYRef.current = y;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [filtersExpanded]);
 
   // ---------------------------------------------------------------------------
   // Data fetching — server-side filtering + pagination
@@ -819,7 +835,11 @@ export default function CommunityActivities() {
         </div>
 
         {/* ── Sticky toolbar: view switcher + search + filters ── */}
-        <div className="sticky top-16 z-40 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border mb-4">
+        <div className={cn(
+          'sticky top-16 z-40 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border mb-4',
+          'transition-transform duration-250 ease-in-out',
+          toolbarHidden ? '-translate-y-[calc(100%+4rem)]' : 'translate-y-0',
+        )}>
           <div className="flex items-center gap-2 py-2">
             {/* View switcher */}
             <div className="inline-flex rounded-md border bg-card shrink-0">
@@ -912,15 +932,27 @@ export default function CommunityActivities() {
           {/* Filter panel — expands inside sticky bar, scrollable on mobile */}
           {filtersExpanded && (
             <div className="max-h-[72vh] overflow-y-auto pb-3">
-              {/* Sticky close bar — always visible at top of scroll container */}
+              {/* Single sticky row: Filters title + clear all + close */}
               <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border flex items-center justify-between py-2 mb-3">
-                <span className="text-sm font-semibold text-foreground">Filters</span>
-                <button
-                  onClick={() => setFiltersExpanded(false)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                >
-                  <X className="w-4 h-4" /> Done
-                </button>
+                <span className="text-sm font-semibold text-foreground">
+                  Filters{activeFilterCount > 0 ? ` · ${activeFilterCount} active` : ''}
+                </span>
+                <div className="flex items-center gap-1">
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={clearFilters}
+                      className="px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setFiltersExpanded(false)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" /> Close
+                  </button>
+                </div>
               </div>
               <div className="rounded-lg border bg-card p-4 space-y-4">
 
@@ -929,14 +961,6 @@ export default function CommunityActivities() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">📍 City / Area</p>
-                    {selectedCities.length > 0 && (
-                      <button
-                        onClick={() => setSelectedCities([])}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        Clear ({selectedCities.length})
-                      </button>
-                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {availableCities.map(city => (

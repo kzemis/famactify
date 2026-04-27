@@ -249,7 +249,7 @@ export default function CommunityActivities() {
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [rainSuitable, setRainSuitable] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [toolbarHidden, setToolbarHidden] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
   const lastScrollYRef = useRef(0);
 
   // Events filter
@@ -345,15 +345,16 @@ export default function CommunityActivities() {
       });
   }, [countryCode]);
 
-  // Scroll-aware toolbar: hide on scroll-down, reveal on scroll-up
+  // Scroll-aware AppHeader: hide header on scroll-down, reveal on scroll-up
+  // Toolbar stays visible always — it just moves to top-0 when header is hidden
   useEffect(() => {
     const handleScroll = () => {
-      if (filtersExpanded) return; // never hide while filters are open
+      if (filtersExpanded) return; // never hide header while filters are open
       const y = window.scrollY;
       const prev = lastScrollYRef.current;
-      if (y < 80) setToolbarHidden(false);          // near top — always show
-      else if (y - prev > 6) setToolbarHidden(true); // scrolling down
-      else if (prev - y > 6) setToolbarHidden(false);// scrolling up
+      if (y < 80) setHeaderHidden(false);           // near top — always show header
+      else if (y - prev > 6) setHeaderHidden(true);  // scrolling down → hide header
+      else if (prev - y > 6) setHeaderHidden(false); // scrolling up → show header
       lastScrollYRef.current = y;
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -817,7 +818,7 @@ export default function CommunityActivities() {
   // ---------------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader />
+      <AppHeader hidden={headerHidden} />
 
       <main className={cn('container mx-auto px-4 py-4', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
         {/* Header */}
@@ -834,11 +835,11 @@ export default function CommunityActivities() {
           </Button>
         </div>
 
-        {/* ── Sticky toolbar: view switcher + search + filters ── */}
+        {/* ── Sticky toolbar: always visible; moves to top-0 when AppHeader hides ── */}
         <div className={cn(
-          'sticky top-16 z-40 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border mb-4',
-          'transition-transform duration-250 ease-in-out',
-          toolbarHidden ? '-translate-y-[calc(100%+4rem)]' : 'translate-y-0',
+          'sticky z-40 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border mb-4',
+          'transition-[top] duration-300 ease-in-out',
+          headerHidden ? 'top-0' : 'top-16',
         )}>
           <div className="flex items-center gap-2 py-2">
             {/* View switcher */}

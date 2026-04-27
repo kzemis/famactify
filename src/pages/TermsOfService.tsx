@@ -29,55 +29,48 @@ const TermsOfService = () => {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">2. Description of Service</h2>
               <p className="text-muted-foreground">
-                FamActify provides an AI-powered platform for family activity planning and recommendations. 
-                We offer both free and paid subscription plans with varying features and usage limits.
+                FamActify is a community-built platform for discovering and planning family-friendly activities.
+                The service is currently free to use and in public beta.
               </p>
             </section>
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">3. User Accounts</h2>
               <p className="text-muted-foreground">
-                You may need to create an account to access certain features. You are responsible for 
-                maintaining the confidentiality of your account information and for all activities under your account.
+                Some features require an account. You are responsible for keeping your account credentials
+                confidential and for all activity that occurs under your account.
               </p>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">4. Subscription and Payments</h2>
+              <h2 className="text-2xl font-semibold">4. User Content</h2>
               <p className="text-muted-foreground">
-                Paid subscriptions are billed monthly. You can cancel your subscription at any time, 
-                and you will continue to have access until the end of your current billing period.
+                You retain ownership of any activity listings or content you contribute. By submitting content
+                you grant FamActify a licence to display and use it to operate the service.
               </p>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">5. User Content</h2>
+              <h2 className="text-2xl font-semibold">5. Limitation of Liability</h2>
               <p className="text-muted-foreground">
-                You retain ownership of any content you submit to the platform. By submitting content, 
-                you grant us a license to use it for providing and improving our services.
+                Activity information is contributed by community members and is provided for informational
+                purposes only. FamActify does not guarantee the accuracy, completeness or timeliness of any
+                listing. Always verify details directly with the venue before visiting.
               </p>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">6. Limitation of Liability</h2>
+              <h2 className="text-2xl font-semibold">6. Changes to Terms</h2>
               <p className="text-muted-foreground">
-                FamActify provides activity recommendations for informational purposes only. We are not 
-                responsible for the accuracy of third-party information or the quality of recommended activities.
+                We may update these terms from time to time. Continued use of the service after changes
+                are posted constitutes your acceptance of the updated terms.
               </p>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">7. Changes to Terms</h2>
+              <h2 className="text-2xl font-semibold">7. Contact</h2>
               <p className="text-muted-foreground">
-                We reserve the right to modify these terms at any time. We will notify users of significant 
-                changes via email or through the platform.
-              </p>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">8. Contact</h2>
-              <p className="text-muted-foreground">
-                If you have any questions about these Terms of Service, please contact us at hello@famactify.com.
+                Questions about these Terms of Service can be submitted through the contact page.
               </p>
             </section>
           </div>

@@ -53,6 +53,8 @@ interface MapViewProps {
   onAddToPlan?: (id: string) => void;
   /** IDs of activities already in the plan — used to show "✓ In plan" state */
   planItemIds?: string[];
+  /** IDs of activities in the kids' wishlist — rendered with an orange heart pin */
+  wishlistItemIds?: string[];
   /** Fires on initial load and after each pan/zoom ends — gives current viewport bounds */
   onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;
 }
@@ -70,6 +72,7 @@ const MapView: React.FC<MapViewProps> = ({
   nearbyKm,
   onAddToPlan,
   planItemIds,
+  wishlistItemIds,
   onBoundsChange,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -91,6 +94,8 @@ const MapView: React.FC<MapViewProps> = ({
   planItemIdsRef.current = planItemIds;
   const onBoundsChangeRef = useRef(onBoundsChange);
   onBoundsChangeRef.current = onBoundsChange;
+  const wishlistItemIdsRef = useRef(wishlistItemIds);
+  wishlistItemIdsRef.current = wishlistItemIds;
 
   // Initialize map
   useEffect(() => {
@@ -147,7 +152,25 @@ const MapView: React.FC<MapViewProps> = ({
     const markerBounds: L.LatLngExpression[] = [];
 
     validPlaces.forEach((place) => {
-      const icon = getMarkerIconRef.current ? getMarkerIconRef.current(place) : undefined;
+      const isWishlist = wishlistItemIdsRef.current?.includes(place.id) ?? false;
+      let icon: L.Icon | L.DivIcon | undefined;
+      if (isWishlist) {
+        icon = L.divIcon({
+          html: `<div style="
+            background:#f97316;color:white;border-radius:50%;
+            width:30px;height:30px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,0.35);
+            border:2px solid white;cursor:pointer;
+          ">❤️</div>`,
+          className: '',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          popupAnchor: [0, -18],
+        });
+      } else if (getMarkerIconRef.current) {
+        icon = getMarkerIconRef.current(place);
+      }
       const marker = L.marker([place.lat, place.lon], icon ? { icon } : undefined);
 
       // Rich popup card — inline styles (Leaflet popup is plain DOM, no Tailwind)

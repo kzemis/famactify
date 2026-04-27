@@ -19,6 +19,8 @@ interface MapPickerProps {
   title?: string;
   description?: string;
   nameForMarker?: string;
+  /** Fallback map center when no location is selected yet. Defaults to Riga. */
+  defaultCenter?: { lat: number; lon: number };
 }
 
 const MapPicker: React.FC<MapPickerProps> = ({
@@ -30,6 +32,7 @@ const MapPicker: React.FC<MapPickerProps> = ({
   title = 'Select location',
   description = 'Click on the map to set the exact location.',
   nameForMarker = 'Selected location',
+  defaultCenter,
 }) => {
   const [tempLat, setTempLat] = useState<number | null>(lat ?? null);
   const [tempLon, setTempLon] = useState<number | null>(lon ?? null);
@@ -75,7 +78,7 @@ const MapPicker: React.FC<MapPickerProps> = ({
         <div className="mt-2 h-[450px]">
            <MapView
              places={hasSelection ? [{ id: 'picked', name: nameForMarker, lat: tempLat!, lon: tempLon! }] : []}
-             center={hasSelection ? { lat: tempLat!, lon: tempLon! } : undefined}
+             center={hasSelection ? { lat: tempLat!, lon: tempLon! } : defaultCenter}
              className="h-[450px]"
              onMapClick={(clat, clon) => {
                setTempLat(clat);

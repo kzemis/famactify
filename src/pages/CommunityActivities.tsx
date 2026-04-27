@@ -20,6 +20,7 @@ import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, forma
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
+import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
@@ -40,7 +41,7 @@ const GRID_COLUMNS = [
   'transit_accessible', 'fenced', 'event_starttime', 'event_endtime',
   'ticket_url', 'organizer', 'created_at', 'city', 'age_min', 'age_max',
   'facilities_restrooms', 'foodvenue_kidamenities', 'foodvenue_kidcorner',
-  'foodvenue_kidmenu', 'source', 'json',
+  'foodvenue_kidmenu', 'source', 'created_by', 'json',
 ].join(', ');
 
 // Map / slim data: only the columns needed for pins, popups, and addToPlan
@@ -102,6 +103,7 @@ interface ActivitySpot {
   foodvenue_kidcorner: boolean | null;
   foodvenue_kidmenu: boolean | null;
   source: string | null;
+  created_by: string | null;
   created_at: string;
   // v3.1 schema fields
   primary_category: string | null;
@@ -245,6 +247,12 @@ export default function CommunityActivities() {
   const navigate = useNavigate();
   const { isKid, isLittleExplorer, mode, currentProfile } = useFamilyMode();
 
+  // Current authenticated user (for edit permission check)
+  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string; app_metadata?: any } | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user as any));
+  }, []);
+
   // Data — paginated grid + slim map dataset
   const [activities, setActivities] = useState<ActivitySpot[]>([]);        // current page(s) for grid
   const [allActivitiesForMap, setAllActivitiesForMap] = useState<SlimActivity[]>([]); // all matching, lightweight, for map/plan
@@ -302,11 +310,14 @@ export default function CommunityActivities() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
 
-  // Read ?view=plan from URL (set by ParentInbox when approving a kid plan)
+  // Read ?view=plan / ?kidplan= from URL
   const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('view') === 'plan' ? 'plan' : 'grid';
+    if (params.get('view') === 'plan' || params.get('kidplan')) return 'plan';
+    return 'grid';
   });
+
+  // Share dialog (kid plan link)
 
   // (Map pins come directly from allActivitiesForMap — no separate viewport fetch)
 
@@ -331,6 +342,7 @@ export default function CommunityActivities() {
   const [planName, setPlanName] = useState('My Plan');
   const [loadingKidPlan, setLoadingKidPlan] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
+  const [planShareData, setPlanShareData] = useState<ShareSheetTripData | null>(null);
   const [showAllOnPlanMap, setShowAllOnPlanMap] = useState(false);
   const [planMapSelectedId, setPlanMapSelectedId] = useState<string | null>(null);
 
@@ -461,6 +473,41 @@ export default function CommunityActivities() {
       .finally(() => setLoadingKidPlan(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount
+
+  // Load shared kid plan from ?kidplan= URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('kidplan');
+    if (!encoded) return;
+    // Strip param from URL without triggering navigation
+    window.history.replaceState({}, '', '/activities?view=plan');
+    try {
+      const json = decodeURIComponent(escape(atob(encoded)));
+      const payload = JSON.parse(json);
+      if (!payload.i?.length) return;
+      const kidName: string = payload.k || 'Kid';
+      setPlanName(`${kidName}'s Plan 💌`);
+      const newItems: PlanItem[] = (payload.i as any[]).map(item => ({
+        activityId: item.id,
+        name: item.nm,
+        startTime: '00:00',
+        endTime: '00:00',
+        durationMinutes: item.dur || 60,
+        minPrice: null,
+        maxPrice: null,
+        address: item.addr ?? null,
+        lat: typeof item.lat === 'number' ? item.lat : null,
+        lon: typeof item.lon === 'number' ? item.lon : null,
+        imageurlthumb: item.img ?? null,
+      }));
+      setPlanItems(recalcPlanTimes(newItems, '10:00'));
+      setViewMode('plan');
+      toast.success(`${kidName}'s plan loaded! Review and adjust ✨`);
+    } catch {
+      toast.error('Could not load shared plan — link may be invalid');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Scroll-aware AppHeader: hide header on scroll-down, reveal on scroll-up
   // Toolbar stays visible always — it just moves to top-0 when header is hidden
@@ -884,6 +931,39 @@ export default function CommunityActivities() {
     [planItems]
   );
 
+  /** True if the current user may edit this activity */
+  const canEdit = (activity: ActivitySpot): boolean => {
+    if (!currentUser) return false;
+    // Supabase admin role or app_metadata.role = 'admin'
+    if (currentUser.app_metadata?.role === 'admin') return true;
+    // Contributor — only if they submitted it (created_by not null = user-contributed)
+    return activity.created_by != null && activity.created_by === currentUser.id;
+  };
+
+  /**
+   * Wishlist items that have map coordinates — shown as orange heart pins in the plan view map.
+   * We resolve coordinates from the already-loaded slim dataset.
+   */
+  const wishlistMapPlaces = useMemo(() => {
+    const pendingIds = kidsProposals
+      .filter(p => p.status === 'pending' && !planItems.some(item => item.activityId === p.activityId))
+      .map(p => p.activityId);
+    return pendingIds.flatMap(id => {
+      const spot = allActivitiesForMap.find(a => a.id === id);
+      if (!spot || spot.location_lat == null || spot.location_lon == null) return [];
+      return [{
+        id: spot.id,
+        name: spot.name,
+        lat: spot.location_lat,
+        lon: spot.location_lon,
+        imageurlthumb: spot.imageurlthumb,
+        location_address: spot.location_address,
+        min_price: spot.min_price,
+        max_price: spot.max_price,
+      }];
+    });
+  }, [kidsProposals, planItems, allActivitiesForMap]);
+
   const savePlan = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate('/auth'); return; }
@@ -899,19 +979,36 @@ export default function CommunityActivities() {
         minPrice: p.minPrice,
         maxPrice: p.maxPrice,
         address: p.address,
+        lat: p.lat ?? null,
+        lon: p.lon ?? null,
         imageurlthumb: p.imageurlthumb,
       }));
-      const { error } = await supabase.from('saved_trips').insert({
+      const { data: savedData, error } = await supabase.from('saved_trips').insert({
         user_id: user.id,
         name: planName,
         events,
         total_cost: planTotals.totalCost,
         total_events: planItems.length,
-      });
+      }).select('id, share_token').single();
       if (error) throw error;
-      toast.success('Plan saved! View it in Saved Trips.');
-      setPlanItems([]);
-      setViewMode('grid');
+      const shareToken = (savedData as any)?.share_token as string | null;
+      const tripId = (savedData as any)?.id as string;
+      const shareUrl = shareToken
+        ? `${window.location.origin}/trip/${shareToken}`
+        : `${window.location.origin}/activities?view=plan`;
+      // Open share sheet — plan is cleared when the sheet is closed
+      setPlanShareData({
+        id: tripId,
+        name: planName,
+        shareUrl,
+        events: planItems.map(p => ({
+          title: p.name,
+          date: new Date().toISOString().split('T')[0],
+          time: `${p.startTime}–${p.endTime}`,
+          location: p.address || '',
+          description: '',
+        })),
+      });
     } catch (e: any) {
       toast.error(e.message || 'Failed to save');
     } finally {
@@ -919,10 +1016,32 @@ export default function CommunityActivities() {
     }
   };
 
-  /** Kid (6+) submits their plan to the parent's "Kids' Wish" inbox */
+  /** Encode plan items into a shareable URL (base64 + URL-safe) */
+  const generateShareUrl = (items: PlanItem[]): string => {
+    const payload = {
+      n: planName,
+      k: currentProfile?.name ?? 'Kid',
+      i: items.map(item => ({
+        id: item.activityId,
+        nm: item.name,
+        img: item.imageurlthumb ?? null,
+        dur: item.durationMinutes,
+        addr: item.address ?? null,
+        lat: item.lat ?? null,
+        lon: item.lon ?? null,
+      })),
+    };
+    try {
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      return `${window.location.origin}/activities?view=plan&kidplan=${encoded}`;
+    } catch {
+      return `${window.location.origin}/activities?view=plan`;
+    }
+  };
+
+  /** Kid (6+) submits their plan — saves to parent's wishlist, then resets */
   const submitKidPlan = () => {
     if (planItems.length === 0) { toast.error('Add at least one activity first'); return; }
-    setSavingPlan(true);
     const planId = crypto.randomUUID();
     const existing: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
     const proposals = planItems.map(item => ({
@@ -938,10 +1057,21 @@ export default function CommunityActivities() {
     }));
     localStorage.setItem('famactify-kid-proposals', JSON.stringify([...existing, ...proposals]));
     window.dispatchEvent(new Event('storage'));
-    setPlanItems([]);
-    setViewMode('grid');
-    setSavingPlan(false);
-    toast.success('Plan sent to parent! 💌 They\'ll see it in Kids\' Wish');
+    // Show share sheet so kid can also send the plan link to parent (no email)
+    const shareUrl = generateShareUrl(planItems);
+    setPlanShareData({
+      id: planId,
+      name: `${currentProfile?.name ?? 'Kid'}'s Plan 💌`,
+      shareUrl,
+      events: planItems.map(p => ({
+        title: p.name,
+        date: new Date().toISOString().split('T')[0],
+        time: `${p.startTime}–${p.endTime}`,
+        location: p.address || '',
+        description: '',
+      })),
+    });
+    // Plan is cleared when the sheet closes
   };
 
   // ---------------------------------------------------------------------------
@@ -1090,25 +1220,27 @@ export default function CommunityActivities() {
               )}
             </div>
 
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Search activities…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn('pl-9 h-9', searchQuery && 'pr-8')}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Clear search"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            {/* Search — hidden for Little Explorer */}
+            {!isLittleExplorer && (
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search activities…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={cn('pl-9 h-9', searchQuery && 'pr-8')}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* City quick-filter pill — toggles filter panel (hidden for little-explorer) */}
             {availableCities.length > 0 && !isLittleExplorer && (
@@ -1531,8 +1663,8 @@ export default function CommunityActivities() {
           )}
         </div>
 
-        {/* Results count — hidden in map view (map shows its own pin count) */}
-        <div className={cn('mb-4 text-sm text-muted-foreground', viewMode === 'map' && 'hidden')}>
+        {/* Results count — hidden in map view and little-explorer */}
+        <div className={cn('mb-4 text-sm text-muted-foreground', (viewMode === 'map' || isLittleExplorer) && 'hidden')}>
           {loading ? '…' : (
             <>
               {activities.length < totalCount
@@ -1602,19 +1734,21 @@ export default function CommunityActivities() {
                           {categoryEmoji}
                         </span>
                       </div>
-                      <div className="p-5">
-                        <h3 className="text-2xl font-black leading-tight mb-2 line-clamp-2">{activity.name}</h3>
-                        <p className="text-lg text-muted-foreground mb-4">{priceLabel}</p>
+                      <div className="p-4 flex items-center justify-between gap-4">
+                        {/* Name — large, bold */}
+                        <h3 className="text-xl font-black leading-tight line-clamp-2 flex-1">{activity.name}</h3>
+                        {/* Giant heart button — no text, tap-friendly */}
                         <button
                           onClick={() => wishlistActivity(activity)}
                           className={cn(
-                            'w-full py-4 rounded-2xl text-xl font-black transition-all active:scale-95 shadow-md select-none',
+                            'shrink-0 w-20 h-20 rounded-full flex items-center justify-center text-5xl transition-all active:scale-90 select-none shadow-lg',
                             isWishlisted
-                              ? 'bg-red-500 text-white shadow-red-200'
-                              : 'bg-gradient-to-r from-pink-400 to-orange-400 text-white hover:opacity-90 hover:scale-[1.02]'
+                              ? 'bg-red-100 shadow-red-200 scale-110'
+                              : 'bg-pink-50 hover:bg-pink-100 hover:scale-105'
                           )}
+                          aria-label={isWishlisted ? 'Added to wishlist' : 'Add to wishlist'}
                         >
-                          {isWishlisted ? '❤️ Wish sent to parent!' : '❤️ I want this!'}
+                          {isWishlisted ? '❤️' : '🤍'}
                         </button>
                       </div>
                     </div>
@@ -1780,14 +1914,15 @@ export default function CommunityActivities() {
                         </div>
                       )}
 
-                      {/* Plan button */}
-                      <div className="mt-auto pt-3 border-t flex gap-2">
+                      {/* ── Single action row: plan + map + nearby + website + edit ── */}
+                      <div className="mt-auto pt-3 border-t flex gap-1.5 flex-wrap items-center">
+                        {/* Add to plan / In plan */}
                         {planItems.some(p => p.activityId === activity.id) ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); removeFromPlan(activity.id); }}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                           >
-                            <span className="w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs flex items-center justify-center font-bold">
+                            <span className="w-4 h-4 rounded-full bg-primary-foreground text-primary text-[10px] flex items-center justify-center font-bold">
                               {planItems.findIndex(p => p.activityId === activity.id) + 1}
                             </span>
                             In plan ✓
@@ -1795,47 +1930,63 @@ export default function CommunityActivities() {
                         ) : (
                           <button
                             onClick={(e) => { e.stopPropagation(); addToPlan(activity); }}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
+                            className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
                           >
                             <Plus className="w-3.5 h-3.5" /> Add to plan
                           </button>
                         )}
-                        {activity.location_lat && activity.location_lon && (
+
+                        {/* Show on map */}
+                        {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleShowOnMap(activity); }}
+                            title={t.communityActivities?.showOnMap || 'Show on map'}
+                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-muted-foreground"
+                          >
+                            <MapIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {/* Nearby filter — silently sets location + distance, no filter panel */}
+                        {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setUserLocation({ lat: activity.location_lat!, lon: activity.location_lon! });
-                              setNearbyKm(2);
-                              setFiltersExpanded(true);
-                              toast.success(`Showing activities near ${activity.name}`);
+                              // 3 miles (imperial) or 5 km (metric)
+                              setNearbyKm(regionConfig.units === 'imperial' ? 3 * 1.60934 : 5);
+                              const label = regionConfig.units === 'imperial' ? '3 mi' : '5 km';
+                              toast.success(`Nearby ${label} filter set`);
                             }}
-                            title="Show activities near this spot"
+                            title={regionConfig.units === 'imperial' ? 'Show within 3 miles' : 'Show within 5 km'}
                             className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-muted-foreground"
                           >
                             <Locate className="w-3.5 h-3.5" />
                           </button>
                         )}
-                      </div>
 
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-2">
+                        {/* Website */}
                         {activity.urlmoreinfo && activity.urlmoreinfo_status === 'ok' && (
-                          <Button variant="link" className="h-auto p-0 text-primary text-sm" asChild>
-                            <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer">
-                              Website →
-                            </a>
-                          </Button>
+                          <a
+                            href={activity.urlmoreinfo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-xs text-primary font-medium"
+                          >
+                            Web →
+                          </a>
                         )}
-                        <div className="flex gap-2 ml-auto">
-                          {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
-                            <Button size="sm" variant="outline" onClick={() => handleShowOnMap(activity)}>
-                              {t.communityActivities?.showOnMap || 'Show on map'}
-                            </Button>
-                          )}
-                          <Button size="sm" variant="outline" onClick={() => navigate(`/activities/${activity.id}/edit`)}>
+
+                        {/* Edit — only for admin or original contributor */}
+                        {canEdit(activity) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/activities/${activity.id}/edit`); }}
+                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-xs text-muted-foreground font-medium"
+                          >
                             Edit
-                          </Button>
-                        </div>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2024,29 +2175,33 @@ export default function CommunityActivities() {
               </div>
 
               {/* Kids' Wishlist — pending proposals from little explorers */}
-              {kidsProposals.length > 0 && (
-                <div className="border-b bg-orange-50">
-                  <div className="px-4 py-2.5 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
-                    <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold shrink-0">
-                      {kidsProposals.length}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-                        const updated = all.map(p => p.status === 'pending' ? { ...p, status: 'declined' } : p);
-                        localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
-                        window.dispatchEvent(new Event('storage'));
-                      }}
-                      className="ml-auto text-xs text-orange-500 hover:text-orange-700 hover:underline transition-colors"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                  <div className="divide-y divide-orange-100">
-                    {kidsProposals.map(p => {
-                      const inPlan = planItems.some(item => item.activityId === p.activityId);
-                      return (
+              {(() => {
+                // Only show wishlist items not yet in the plan — avoids duplication
+                const pendingWishlist = kidsProposals.filter(
+                  p => !planItems.some(item => item.activityId === p.activityId)
+                );
+                if (pendingWishlist.length === 0) return null;
+                return (
+                  <div className="border-b bg-orange-50">
+                    <div className="px-4 py-2.5 flex items-center gap-2">
+                      <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
+                      <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold shrink-0">
+                        {pendingWishlist.length}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+                          const updated = all.map(p => p.status === 'pending' ? { ...p, status: 'declined' } : p);
+                          localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
+                          window.dispatchEvent(new Event('storage'));
+                        }}
+                        className="ml-auto text-xs text-orange-500 hover:text-orange-700 hover:underline transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    <div className="divide-y divide-orange-100 max-h-48 overflow-y-auto">
+                      {pendingWishlist.map(p => (
                         <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
                           {p.activityImage ? (
                             <img src={p.activityImage} alt={p.activityName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
@@ -2054,17 +2209,12 @@ export default function CommunityActivities() {
                             <div className="w-9 h-9 rounded-lg bg-orange-200 flex items-center justify-center text-base shrink-0">🎪</div>
                           )}
                           <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
-                          {inPlan ? (
-                            <span className="text-xs text-primary font-semibold shrink-0">✓ In plan</span>
-                          ) : (
-                            <button
-                              onClick={() => addProposalToPlan(p)}
-                              className="shrink-0 px-2.5 py-1 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition-colors"
-                            >
-                              + Add
-                            </button>
-                          )}
-                          {/* Dismiss from wishlist */}
+                          <button
+                            onClick={() => addProposalToPlan(p)}
+                            className="shrink-0 px-2.5 py-1 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition-colors"
+                          >
+                            + Add
+                          </button>
                           <button
                             onClick={() => dismissProposal(p.id)}
                             className="shrink-0 p-1 rounded hover:bg-orange-200 text-orange-400 hover:text-orange-700 transition-colors"
@@ -2073,11 +2223,11 @@ export default function CommunityActivities() {
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Plan items */}
               {planItems.length === 0 ? (
@@ -2147,7 +2297,7 @@ export default function CommunityActivities() {
                     </Button>
                   ) : (
                     <Button size="sm" onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1">
-                      {savingPlan ? 'Saving…' : '💾 Save plan'}
+                      {savingPlan ? 'Saving…' : '💾 Save & Share'}
                     </Button>
                   )}
                 </div>
@@ -2157,12 +2307,21 @@ export default function CommunityActivities() {
             {/* Right: route map — always visible; shows user/default location when plan is empty */}
             <div className="relative w-full lg:w-3/5 h-64 lg:h-full">
               <MapView
-                places={showAllOnPlanMap ? places : []}
+                places={[
+                  ...(showAllOnPlanMap ? places : []),
+                  // Always show wishlist items as orange heart pins
+                  ...wishlistMapPlaces.filter(w =>
+                    !planItems.some(p => p.activityId === w.id) &&
+                    !(showAllOnPlanMap && places.some(pl => pl.id === w.id))
+                  ),
+                ]}
                 path={planPath}
                 className="h-full rounded-none border-0"
                 center={
                   planPath.length > 0
                     ? { lat: planPath[0].lat, lon: planPath[0].lon }
+                    : wishlistMapPlaces.length > 0
+                    ? { lat: wishlistMapPlaces[0].lat, lon: wishlistMapPlaces[0].lon }
                     : (userLocation ?? center)
                 }
                 userLocation={userLocation}
@@ -2172,6 +2331,7 @@ export default function CommunityActivities() {
                   if (a) addToPlan(a);
                 }}
                 planItemIds={planItems.map(p => p.activityId)}
+                wishlistItemIds={wishlistMapPlaces.map(w => w.id)}
                 overlay={
                   <div className="flex flex-col gap-1.5 items-end">
                     <button
@@ -2417,10 +2577,8 @@ export default function CommunityActivities() {
       {planItems.length > 0 && viewMode !== 'plan' && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg border-t">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-screen-xl">
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-3 text-sm">
               <span className="font-semibold">🗓️ {planItems.length} {planItems.length === 1 ? 'activity' : 'activities'}</span>
-              <span>⏱️ {Math.floor(planTotals.totalMinutes / 60)}h {planTotals.totalMinutes % 60}m</span>
-              {planTotals.totalCost > 0 && <span>💰 Est. ${planTotals.totalCost}</span>}
               {planTotals.overrunsBy > 0 && (
                 <span className="px-2 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs font-bold">
                   Overruns by {Math.round(planTotals.overrunsBy / 60 * 10) / 10}h
@@ -2446,6 +2604,19 @@ export default function CommunityActivities() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Share sheet (parent — shown after Save & Share) ── */}
+      {planShareData && (
+        <ShareSheet
+          trip={planShareData}
+          hideEmail={mode === 'kid'}
+          onClose={() => {
+            setPlanShareData(null);
+            setPlanItems([]);
+            setViewMode('grid');
+          }}
+        />
       )}
 
       <Footer />

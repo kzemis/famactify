@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Euro } from 'lucide-react';
+import { ArrowLeft, MapPin, Euro, Globe, ExternalLink } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import { cleanDisplayText } from '@/lib/text';
@@ -20,6 +20,16 @@ interface CuratedList {
   cover_image_url: string | null;
   author_name: string | null;
   author_type: string | null;
+  created_by: string | null;
+}
+
+interface OrgProfile {
+  org_name: string;
+  org_type: string;
+  description: string | null;
+  logo_url: string | null;
+  website_url: string | null;
+  verified: boolean;
 }
 
 interface ActivitySpot {
@@ -70,6 +80,7 @@ export default function CuratedListDetail() {
 
   const [list, setList] = useState<CuratedList | null>(null);
   const [items, setItems] = useState<ListItemWithActivity[]>([]);
+  const [orgProfile, setOrgProfile] = useState<OrgProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,7 +91,7 @@ export default function CuratedListDetail() {
       // Fetch the list
       const { data: listData, error: listError } = await supabase
         .from('curated_lists')
-        .select('id, slug, title, description, cover_image_url, author_name, author_type')
+        .select('id, slug, title, description, cover_image_url, author_name, author_type, created_by')
         .eq('slug', slug)
         .single();
 
@@ -89,7 +100,17 @@ export default function CuratedListDetail() {
         navigate('/lists');
         return;
       }
-      setList(listData);
+      setList(listData as CuratedList);
+
+      // Fetch org profile if list has a creator
+      if ((listData as any).created_by) {
+        const { data: orgData } = await (supabase as any)
+          .from('org_profiles')
+          .select('org_name, org_type, description, logo_url, website_url, verified')
+          .eq('user_id', (listData as any).created_by)
+          .maybeSingle();
+        if (orgData) setOrgProfile(orgData);
+      }
 
       // Fetch items with activity data
       const { data: itemsData, error: itemsError } = await supabase
@@ -173,6 +194,43 @@ export default function CuratedListDetail() {
               </Badge>
             )}
           </div>
+
+          {/* Org profile card — shown when list has a registered org creator */}
+          {orgProfile && (
+            <div className="flex items-start gap-4 mt-5 p-4 border rounded-xl bg-muted/30">
+              {orgProfile.logo_url && (
+                <img
+                  src={orgProfile.logo_url}
+                  alt={orgProfile.org_name}
+                  className="w-12 h-12 rounded-lg object-contain border bg-white p-0.5 shrink-0"
+                  onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <p className="font-semibold text-sm">{orgProfile.org_name}</p>
+                  {orgProfile.verified && (
+                    <Badge className="text-xs bg-emerald-500 hover:bg-emerald-600">✅ Verified</Badge>
+                  )}
+                </div>
+                {orgProfile.description && (
+                  <p className="text-xs text-muted-foreground mb-1">{orgProfile.description}</p>
+                )}
+                {orgProfile.website_url && (
+                  <a
+                    href={orgProfile.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary flex items-center gap-1 hover:underline w-fit"
+                  >
+                    <Globe className="w-3 h-3" />
+                    {orgProfile.website_url.replace(/^https?:\/\//, '')}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Activity count */}

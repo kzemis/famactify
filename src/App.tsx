@@ -44,6 +44,9 @@ import AdminLists from "./pages/AdminLists";
 import AdminListEdit from "./pages/AdminListEdit";
 import LongHorizonPlanner from "./pages/LongHorizonPlanner";
 import BalanceTracker from "./pages/BalanceTracker";
+import OrgSetup from "./pages/OrgSetup";
+import OrgDashboard from "./pages/OrgDashboard";
+import OrgListEdit from "./pages/OrgListEdit";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +98,10 @@ const App = () => (
           <Route path="/plan/horizon" element={<ProtectedRoute><LongHorizonPlanner /></ProtectedRoute>} />
           <Route path="/balance" element={<ProtectedRoute><BalanceTracker /></ProtectedRoute>} />
           <Route path="/proposals" element={<Navigate to="/activities?view=plan" replace />} />
+          <Route path="/org/setup" element={<ProtectedRoute><OrgSetup /></ProtectedRoute>} />
+          <Route path="/org/dashboard" element={<ProtectedRoute><OrgDashboard /></ProtectedRoute>} />
+          <Route path="/org/lists/new" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
+          <Route path="/org/lists/:id" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

@@ -281,7 +281,12 @@ export default function CommunityActivities() {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>('grid');
+
+  // Read ?view=plan from URL (set by ParentInbox when approving a kid plan)
+  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('view') === 'plan' ? 'plan' : 'grid';
+  });
 
   // (Map pins come directly from allActivitiesForMap — no separate viewport fetch)
 
@@ -304,6 +309,7 @@ export default function CommunityActivities() {
   const [sessionStartTime, setSessionStartTime] = useState('10:00');
   const [sessionFinishTime, setSessionFinishTime] = useState('18:00');
   const [planName, setPlanName] = useState('My Plan');
+  const [loadingKidPlan, setLoadingKidPlan] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const [showAllOnPlanMap, setShowAllOnPlanMap] = useState(false);
   const [planMapSelectedId, setPlanMapSelectedId] = useState<string | null>(null);
@@ -344,6 +350,60 @@ export default function CommunityActivities() {
         setSelectedCities([]); // reset when switching countries
       });
   }, [countryCode]);
+
+  // ---------------------------------------------------------------------------
+  // Pending plan from ParentInbox (kid plan approval → pre-fill plan builder)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const raw = localStorage.getItem('famactify-pending-plan');
+    if (!raw) return;
+    let pending: { source: string; label: string; items: { activityId: string; activityName: string; activityImage: string | null }[] };
+    try { pending = JSON.parse(raw); } catch { return; }
+    localStorage.removeItem('famactify-pending-plan'); // consume once
+
+    if (!pending.items?.length) return;
+    setLoadingKidPlan(true);
+    setPlanName(pending.label || "Kid's Plan 🧒");
+
+    // Fetch full activity data for each id so we have price/duration/coords
+    const ids = pending.items.map(i => i.activityId);
+    supabase
+      .from('activityspots')
+      .select(MAP_COLUMNS + ', duration_minutes, min_price, max_price, location_address, location_lat, location_lon')
+      .in('id', ids)
+      .then(({ data }) => {
+        const byId = Object.fromEntries((data || []).map((a: any) => [a.id, a]));
+        // Preserve kid's ordering
+        const newItems: PlanItem[] = pending.items
+          .filter(i => byId[i.activityId])
+          .map(i => {
+            const a = byId[i.activityId];
+            return {
+              activityId: a.id,
+              name: a.name,
+              startTime: '00:00',
+              endTime: '00:00',
+              durationMinutes: a.duration_minutes || 60,
+              minPrice: a.min_price,
+              maxPrice: a.max_price,
+              address: a.location_address,
+              lat: a.location_lat,
+              lon: a.location_lon,
+              imageurlthumb: a.imageurlthumb,
+            };
+          });
+        setPlanItems(prev => {
+          const merged = [...prev];
+          newItems.forEach(ni => {
+            if (!merged.some(p => p.activityId === ni.activityId)) merged.push(ni);
+          });
+          return recalcPlanTimes(merged, '10:00');
+        });
+        toast.success(`Kid's plan loaded — adjust, reorder or add more! 🧒`);
+      })
+      .finally(() => setLoadingKidPlan(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
 
   // Scroll-aware AppHeader: hide header on scroll-down, reveal on scroll-up
   // Toolbar stays visible always — it just moves to top-0 when header is hidden
@@ -1696,6 +1756,12 @@ export default function CommunityActivities() {
             <div className="w-full lg:w-2/5 flex flex-col bg-card border-r overflow-y-auto">
               {/* Plan header */}
               <div className="p-4 border-b space-y-3">
+                {loadingKidPlan && (
+                  <div className="flex items-center gap-2 text-xs text-primary font-medium animate-pulse">
+                    <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
+                    Loading kid's plan…
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <input
                     type="text"

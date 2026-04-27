@@ -78,8 +78,14 @@ export default function ParentInbox() {
     );
     saveProposals(updated);
     setProposals(updated);
-    toast.success(`Let's plan "${proposal.activityName}"! 🗓️`);
-    navigate('/activities');
+    // Pre-fill the plan builder with this activity
+    localStorage.setItem('famactify-pending-plan', JSON.stringify({
+      source: 'kid',
+      label: `${proposal.activityName} — Kid's Pick 🧒`,
+      items: [{ activityId: proposal.activityId, activityName: proposal.activityName, activityImage: proposal.activityImage }],
+    }));
+    toast.success(`Loading "${proposal.activityName}" into your plan! 🗓️`);
+    navigate('/activities?view=plan');
   };
 
   const declineSingle = (proposal: KidProposal) => {
@@ -92,13 +98,24 @@ export default function ParentInbox() {
   };
 
   const approvePlan = (planId: string) => {
+    const planItems = proposals.filter(p => p.planId === planId);
     const updated = proposals.map(p =>
       p.planId === planId ? { ...p, status: 'approved' as const } : p,
     );
     saveProposals(updated);
     setProposals(updated);
-    toast.success('Plan approved! Head to Activities to build it out 🗓️');
-    navigate('/activities');
+    // Pre-fill the plan builder with all activities from the kid's plan, in order
+    localStorage.setItem('famactify-pending-plan', JSON.stringify({
+      source: 'kid',
+      label: `Kid's Day Plan 🧒 (${planItems.length} activities)`,
+      items: planItems.map(p => ({
+        activityId: p.activityId,
+        activityName: p.activityName,
+        activityImage: p.activityImage,
+      })),
+    }));
+    toast.success(`Loading your kid's plan into the builder! 🗓️`);
+    navigate('/activities?view=plan');
   };
 
   const declinePlan = (planId: string) => {
@@ -197,7 +214,7 @@ export default function ParentInbox() {
                     className="flex-1 rounded-xl font-bold bg-blue-500 hover:bg-blue-600"
                     onClick={() => approvePlan(planId)}
                   >
-                    Let's do this! 🗓️
+                    Open in Plan Builder 🗓️
                   </Button>
                   <Button
                     variant="outline"
@@ -247,7 +264,7 @@ export default function ParentInbox() {
                 </div>
                 <div className="flex gap-2 px-4 pb-4">
                   <Button className="flex-1 rounded-xl font-bold" onClick={() => approveSingle(proposal)}>
-                    Let's plan it! 🗓️
+                    Add to Plan Builder 🗓️
                   </Button>
                   <Button variant="outline" className="flex-1 rounded-xl" onClick={() => declineSingle(proposal)}>
                     Maybe later 💭

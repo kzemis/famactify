@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
   Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer, Trash2, Layers, LayoutGrid,
-  TreePine, GraduationCap, Landmark, PartyPopper, Dumbbell, Sparkles,
+  TreePine, GraduationCap, Landmark, PartyPopper, Dumbbell, Sparkles, Check,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -133,6 +133,245 @@ const PRICE_OPTIONS = [
   { value: '20',   label: 'Under $20' },
 ];
 // Distance options are now derived from regionConfig — see distanceOptions useMemo below
+
+interface ScalableMultiPickerProps {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  emptyLabel: string;
+  searchPlaceholder: string;
+  emoji?: string;
+}
+
+function ScalableMultiPicker({
+  label,
+  options,
+  selected,
+  onChange,
+  emptyLabel,
+  searchPlaceholder,
+  emoji,
+}: ScalableMultiPickerProps) {
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const isLargeSet = options.length > 10;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredOptions = normalizedQuery
+    ? options.filter(option => option.toLowerCase().includes(normalizedQuery))
+    : options;
+  const visibleOptions = !isLargeSet || expanded || normalizedQuery
+    ? filteredOptions
+    : filteredOptions.slice(0, 8);
+
+  const toggle = (value: string) => {
+    onChange(selected.includes(value)
+      ? selected.filter(item => item !== value)
+      : [...selected, value]);
+  };
+
+  return (
+    <div className="rounded-xl border bg-background/60 p-3 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {emoji ? `${emoji} ` : ''}{label}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {selected.length === 0 ? emptyLabel : `${selected.length} selected`}
+          </p>
+        </div>
+        {selected.length > 0 && (
+          <button
+            onClick={() => onChange([])}
+            className="min-h-[36px] px-2.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {selected.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {selected.map(value => (
+            <button
+              key={value}
+              onClick={() => toggle(value)}
+              className="shrink-0 inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 text-sm"
+            >
+              {value}
+              <X className="w-3 h-3" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isLargeSet && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={searchPlaceholder}
+            className="h-10 pl-9"
+          />
+        </div>
+      )}
+
+      <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-2', isLargeSet && 'max-h-64 overflow-y-auto pr-1')}>
+        {visibleOptions.map(option => {
+          const isSelected = selected.includes(option);
+          return (
+            <button
+              key={option}
+              onClick={() => toggle(option)}
+              className={cn(
+                'min-h-[44px] w-full flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors',
+                isSelected
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card border-border hover:border-primary/50',
+              )}
+            >
+              <span className="line-clamp-1">{option}</span>
+              {isSelected && <Check className="w-4 h-4 shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {isLargeSet && !normalizedQuery && filteredOptions.length > 8 && (
+        <button
+          onClick={() => setExpanded(value => !value)}
+          className="min-h-[40px] w-full rounded-lg border border-dashed text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        >
+          {expanded ? 'Show fewer' : `Show all ${filteredOptions.length}`}
+        </button>
+      )}
+
+      {isLargeSet && normalizedQuery && filteredOptions.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">No matches</p>
+      )}
+    </div>
+  );
+}
+
+interface ScalableSinglePickerOption {
+  value: string;
+  label: string;
+  description?: string | null;
+}
+
+interface ScalableSinglePickerProps {
+  label: string;
+  options: ScalableSinglePickerOption[];
+  selected: string;
+  onChange: (value: string) => void;
+  allLabel: string;
+  searchPlaceholder: string;
+  emoji?: string;
+}
+
+function ScalableSinglePicker({
+  label,
+  options,
+  selected,
+  onChange,
+  allLabel,
+  searchPlaceholder,
+  emoji,
+}: ScalableSinglePickerProps) {
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const isLargeSet = options.length > 8;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredOptions = normalizedQuery
+    ? options.filter(option =>
+        option.label.toLowerCase().includes(normalizedQuery) ||
+        option.description?.toLowerCase().includes(normalizedQuery),
+      )
+    : options;
+  const visibleOptions = !isLargeSet || expanded || normalizedQuery
+    ? filteredOptions
+    : filteredOptions.slice(0, 6);
+  const selectedOption = options.find(option => option.value === selected);
+
+  return (
+    <div className="rounded-xl border bg-background/60 p-3 space-y-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {emoji ? `${emoji} ` : ''}{label}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {selectedOption ? selectedOption.label : allLabel}
+        </p>
+      </div>
+
+      {isLargeSet && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={searchPlaceholder}
+            className="h-10 pl-9"
+          />
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-2">
+        <button
+          onClick={() => onChange('')}
+          className={cn(
+            'min-h-[44px] w-full flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors',
+            !selected
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-card border-border hover:border-primary/50',
+          )}
+        >
+          <span>{allLabel}</span>
+          {!selected && <Check className="w-4 h-4 shrink-0" />}
+        </button>
+
+        <div className={cn('grid grid-cols-1 gap-2', isLargeSet && 'max-h-64 overflow-y-auto pr-1')}>
+          {visibleOptions.map(option => {
+            const isSelected = selected === option.value;
+            return (
+              <button
+                key={option.value}
+                onClick={() => onChange(option.value)}
+                className={cn(
+                  'min-h-[44px] w-full flex items-start justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                  isSelected
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card border-border hover:border-primary/50',
+                )}
+              >
+                <span className="min-w-0">
+                  <span className="block font-medium line-clamp-1">{option.label}</span>
+                  {option.description && <span className="block text-xs opacity-75 line-clamp-1">{option.description}</span>}
+                </span>
+                {isSelected && <Check className="w-4 h-4 shrink-0 mt-0.5" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {isLargeSet && !normalizedQuery && filteredOptions.length > 6 && (
+        <button
+          onClick={() => setExpanded(value => !value)}
+          className="min-h-[40px] w-full rounded-lg border border-dashed text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        >
+          {expanded ? 'Show fewer' : `Show all ${filteredOptions.length}`}
+        </button>
+      )}
+
+      {isLargeSet && normalizedQuery && filteredOptions.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">No matches</p>
+      )}
+    </div>
+  );
+}
 
 interface KidProposalItem {
   id: string;
@@ -1140,67 +1379,34 @@ export default function CommunityActivities() {
               </div>
               <div className="rounded-lg border bg-card p-4 space-y-4">
 
-              {/* City / Area — multi-select (only when cities are available for this country) */}
+              {/* City / Area — scalable multi-select for many locations */}
               {availableCities.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">📍 City / Area</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {availableCities.map(city => (
-                      <button
-                        key={city}
-                        onClick={() =>
-                          setSelectedCities(prev =>
-                            prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
-                          )
-                        }
-                        className={cn(
-                          'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                          selectedCities.includes(city)
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background border-border hover:border-primary/50',
-                        )}
-                      >
-                        {city}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <ScalableMultiPicker
+                  label="City / Area"
+                  emoji="📍"
+                  options={availableCities}
+                  selected={selectedCities}
+                  onChange={setSelectedCities}
+                  emptyLabel="All cities"
+                  searchPlaceholder="Search cities…"
+                />
               )}
 
-              {/* Curated lists */}
+              {/* Curated lists — scalable single-select lens for playlists/collections */}
               {curatedLists.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Curated Lists</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => selectCuratedList('')}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        !selectedCuratedListSlug
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      All Lists
-                    </button>
-                    {curatedLists.map(list => (
-                      <button
-                        key={list.id}
-                        onClick={() => selectCuratedList(list.slug)}
-                        className={cn(
-                          'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                          selectedCuratedListSlug === list.slug
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background border-border hover:border-primary/50',
-                        )}
-                      >
-                        {list.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <ScalableSinglePicker
+                  label="Curated Lists"
+                  emoji="📋"
+                  options={curatedLists.map(list => ({
+                    value: list.slug,
+                    label: list.title,
+                    description: list.description,
+                  }))}
+                  selected={selectedCuratedListSlug}
+                  onChange={selectCuratedList}
+                  allLabel="All activities"
+                  searchPlaceholder="Search lists…"
+                />
               )}
 
               {/* Category */}

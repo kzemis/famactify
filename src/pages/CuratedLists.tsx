@@ -1,27 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface CuratedList {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  cover_image_url: string | null;
-  author_name: string | null;
-  author_type: 'editor' | 'municipality' | 'partner' | null;
-  is_published: boolean;
-  created_at: string;
-}
+import { curatedListsService, type CuratedList } from '@/services';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,17 +28,14 @@ export default function CuratedLists() {
   useEffect(() => {
     const fetchLists = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('curated_lists')
-        .select('*')
-        .eq('is_published', true)
-        .order('created_at', { ascending: false });
-      if (error) {
+      try {
+        const data = await curatedListsService.listPublished();
+        setLists(data);
+      } catch {
         toast.error('Failed to load lists');
-      } else {
-        setLists(data || []);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchLists();
   }, []);
@@ -66,7 +48,7 @@ export default function CuratedLists() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Curated Lists</h1>
           <p className="text-muted-foreground">
-            Hand-picked collections of family-friendly activities, curated by editors and local experts.
+            Hand-picked activity filters from editors and local experts. Open one to browse the main activity view with that list applied.
           </p>
         </div>
 
@@ -85,7 +67,7 @@ export default function CuratedLists() {
         ) : lists.length === 0 ? (
           <div className="text-center py-16">
             <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg">No curated lists published yet.</p>
+            <p className="text-muted-foreground text-lg">No curated activity filters published yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -93,7 +75,7 @@ export default function CuratedLists() {
               <Card
                 key={list.id}
                 className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate(`/lists/${list.slug}`)}
+                onClick={() => navigate(`/activities?list=${list.slug}`)}
               >
                 {/* Cover image */}
                 {list.cover_image_url ? (

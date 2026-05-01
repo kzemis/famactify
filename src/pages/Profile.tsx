@@ -9,9 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { User, Save, Plus, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { profileService } from "@/services";
 
 // ---------------------------------------------------------------------------
 // Interests vocabulary (subset of TAGS_VOCABULARY)
@@ -71,28 +71,14 @@ const Profile = () => {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const getProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { profile: data, email } = await profileService.getCurrentProfile();
 
-      if (!session) {
+      if (!data && !email) {
         navigate("/auth");
         return;
       }
 
-      setUserEmail(session.user.email || "");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        toast({
-          title: "Error",
-          description: "Failed to load profile",
-          variant: "destructive",
-        });
-      }
+      setUserEmail(email);
 
       if (data) {
         setProfile({
@@ -119,20 +105,11 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
 
-    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      // Backward compat: derive children_ages from structured children array
+      const derivedChildrenAges = children.map(c => c.age).join(', ');
 
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-
-    // Backward compat: derive children_ages from structured children array
-    const derivedChildrenAges = children.map(c => c.age).join(', ');
-
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({
-        user_id: session.user.id,
+      await profileService.saveCurrentProfile({
         full_name: profile.full_name || null,
         city: profile.city || null,
         family_size: profile.family_size ? parseInt(profile.family_size) : null,
@@ -141,20 +118,17 @@ const Profile = () => {
         discoverable: profile.discoverable,
         children: children as any,
         interests: familyInterests,
-      }, {
-        onConflict: 'user_id'
       });
 
-    if (error) {
+      toast({
+        title: "Success",
+        description: "Profile saved successfully",
+      });
+    } catch {
       toast({
         title: "Error",
         description: "Failed to save profile",
         variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Profile saved successfully",
       });
     }
 

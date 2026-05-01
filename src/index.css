@@ -156,5 +156,34 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent iOS rubber-band scroll on body; each scroll container handles it */
+    overscroll-behavior: none;
+    /* Full dynamic viewport height on mobile */
+    min-height: 100dvh;
   }
+
+  /* Smooth momentum scroll for all scrollable areas */
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer utilities {
+  /* Safe-area aware bottom padding — used by tab bar content */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pb-tab-bar { padding-bottom: calc(env(safe-area-inset-bottom) + 64px); }
+
+  /* Tap feedback — press state for all interactive elements */
+  .tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* Hide scrollbar but keep scroll functionality (chip rows, carousels) */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
 }

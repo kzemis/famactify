@@ -3,22 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import {
   Search, MapPin, Euro, Users, Plus, ChevronLeft, ChevronRight, X,
   Map as MapIcon, SlidersHorizontal, CloudRain, Home, Locate, Clock, Timer, Trash2, Layers, LayoutGrid,
-  TreePine, GraduationCap, Landmark, PartyPopper, Dumbbell, Sparkles, Check,
+  TreePine, GraduationCap, Landmark, PartyPopper, Dumbbell, Sparkles, Check, CalendarDays,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { cleanDisplayText } from '@/lib/text';
 import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
-import AppHeader from '@/components/AppHeader';
-import Footer from '@/components/Footer';
 import MapView from '@/components/MapView';
+import ProfileSwitcher from '@/components/ProfileSwitcher';
 import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
@@ -1208,1482 +1206,914 @@ export default function CommunityActivities() {
     toast.success(`Added to wishlist! 🌟 Parent will see your pick.`);
   }, [wishlisted, currentProfile, mode]);
 
+  // Mobile UI state
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [detailActivity, setDetailActivity] = useState<ActivitySpot | null>(null);
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className={cn('min-h-screen', isLittleExplorer ? 'bg-gradient-to-b from-orange-50 to-pink-50' : 'bg-background')}>
-      <AppHeader hidden={headerHidden} />
+    <div className={cn('min-h-[100dvh]', isLittleExplorer ? 'bg-gradient-to-b from-orange-50 to-pink-50' : 'bg-background')}>
 
-      <main className={cn('container mx-auto px-4 py-4', planItems.length > 0 && viewMode !== 'plan' && 'pb-20')}>
-        {/* Header */}
-        {isLittleExplorer ? (
-          /* Little Explorer — big fun greeting */
-          <div className="mb-4 text-center py-4">
-            <p className="text-5xl mb-2">🌟</p>
-            <h1 className="text-3xl font-black text-orange-500">
-              Hi {currentProfile?.name ?? 'Explorer'}!
-            </h1>
-            <p className="text-lg text-muted-foreground mt-1">What do you want to do today? ✨</p>
-          </div>
-        ) : (
-          /* Parent & Kid (6+) — normal header */
-          <div className="flex items-start justify-between gap-2 mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">
-                {mode === 'kid' ? `${currentProfile?.emoji ?? '🧒'} Activities` : 'Activities'}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {mode === 'kid'
-                  ? 'Build your plan and send it to a parent 💌'
-                  : 'Browse family-friendly activities, build a day plan'}
-              </p>
+      {/* ── Sticky top header ── */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+
+        {/* Row 1: Brand + profile */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          {isLittleExplorer ? (
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🌟</span>
+              <span className="text-xl font-black text-orange-500">Hi {currentProfile?.name ?? 'Explorer'}!</span>
             </div>
-            {mode === 'parent' && (
-              <Button variant="outline" size="sm" onClick={() => navigate('/contribute')} className="shrink-0 gap-1.5 mt-1">
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Contribute</span>
-              </Button>
-            )}
+          ) : (
+            <h1 className="text-xl font-bold text-primary">
+              {mode === 'kid' ? `${currentProfile?.emoji ?? '🧒'} My Day` : 'Discover'}
+            </h1>
+          )}
+          <div className="flex items-center gap-1">
+            <ProfileSwitcher iconOnly />
+          </div>
+        </div>
+
+        {/* Row 2: Search bar (hidden for little explorer) */}
+        {!isLittleExplorer && (
+          <div className="px-4 pb-2">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search activities…"
+                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        {/* ── Sticky toolbar: always visible; moves to top-0 when AppHeader hides ── */}
-        <div className={cn(
-          'sticky z-40 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border mb-4',
-          'transition-[top] duration-300 ease-in-out',
-          headerHidden ? 'top-0' : 'top-16',
-        )}>
-          <div className="flex items-center gap-2 py-2">
-            {/* View switcher */}
-            <div className="inline-flex rounded-md border bg-card shrink-0">
-              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('grid'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
-                <LayoutGrid className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Grid</span>
-              </Button>
-              {!isLittleExplorer && (
-                <Button variant={viewMode === 'map' ? 'default' : 'ghost'} size="sm" onClick={() => { setViewMode('map'); window.scrollTo({ top: 0 }); }} className="gap-1.5 px-2.5">
-                  <MapIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline text-xs">Map</span>
-                </Button>
+        {/* Row 3: Category chips + filter button (hidden for little explorer) */}
+        {!isLittleExplorer && (
+          <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setSelectedCategories([])}
+              className={cn('shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight',
+                selectedCategories.length === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               )}
-              {!isLittleExplorer && (
-                <Button
-                  variant={viewMode === 'plan' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => { setViewMode('plan'); window.scrollTo({ top: 0 }); }}
-                  className="relative gap-1.5 px-2.5"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-xs">{mode === 'kid' ? 'My Plan' : 'Plan'}</span>
-                  {planItems.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
-                      {planItems.length}
-                    </span>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Search — hidden for Little Explorer */}
-            {!isLittleExplorer && (
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  placeholder="Search activities…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={cn('pl-9 h-9', searchQuery && 'pr-8')}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* City quick-filter pill — toggles filter panel (hidden for little-explorer) */}
-            {availableCities.length > 0 && !isLittleExplorer && (
+            >All</button>
+            {CATEGORIES.map(cat => (
               <button
-                onClick={() => setFiltersExpanded(v => !v)}
-                className={cn(
-                  'flex items-center gap-1 px-2.5 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
-                  selectedCities.length > 0
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background border-border hover:border-primary/50',
+                key={cat}
+                onClick={() => setSelectedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])}
+                className={cn('shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight',
+                  selectedCategories.includes(cat) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 )}
               >
-                <MapPin className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {selectedCities.length === 0 ? 'City' : selectedCities.length === 1 ? selectedCities[0] : `${selectedCities.length} cities`}
+                {KID_CATEGORY_EMOJIS[cat]} {cat}
+              </button>
+            ))}
+            <div className="shrink-0 w-px h-5 bg-border mx-1" />
+            <button
+              onClick={() => setFiltersOpen(true)}
+              className={cn(
+                'shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-sm font-medium transition-colors tap-highlight border',
+                activeFilterCount > 0
+                  ? 'bg-primary/10 text-primary border-primary/30'
+                  : 'bg-background border-border text-muted-foreground'
+              )}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
                 </span>
-                {selectedCities.length > 0 && (
-                  <X
-                    className="w-3 h-3 ml-0.5 opacity-70 hover:opacity-100"
-                    onClick={(e) => { e.stopPropagation(); setSelectedCities([]); }}
-                  />
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Result count ── */}
+      {!loading && !isLittleExplorer && activities.length > 0 && (
+        <div className="px-4 py-2 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {totalCount} {totalCount === 1 ? 'activity' : 'activities'}
+            {activeFilterCount > 0 && ' · filtered'}
+          </span>
+          {activeFilterCount > 0 && (
+            <button onClick={clearFilters} className="text-xs text-primary font-medium tap-highlight">Clear all</button>
+          )}
+        </div>
+      )}
+
+      {/* ── Loading skeletons ── */}
+      {loading && (
+        <div className="px-4 py-3 space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl border bg-card overflow-hidden animate-pulse flex gap-3 p-3">
+              <div className="w-24 h-24 bg-muted rounded-xl shrink-0" />
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-4 bg-muted rounded w-3/4" />
+                <div className="h-3 bg-muted rounded w-full" />
+                <div className="h-3 bg-muted rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Empty state ── */}
+      {!loading && activities.length === 0 && (
+        <div className="flex flex-col items-center justify-center px-8 py-16 text-center">
+          <span className="text-5xl mb-4">🔍</span>
+          <p className="text-base font-semibold mb-1">No activities found</p>
+          <p className="text-sm text-muted-foreground mb-6">Try adjusting your filters</p>
+          <button onClick={clearFilters} className="h-11 px-6 rounded-full bg-primary text-primary-foreground font-medium text-sm tap-highlight">
+            Clear filters
+          </button>
+        </div>
+      )}
+
+      {/* ── Little Explorer grid ── */}
+      {!loading && isLittleExplorer && activities.length > 0 && (
+        <div className="px-4 py-3 grid grid-cols-1 gap-4">
+          {activities.map(activity => {
+            const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
+            const visual = getActivityVisual(activity);
+            const categoryEmoji = KID_CATEGORY_EMOJIS[activity.primary_category ?? ''] ?? '⭐';
+            const isWishlisted = wishlisted.has(activity.id);
+            return (
+              <div key={activity.id} className="rounded-3xl overflow-hidden shadow-lg bg-card active:scale-[0.98] transition-transform">
+                <div className="relative h-52">
+                  {displayImage ? (
+                    <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={cn('h-52 flex items-center justify-center text-7xl', visual.className)}>
+                      {categoryEmoji}
+                    </div>
+                  )}
+                  <span className="absolute top-3 right-3 w-12 h-12 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-2xl">
+                    {categoryEmoji}
+                  </span>
+                </div>
+                <div className="p-4 flex items-center gap-3">
+                  <h3 className="text-lg font-black leading-tight flex-1">{activity.name}</h3>
+                  <button
+                    onClick={() => wishlistActivity(activity)}
+                    className={cn('shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-4xl tap-highlight active:scale-90 transition-transform', isWishlisted ? 'bg-red-100' : 'bg-pink-50')}
+                  >
+                    {isWishlisted ? '❤️' : '🤍'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Parent / Kid feed ── */}
+      {!loading && !isLittleExplorer && activities.length > 0 && (
+        <div className="px-4 py-2 space-y-3">
+          {activities.map(activity => {
+            const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
+            const visual = getActivityVisual(activity);
+            const FallbackIcon = visual.Icon;
+            const inPlan = planItems.some(p => p.activityId === activity.id);
+            const price = getPriceDisplay(activity);
+            const isWishlisted = wishlisted.has(activity.id);
+
+            return (
+              <button
+                key={activity.id}
+                onClick={() => setDetailActivity(activity)}
+                className="w-full text-left rounded-2xl border bg-card overflow-hidden active:scale-[0.98] transition-transform shadow-sm tap-highlight"
+              >
+                <div className="flex gap-3 p-3">
+                  {/* Thumbnail */}
+                  <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0">
+                    {displayImage ? (
+                      <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className={cn('w-full h-full flex items-center justify-center', visual.className)}>
+                        <FallbackIcon className="w-8 h-8" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-[15px] leading-snug line-clamp-2 mb-1">{activity.name}</h3>
+                      {activity.location_address && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 line-clamp-1">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {activity.location_address}
+                        </p>
+                      )}
+                      {activity.event_starttime && (
+                        <p className="text-xs font-semibold text-primary mt-0.5">
+                          🎟️ {formatDate(activity.event_starttime, regionConfig)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold">{price}</span>
+                        {activity.duration_minutes && (
+                          <span className="text-xs text-muted-foreground">· {activity.duration_minutes} min</span>
+                        )}
+                      </div>
+                      {mode !== 'kid' ? (
+                        <button
+                          onClick={e => { e.stopPropagation(); inPlan ? removeFromPlan(activity.id) : addToPlan(activity); }}
+                          className={cn('h-8 px-3 rounded-full text-xs font-semibold tap-highlight transition-colors',
+                            inPlan ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                          )}
+                        >
+                          {inPlan ? '✓ In plan' : '+ Plan'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={e => { e.stopPropagation(); wishlistActivity(activity); }}
+                          className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-lg tap-highlight"
+                        >
+                          {isWishlisted ? '❤️' : '🤍'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Tags row */}
+                {(activity.involvement || (activity.age_buckets?.length ?? 0) > 0 || activity.fenced || activity.accessibility_stroller) && (
+                  <div className="flex items-center gap-1.5 px-3 pb-3 flex-wrap">
+                    {activity.involvement && (
+                      <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                        activity.involvement === 'active_together' ? 'bg-green-100 text-green-700' :
+                        activity.involvement === 'supervise' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-600'
+                      )}>
+                        {activity.involvement === 'active_together' ? '🤝 Together' :
+                         activity.involvement === 'supervise' ? '👀 Watch' : '🚗 Drop & Go'}
+                      </span>
+                    )}
+                    {activity.age_buckets?.slice(0, 2).map(age => (
+                      <span key={age} className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">{age} yrs</span>
+                    ))}
+                    {(activity.fenced || activity.tags?.includes('fenced')) && (
+                      <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">🔒 Fenced</span>
+                    )}
+                    {(activity.accessibility_stroller || activity.tags?.includes('stroller-friendly')) && (
+                      <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">🚼 Stroller</span>
+                    )}
+                  </div>
                 )}
               </button>
-            )}
+            );
+          })}
+        </div>
+      )}
 
-            {/* Filters button — hidden for little-explorer */}
-            {!isLittleExplorer && (
+      {/* ── Load more ── */}
+      {!loading && hasMore && (
+        <div className="px-4 py-4">
+          <button
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="w-full h-12 rounded-full border border-border text-sm font-medium text-muted-foreground tap-highlight disabled:opacity-50"
+          >
+            {isLoadingMore ? 'Loading…' : `Load more (${totalCount - activities.length} more)`}
+          </button>
+        </div>
+      )}
+
+      {/* ── Map FAB ── */}
+      {!isLittleExplorer && viewMode !== 'map' && (
+        <button
+          onClick={() => setViewMode('map')}
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+80px)] right-4 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center tap-highlight active:scale-95 transition-transform"
+          aria-label="Show map"
+        >
+          <MapIcon className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* ── Plan sticky bar (above tab bar) ── */}
+      {planItems.length > 0 && viewMode !== 'plan' && (
+        <div className="fixed left-0 right-0 z-40 px-4" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}>
+          <button
+            onClick={() => setViewMode('plan')}
+            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground shadow-xl flex items-center justify-between px-5 tap-highlight active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <CalendarDays className="w-4 h-4" />
+              <span>My Plan</span>
+              {planTotals.overrunsBy > 0 && (
+                <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">⚠️ Overruns</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm opacity-80">{planTotals.totalMinutes} min</span>
+              <span className="w-7 h-7 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">{planItems.length}</span>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* ── Map full-screen overlay ── */}
+      {viewMode === 'map' && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <MapView
+            places={places}
+            center={center}
+            userLocation={userLocation}
+            nearbyKm={nearbyKm}
+            onSelect={id => setSelectedId(id)}
+            onAddToPlan={id => { const a = allActivitiesForMap.find(x => x.id === id); if (a) addToPlan(a); }}
+            planItemIds={planItems.map(p => p.activityId)}
+            className="h-full"
+            overlay={
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className="h-10 pl-3 pr-4 rounded-full bg-background border border-border shadow-md flex items-center gap-2 text-sm font-medium tap-highlight"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Back
+                </button>
+                <button
+                  onClick={handleLocateMe}
+                  disabled={locatingGPS}
+                  className={cn('h-10 px-4 rounded-full shadow-md flex items-center gap-2 text-sm font-medium tap-highlight',
+                    userLocation ? 'bg-primary text-primary-foreground' : 'bg-background border border-border'
+                  )}
+                >
+                  <Locate className="w-4 h-4" />
+                  {locatingGPS ? '…' : 'Me'}
+                </button>
+                {userLocation && distanceOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
+                    className={cn('h-8 px-3 rounded-full shadow-md text-xs font-medium tap-highlight',
+                      nearbyKm === opt.value ? 'bg-primary text-primary-foreground' : 'bg-background border border-border'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            }
+          />
+          {selectedId && (() => {
+            const sel = allActivitiesForMap.find(a => a.id === selectedId);
+            if (!sel) return null;
+            const inPlan = planItems.some(p => p.activityId === sel.id);
+            return (
+              <div className="absolute left-4 right-4 z-20 bg-card rounded-2xl shadow-xl p-3 flex gap-3 items-start" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
+                {sel.imageurlthumb && (
+                  <img src={sel.imageurlthumb} alt={sel.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{sel.name}</p>
+                  {sel.location_address && <p className="text-xs text-muted-foreground truncate">{sel.location_address}</p>}
+                  <p className="text-xs text-muted-foreground mt-0.5">{formatPriceRange(sel.min_price, sel.max_price, regionConfig)}</p>
+                </div>
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  <button onClick={() => inPlan ? removeFromPlan(sel.id) : addToPlan(sel)} className={cn('px-3 py-2 rounded-xl text-xs font-semibold tap-highlight', inPlan ? 'bg-primary text-primary-foreground' : 'border border-border bg-background')}>
+                    {inPlan ? '✓ In plan' : '+ Plan'}
+                  </button>
+                  <button onClick={() => setSelectedId(null)} className="px-3 py-1.5 text-xs text-muted-foreground tap-highlight text-center">Dismiss</button>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── Plan full-screen overlay ── */}
+      {viewMode === 'plan' && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
+            <button onClick={() => setViewMode('grid')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <input
+              type="text"
+              value={planName}
+              onChange={e => setPlanName(e.target.value)}
+              className="flex-1 text-lg font-semibold bg-transparent border-0 focus:outline-none"
+              placeholder="My Plan"
+            />
+            {planItems.length > 0 && (
               <button
-                onClick={() => setFiltersExpanded(v => !v)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors shrink-0',
-                  filtersExpanded || activeFilterCount > (searchQuery ? 1 : 0)
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background border-border hover:border-primary/50',
-                )}
+                onClick={() => { if (window.confirm('Clear plan?')) setPlanItems([]); }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 tap-highlight"
               >
-                <SlidersHorizontal className="w-4 h-4" />
-                <span className="hidden sm:inline">Filters</span>
-                {activeFilterCount > (searchQuery ? 1 : 0) && (
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-foreground text-primary text-xs font-bold">
-                    {activeFilterCount - (searchQuery ? 1 : 0)}
-                  </span>
-                )}
+                <Trash2 className="w-4 h-4" />
               </button>
             )}
           </div>
-
-
-          {/* Filter panel — expands inside sticky bar, scrollable on mobile (hidden for little-explorer) */}
-          {filtersExpanded && !isLittleExplorer && (
-            <div className="max-h-[72vh] overflow-y-auto pb-3">
-              {/* Single sticky row: Filters title + clear all + close */}
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border flex items-center justify-between py-2 mb-3">
-                <span className="text-sm font-semibold text-foreground">
-                  Filters{activeFilterCount > 0 ? ` · ${activeFilterCount} active` : ''}
-                </span>
-                <div className="flex items-center gap-1">
-                  {activeFilterCount > 0 && (
-                    <button
-                      onClick={clearFilters}
-                      className="px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    >
-                      Clear all
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setFiltersExpanded(false)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" /> Close
-                  </button>
+          {/* Time row */}
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b bg-muted/30 text-sm shrink-0">
+            <span className="text-muted-foreground">Start</span>
+            <input type="time" value={sessionStartTime} onChange={e => setSessionStartTime(e.target.value)} className="border rounded-lg px-2 py-1 text-sm bg-background" />
+            <span className="text-muted-foreground">End</span>
+            <input type="time" value={sessionFinishTime} onChange={e => setSessionFinishTime(e.target.value)} className="border rounded-lg px-2 py-1 text-sm bg-background" />
+            {planTotals.overrunsBy > 0 && (
+              <span className="ml-auto text-xs text-destructive font-semibold">⚠️ +{Math.ceil(planTotals.overrunsBy)} min over</span>
+            )}
+          </div>
+          {/* Kids wishlist */}
+          {(() => {
+            const pendingWishlist = kidsProposals.filter(p => !planItems.some(item => item.activityId === p.activityId));
+            if (pendingWishlist.length === 0) return null;
+            return (
+              <div className="border-b bg-orange-50 shrink-0">
+                <div className="px-4 py-2 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
+                  <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">{pendingWishlist.length}</span>
                 </div>
-              </div>
-              <div className="rounded-lg border bg-card p-4 space-y-4">
-
-              {/* City / Area — scalable multi-select for many locations */}
-              {availableCities.length > 0 && (
-                <ScalableMultiPicker
-                  label="City / Area"
-                  emoji="📍"
-                  options={availableCities}
-                  selected={selectedCities}
-                  onChange={setSelectedCities}
-                  emptyLabel="All cities"
-                  searchPlaceholder="Search cities…"
-                />
-              )}
-
-              {/* Curated lists — scalable single-select lens for playlists/collections */}
-              {curatedLists.length > 0 && (
-                <ScalableSinglePicker
-                  label="Curated Lists"
-                  emoji="📋"
-                  options={curatedLists.map(list => ({
-                    value: list.slug,
-                    label: list.title,
-                    description: list.description,
-                  }))}
-                  selected={selectedCuratedListSlug}
-                  onChange={selectCuratedList}
-                  allLabel="All activities"
-                  searchPlaceholder="Search lists…"
-                />
-              )}
-
-              {/* Category */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Category</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSelectedCategories([])}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      selectedCategories.length === 0
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    All
-                  </button>
-                  {CATEGORIES.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() =>
-                        setSelectedCategories(prev =>
-                          prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
-                        )
-                      }
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        selectedCategories.includes(cat)
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
+                <div className="divide-y divide-orange-100 max-h-36 overflow-y-auto">
+                  {pendingWishlist.map(p => (
+                    <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
+                      {p.activityImage ? (
+                        <img src={p.activityImage} alt={p.activityName} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-orange-200 flex items-center justify-center text-lg shrink-0">🎪</div>
                       )}
-                    >
-                      {cat}
-                    </button>
+                      <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
+                      <button onClick={() => addProposalToPlan(p)} className="shrink-0 h-8 px-3 rounded-full bg-orange-500 text-white text-xs font-semibold tap-highlight">+ Add</button>
+                      <button onClick={() => dismissProposal(p.id)} className="shrink-0 w-8 h-8 rounded-full hover:bg-orange-200 flex items-center justify-center tap-highlight">
+                        <X className="w-3.5 h-3.5 text-orange-400" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
-
-              {/* Age */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Age Group</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSelectedAges([])}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      selectedAges.length === 0
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    All Ages
-                  </button>
-                  {AGE_BUCKETS.map(age => (
-                    <button
-                      key={age}
-                      onClick={() =>
-                        setSelectedAges(prev =>
-                          prev.includes(age) ? prev.filter(a => a !== age) : [...prev, age],
-                        )
-                      }
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        selectedAges.includes(age)
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      {age} yrs
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Involvement */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Involvement</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSelectedInvolvement('')}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      selectedInvolvement === ''
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    Any
-                  </button>
-                  {INVOLVEMENT_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setSelectedInvolvement(opt.value)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        selectedInvolvement === opt.value
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Budget */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Budget</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setMaxPrice('any')}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      maxPrice === 'any'
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    Any
-                  </button>
-                  {PRICE_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setMaxPrice(opt.value)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        maxPrice === opt.value
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Environment */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Environment</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setRainSuitable(v => !v)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      rainSuitable
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    <CloudRain className="w-3.5 h-3.5" /> Rain suitable
-                  </button>
-                  <button
-                    onClick={() => setIndoorOnly(v => !v)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      indoorOnly
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    <Home className="w-3.5 h-3.5" /> Indoor only
-                  </button>
-                  <button
-                    onClick={() => setEventsOnly(v => !v)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                      eventsOnly
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    🎟️ Upcoming Events only
-                  </button>
-                </div>
-              </div>
-
-              {/* Accessibility & Practical (DIS-15) */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Accessibility & Practical</p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { state: wheelchairAccessible, set: setWheelchairAccessible, label: '♿ Wheelchair' },
-                    { state: strollerFriendly,     set: setStrollerFriendly,     label: '🚼 Stroller friendly' },
-                    { state: sensoryFriendly,      set: setSensoryFriendly,      label: '🤫 Sensory friendly' },
-                    { state: transitAccessible,    set: setTransitAccessible,    label: '🚇 Transit accessible' },
-                    { state: fencedArea,           set: setFencedArea,           label: '🔒 Fenced area' },
-                  ].map(({ state, set, label }) => (
-                    <button
-                      key={label}
-                      onClick={() => set(v => !v)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        state
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Timing (PLN-11) */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> When
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {([
-                    { value: 'any',      label: 'Anytime' },
-                    { value: 'now',      label: '⚡ Going Now' },
-                    { value: 'today',    label: '☀️ Later Today' },
-                    { value: 'tomorrow', label: '📅 Tomorrow' },
-                    { value: 'weekend',  label: '🎉 This Weekend' },
-                  ] as const).map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setTimingFilter(opt.value)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        timingFilter === opt.value
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Duration (PLN-12) */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <Timer className="w-3.5 h-3.5" /> How long?
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {([
-                    { value: 'any',     label: 'Any length' },
-                    { value: '<60',     label: '⚡ Under 1h' },
-                    { value: '60-120',  label: '⏱️ 1–2 hours' },
-                    { value: '120-240', label: '🕑 2–4 hours' },
-                    { value: '240+',    label: '🌅 Full day' },
-                  ] as const).map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setDurationFilter(opt.value)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                        durationFilter === opt.value
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background border-border hover:border-primary/50',
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nearby — GPS + distance */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Nearby</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* GPS locate button */}
-                  <button
-                    onClick={handleLocateMe}
-                    disabled={locatingGPS}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors disabled:opacity-50',
-                      userLocation
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background border-border hover:border-primary/50',
-                    )}
-                  >
-                    <Locate className="w-3.5 h-3.5" />
-                    {locatingGPS ? 'Locating…' : userLocation ? 'Location set ✓' : 'Use my location'}
-                  </button>
-                  {/* Distance pills — only active after GPS obtained */}
-                  {userLocation
-                    ? distanceOptions.map(opt => (
-                        <button
-                          key={opt.value}
-                          onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
-                          className={cn(
-                            'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                            nearbyKm === opt.value
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-background border-border hover:border-primary/50',
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))
-                    : (
-                      <span className="text-xs text-muted-foreground">
-                        Get location first, then pick a distance
-                      </span>
-                    )
-                  }
-                </div>
-              </div>
-
-              {/* Clear all */}
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" /> Clear all filters
-                </button>
-              )}
-              </div>
+            );
+          })()}
+          {/* Plan items */}
+          {planItems.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-8 text-center">
+              <span className="text-5xl">🗓️</span>
+              <p className="text-base font-semibold">No activities yet</p>
+              <p className="text-sm text-muted-foreground">Browse and tap "+ Plan" to build your day</p>
+              <button onClick={() => setViewMode('grid')} className="h-11 px-6 rounded-full bg-primary text-primary-foreground font-medium text-sm tap-highlight mt-2">Browse activities</button>
             </div>
-          )}
-        </div>
-
-        {/* Results count — hidden in map view and little-explorer */}
-        <div className={cn('mb-4 text-sm text-muted-foreground', (viewMode === 'map' || isLittleExplorer) && 'hidden')}>
-          {loading ? '…' : (
-            <>
-              {activities.length < totalCount
-                ? `Showing ${activities.length} of ${totalCount}`
-                : totalCount
-              }{' '}{totalCount === 1 ? 'activity' : 'activities'}
-            </>
-          )}
-          {activeFilterCount > 0 && (
-            <button onClick={clearFilters} className="ml-2 text-primary hover:underline">
-              Clear filters
-            </button>
-          )}
-        </div>
-
-        {/* ── Grid View ── */}
-        {viewMode === 'grid' && (
-          loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="rounded-xl border bg-card animate-pulse">
-                  <div className="h-48 bg-muted rounded-t-xl" />
-                  <div className="p-4 space-y-3">
-                    <div className="h-5 bg-muted rounded w-3/4" />
-                    <div className="h-4 bg-muted rounded w-full" />
-                    <div className="h-4 bg-muted rounded w-1/2" />
+          ) : (
+            <div className="flex-1 overflow-y-auto divide-y">
+              {planItems.map((item, idx) => (
+                <div key={item.activityId} className="flex gap-3 px-4 py-3 items-center">
+                  <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{idx + 1}</div>
+                  {item.imageurlthumb ? (
+                    <img src={item.imageurlthumb} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.startTime}–{item.endTime} · {item.durationMinutes} min</p>
+                    {item.address && <p className="text-xs text-muted-foreground truncate">{item.address}</p>}
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button onClick={() => movePlanItem(idx, 'up')} disabled={idx === 0} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30 tap-highlight">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                    <button onClick={() => movePlanItem(idx, 'down')} disabled={idx === planItems.length - 1} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30 tap-highlight">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <button onClick={() => removeFromPlan(item.activityId)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-destructive tap-highlight">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
-          ) : activities.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg mb-4">
-                No activities found matching your filters
-              </p>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
-              </Button>
+          )}
+          {/* Plan footer */}
+          <div className="px-4 py-3 border-t bg-card space-y-2 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+            {planItems.length > 0 && (
+              <p className="text-sm text-muted-foreground">{planItems.length} stops · {planTotals.totalMinutes} min total</p>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => setViewMode('grid')} className="flex-1 h-11 rounded-2xl border border-border text-sm font-medium tap-highlight">+ Add more</button>
+              {mode === 'kid' ? (
+                <button onClick={submitKidPlan} disabled={savingPlan || planItems.length === 0} className="flex-1 h-11 rounded-2xl bg-orange-500 text-white text-sm font-semibold tap-highlight disabled:opacity-50">
+                  {savingPlan ? 'Sending…' : '💌 Send to parent'}
+                </button>
+              ) : (
+                <button onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight disabled:opacity-50">
+                  {savingPlan ? 'Saving…' : '💾 Save & Share'}
+                </button>
+              )}
             </div>
-          ) : isLittleExplorer ? (
-            /* ── Little Explorer Grid (≤5) — big colourful tap cards ───────── */
-            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2">
-              {activities.map((activity) => {
-                const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
-                const visual = getActivityVisual(activity);
-                const FallbackIcon = visual.Icon;
-                const categoryEmoji = KID_CATEGORY_EMOJIS[activity.primary_category ?? ''] ?? '⭐';
-                const isWishlisted = wishlisted.has(activity.id);
-                const priceLabel = activity.min_price === 0 || activity.min_price == null
-                  ? '🆓 Free!'
-                  : `💰 From $${activity.min_price}`;
+          </div>
+        </div>
+      )}
 
-                if (mode === 'little-explorer') {
-                  return (
-                    <div key={activity.id} className="rounded-3xl overflow-hidden shadow-lg bg-white hover:shadow-xl transition-shadow">
-                      {/* Big image */}
-                      <div className="relative h-64">
-                        {displayImage ? (
-                          <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className={cn('h-64 flex items-center justify-center text-8xl', visual.className)}>
-                            {categoryEmoji}
-                          </div>
-                        )}
-                        {/* Category emoji badge */}
-                        <span className="absolute top-3 right-3 w-14 h-14 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-3xl">
-                          {categoryEmoji}
-                        </span>
-                      </div>
-                      <div className="p-4 flex items-center justify-between gap-4">
-                        {/* Name — large, bold */}
-                        <h3 className="text-xl font-black leading-tight line-clamp-2 flex-1">{activity.name}</h3>
-                        {/* Giant heart button — no text, tap-friendly */}
-                        <button
-                          onClick={() => wishlistActivity(activity)}
-                          className={cn(
-                            'shrink-0 w-20 h-20 rounded-full flex items-center justify-center text-5xl transition-all active:scale-90 select-none shadow-lg',
-                            isWishlisted
-                              ? 'bg-red-100 shadow-red-200 scale-110'
-                              : 'bg-pink-50 hover:bg-pink-100 hover:scale-105'
-                          )}
-                          aria-label={isWishlisted ? 'Added to wishlist' : 'Add to wishlist'}
-                        >
-                          {isWishlisted ? '❤️' : '🤍'}
-                        </button>
-                      </div>
+      {/* ── Activity detail bottom sheet ── */}
+      <Sheet open={!!detailActivity} onOpenChange={open => !open && setDetailActivity(null)}>
+        <SheetContent side="bottom" className="h-[88vh] rounded-t-3xl px-0 pt-0 pb-0 overflow-hidden flex flex-col">
+          {detailActivity && (() => {
+            const activity = detailActivity;
+            const images = activity.json?.images || [];
+            const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
+            const displayDescription = cleanDisplayText(activity.description);
+            const visual = getActivityVisual(activity);
+            const FallbackIcon = visual.Icon;
+            const inPlan = planItems.some(p => p.activityId === activity.id);
+            const price = getPriceDisplay(activity);
+            const isWishlisted = wishlisted.has(activity.id);
+            return (
+              <>
+                {/* Hero image */}
+                <div className="relative h-52 shrink-0">
+                  {displayImage ? (
+                    <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={cn('h-full flex items-center justify-center', visual.className)}>
+                      <FallbackIcon className="w-16 h-16 opacity-60" />
                     </div>
-                  );
-                }
-
-              })}
-            </div>
-          ) : (
-            /* ── Parent Grid ────────────────────────────────────────────────── */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activities.map((activity) => {
-                const images = activity.json?.images || [];
-                const hasMultipleImages = images.length > 1;
-                const displayImage = images.length > 0 ? images[0] : activity.imageurlthumb;
-                const displayDescription = cleanDisplayText(activity.description);
-                const fallbackVisual = getActivityVisual(activity);
-                const FallbackIcon = fallbackVisual.Icon;
-
-                return (
-                  <div key={activity.id} className="rounded-xl border bg-card overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    {/* Image / Carousel */}
-                    {hasMultipleImages ? (
-                      <div className="h-48 relative">
-                        <Carousel className="w-full h-full">
-                          <CarouselContent>
-                            {images.map((imageUrl: string, idx: number) => (
-                              <CarouselItem key={idx}>
-                                <div
-                                  className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => openLightbox(images, idx)}
-                                >
-                                  <img src={imageUrl} alt={`${activity.name} ${idx + 1}`} className="w-full h-full object-cover" />
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <CarouselPrevious className="left-2" />
-                          <CarouselNext className="right-2" />
-                        </Carousel>
-                      </div>
-                    ) : displayImage ? (
-                      <div
-                        className="h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => openLightbox([displayImage], 0)}
-                      >
-                        <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className={cn('h-48 relative overflow-hidden flex items-center justify-center', fallbackVisual.className)}>
-                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/20 to-transparent" />
-                        <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/55 shadow-sm ring-1 ring-white/70 backdrop-blur-sm">
-                          <FallbackIcon className="h-10 w-10" />
-                        </div>
-                        <span className="absolute bottom-3 left-4 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm backdrop-blur-sm">
-                          {fallbackVisual.label}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="p-4 flex flex-col gap-3 flex-1">
-                      <div>
-                        <h3 className="font-semibold text-base line-clamp-2 mb-1">{activity.name}</h3>
-                        {displayDescription && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{displayDescription}</p>
-                        )}
-                      </div>
-
-                      {/* Involvement badge (TOG-03) */}
+                  )}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/60" />
+                  <SheetClose className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 flex items-center justify-center">
+                    <X className="w-4 h-4 text-white" />
+                  </SheetClose>
+                  {activity.primary_category && (
+                    <span className="absolute bottom-3 left-4 px-3 py-1 rounded-full bg-black/40 text-white text-xs font-semibold backdrop-blur-sm">
+                      {KID_CATEGORY_EMOJIS[activity.primary_category] ?? ''} {activity.primary_category}
+                    </span>
+                  )}
+                </div>
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="px-5 pt-4 pb-6 space-y-4">
+                    <div>
+                      <h2 className="text-xl font-bold leading-tight">{activity.name}</h2>
                       {activity.involvement && (
-                        <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold w-fit',
+                        <span className={cn('inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold',
                           activity.involvement === 'active_together' ? 'bg-green-100 text-green-700' :
-                          activity.involvement === 'supervise'       ? 'bg-blue-100  text-blue-700'  :
-                                                                       'bg-gray-100  text-gray-600'
+                          activity.involvement === 'supervise' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-600'
                         )}>
                           {activity.involvement === 'active_together' ? '🤝 Together' :
-                           activity.involvement === 'supervise'       ? '👀 Watch from Side' :
-                                                                        '🚗 Drop & Go'}
+                           activity.involvement === 'supervise' ? '👀 Watch from Side' : '🚗 Drop & Go'}
                         </span>
                       )}
-
-                      {/* Location */}
-                      {activity.location_address && (
-                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                          <span className="line-clamp-1">{activity.location_address}</span>
-                        </div>
-                      )}
-
-                      {/* Distance badge if nearby filter active */}
-                      {userLocation && typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
-                        <div className="text-xs text-muted-foreground">
-                          📍 {formatDistance(haversineKm(userLocation.lat, userLocation.lon, activity.location_lat, activity.location_lon), regionConfig)} away
-                        </div>
-                      )}
-
-                      {/* Event date badge — replaces duration badge for events */}
-                      {activity.event_starttime ? (
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-primary">
-                          🎟️ {formatDate(activity.event_starttime, regionConfig)} {formatTime(activity.event_starttime, regionConfig)}
-                        </div>
-                      ) : null}
-
-                      {/* Price */}
-                      <div className="flex items-center gap-2 text-sm">
-                        <Euro className="w-4 h-4 text-muted-foreground" />
-                        <span>{getPriceDisplay(activity)}</span>
-                      </div>
-
-                      {/* Activity types */}
-                      <div className="flex flex-wrap gap-1">
-                        {activity.activity_type.slice(0, 3).map(type => (
-                          <Badge key={type} variant="secondary" className="text-xs">{type}</Badge>
-                        ))}
-                        {activity.activity_type.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">+{activity.activity_type.length - 3}</Badge>
-                        )}
-                      </div>
-
-                      {/* Age groups */}
-                      {activity.age_buckets.length > 0 && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="w-4 h-4" />
-                          <span>{activity.age_buckets.join(', ')} years</span>
-                        </div>
-                      )}
-
-                      {/* Kid amenities */}
-                      {(activity.foodvenue_kidamenities || activity.foodvenue_kidcorner || activity.foodvenue_kidmenu) && (
-                        <div className="flex flex-wrap gap-1">
-                          {activity.foodvenue_kidamenities && <Badge variant="outline" className="text-xs">🎨 Activity Kit</Badge>}
-                          {activity.foodvenue_kidcorner && <Badge variant="outline" className="text-xs">🧸 Kids Corner</Badge>}
-                          {activity.foodvenue_kidmenu && <Badge variant="outline" className="text-xs">🎪 Playroom</Badge>}
-                        </div>
-                      )}
-
-                      {/* Accessibility & practical badges */}
-                      {(activity.accessibility_wheelchair || activity.tags?.includes('wheelchair-accessible') ||
-                        activity.accessibility_stroller || activity.tags?.includes('stroller-friendly') ||
-                        activity.sensory_friendly || activity.tags?.includes('sensory-friendly') ||
-                        activity.transit_accessible || activity.tags?.includes('transit-friendly') ||
-                        activity.fenced || activity.tags?.includes('fenced') ||
-                        activity.facilities_restrooms) && (
-                        <div className="flex flex-wrap gap-1">
-                          {(activity.accessibility_wheelchair || activity.tags?.includes('wheelchair-accessible')) && (
-                            <Badge variant="outline" className="text-xs">♿ Wheelchair</Badge>
-                          )}
-                          {(activity.accessibility_stroller || activity.tags?.includes('stroller-friendly')) && (
-                            <Badge variant="outline" className="text-xs">🚼 Stroller</Badge>
-                          )}
-                          {(activity.sensory_friendly || activity.tags?.includes('sensory-friendly')) && (
-                            <Badge variant="outline" className="text-xs">🤫 Sensory friendly</Badge>
-                          )}
-                          {(activity.transit_accessible || activity.tags?.includes('transit-friendly')) && (
-                            <Badge variant="outline" className="text-xs">🚇 Transit</Badge>
-                          )}
-                          {(activity.fenced || activity.tags?.includes('fenced')) && (
-                            <Badge variant="outline" className="text-xs">🔒 Fenced</Badge>
-                          )}
-                          {activity.facilities_restrooms && (
-                            <Badge variant="outline" className="text-xs">🚻 Restrooms</Badge>
-                          )}
-                        </div>
-                      )}
-
-                      {/* ── Single action row: plan + map + nearby + website + edit ── */}
-                      <div className="mt-auto pt-3 border-t flex gap-1.5 flex-wrap items-center">
-                        {/* Add to plan / In plan */}
-                        {planItems.some(p => p.activityId === activity.id) ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); removeFromPlan(activity.id); }}
-                            className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                          >
-                            <span className="w-4 h-4 rounded-full bg-primary-foreground text-primary text-[10px] flex items-center justify-center font-bold">
-                              {planItems.findIndex(p => p.activityId === activity.id) + 1}
-                            </span>
-                            In plan ✓
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); addToPlan(activity); }}
-                            className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-accent transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Add to plan
-                          </button>
-                        )}
-
-                        {/* Show on map */}
-                        {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleShowOnMap(activity); }}
-                            title={t.communityActivities?.showOnMap || 'Show on map'}
-                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-muted-foreground"
-                          >
-                            <MapIcon className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {/* Nearby filter — silently sets location + distance, no filter panel */}
-                        {typeof activity.location_lat === 'number' && typeof activity.location_lon === 'number' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setUserLocation({ lat: activity.location_lat!, lon: activity.location_lon! });
-                              // 3 miles (imperial) or 5 km (metric)
-                              setNearbyKm(regionConfig.units === 'imperial' ? 3 * 1.60934 : 5);
-                              const label = regionConfig.units === 'imperial' ? '3 mi' : '5 km';
-                              toast.success(`Nearby ${label} filter set`);
-                            }}
-                            title={regionConfig.units === 'imperial' ? 'Show within 3 miles' : 'Show within 5 km'}
-                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-muted-foreground"
-                          >
-                            <Locate className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {/* Website */}
-                        {activity.urlmoreinfo && activity.urlmoreinfo_status === 'ok' && (
-                          <a
-                            href={activity.urlmoreinfo}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-xs text-primary font-medium"
-                          >
-                            Web →
-                          </a>
-                        )}
-
-                        {/* Edit — only for admin or original contributor */}
-                        {canEdit(activity) && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); navigate(`/activities/${activity.id}/edit`); }}
-                            className="px-2 py-2 rounded-lg border border-border bg-background hover:bg-accent transition-colors text-xs text-muted-foreground font-medium"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-
-        {/* Load more — only shown in grid view when there are more pages */}
-        {viewMode === 'grid' && !loading && hasMore && (
-          <div className="flex justify-center mt-8 mb-4">
-            <Button
-              variant="outline"
-              onClick={loadMore}
-              disabled={isLoadingMore}
-              className="min-w-[160px]"
-            >
-              {isLoadingMore ? 'Loading…' : `Load more (${totalCount - activities.length} remaining)`}
-            </Button>
-          </div>
-        )}
-
-        {/* ── Map View ── */}
-        {viewMode === 'map' && (
-          <div className="mt-2">
-            {/* BUG FIX: height on wrapper → MapView's h-full resolves correctly */}
-            <div className="relative rounded-lg border overflow-hidden h-[360px] md:h-[520px]">
-              <MapView
-                places={places}
-                center={center}
-                userLocation={userLocation}
-                nearbyKm={nearbyKm}
-                onSelect={(id) => setSelectedId(id)}
-                onAddToPlan={(id) => {
-                  const a = allActivitiesForMap.find(x => x.id === id);
-                  if (a) addToPlan(a);
-                }}
-                planItemIds={planItems.map(p => p.activityId)}
-                overlay={
-                  <div className="flex items-center gap-2">
-                    {/* GPS locate button — centers map AND sets location for filter */}
-                    <Button
-                      size="sm"
-                      variant={userLocation ? 'default' : 'outline'}
-                      onClick={handleLocateMe}
-                      disabled={locatingGPS}
-                      title={userLocation ? 'Re-center on my location' : 'Find my location'}
-                    >
-                      <Locate className="w-4 h-4 mr-1" />
-                      {locatingGPS ? '…' : 'Me'}
-                    </Button>
-                    {/* Distance quick-select in map overlay */}
-                    {userLocation && distanceOptions.map(opt => (
-                      <Button
-                        key={opt.value}
-                        size="sm"
-                        variant={nearbyKm === opt.value ? 'default' : 'outline'}
-                        onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
-                        className="px-2 py-1 h-auto text-xs"
-                      >
-                        {opt.label}
-                      </Button>
-                    ))}
-                  </div>
-                }
-              />
-              {/* Loading overlay while main query runs */}
-              {loading && (
-                <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-[1000]">
-                  <div className="px-4 py-2 bg-white/95 backdrop-blur text-xs text-muted-foreground rounded-full shadow-lg border border-border flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
-                    Loading…
-                  </div>
-                </div>
-              )}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {loading ? '…' : (
-                <>
-                  {places.length} {places.length === 1 ? 'location' : 'locations'} shown
-                  {activeFilterCount > 0 && ' (filtered)'}
-                </>
-              )}
-            </p>
-
-            {/* Selected activity card — appears when a map marker is clicked */}
-            {selectedId && (() => {
-              const sel = allActivitiesForMap.find(a => a.id === selectedId);
-              if (!sel) return null;
-              const inPlan = planItems.some(p => p.activityId === sel.id);
-              return (
-                <div className="mt-3 flex items-start gap-3 p-3 rounded-lg border bg-card shadow-sm animate-in slide-in-from-bottom-2">
-                  {sel.imageurlthumb && (
-                    <img src={sel.imageurlthumb} alt={sel.name} className="w-16 h-16 rounded-md object-cover shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{sel.name}</p>
-                    {sel.location_address && (
-                      <p className="text-xs text-muted-foreground truncate">{sel.location_address}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatPriceRange(sel.min_price, sel.max_price, regionConfig)}
-                      {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    <button
-                      onClick={() => inPlan ? removeFromPlan(sel.id) : addToPlan(sel)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap',
-                        inPlan
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                          : 'border border-border bg-background hover:bg-accent'
-                      )}
-                    >
-                      {inPlan
-                        ? `✓ In plan (${planItems.findIndex(p => p.activityId === sel.id) + 1})`
-                        : '+ Add to plan'}
-                    </button>
-                    <button
-                      onClick={() => setSelectedId(null)}
-                      className="px-3 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors text-center"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* ── Plan View ── */}
-        {viewMode === 'plan' && (
-          <div className="flex flex-col lg:flex-row gap-0 rounded-xl border overflow-hidden" style={{ height: '70vh' }}>
-            {/* Left: plan list */}
-            <div className="w-full lg:w-2/5 flex flex-col bg-card border-r overflow-y-auto">
-              {/* Plan header */}
-              <div className="p-4 border-b space-y-3">
-                {loadingKidPlan && (
-                  <div className="flex items-center gap-2 text-xs text-primary font-medium animate-pulse">
-                    <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin inline-block" />
-                    Loading kid's plan…
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={planName}
-                    onChange={(e) => setPlanName(e.target.value)}
-                    className="flex-1 text-lg font-semibold bg-transparent border-b border-border/50 focus:border-primary outline-none pb-1"
-                    placeholder="My Plan"
-                  />
-                  {planItems.length > 0 && (
-                    <button
-                      onClick={() => { if (window.confirm('Clear all activities from plan?')) { setPlanItems([]); } }}
-                      title="Clear entire plan"
-                      className="shrink-0 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-3 items-center text-sm">
-                  <label className="text-muted-foreground">Start</label>
-                  <input
-                    type="time"
-                    value={sessionStartTime}
-                    onChange={(e) => setSessionStartTime(e.target.value)}
-                    className="border rounded px-2 py-1 text-sm bg-background"
-                  />
-                  <label className="text-muted-foreground">Finish by</label>
-                  <input
-                    type="time"
-                    value={sessionFinishTime}
-                    onChange={(e) => setSessionFinishTime(e.target.value)}
-                    className="border rounded px-2 py-1 text-sm bg-background"
-                  />
-                </div>
-                {planTotals.overrunsBy > 0 && (
-                  <div className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">
-                    ⚠️ Plan overruns by {Math.ceil(planTotals.overrunsBy)} min — consider removing an activity or adjusting finish time
-                  </div>
-                )}
-              </div>
-
-              {/* Kids' Wishlist — pending proposals from little explorers */}
-              {(() => {
-                // Only show wishlist items not yet in the plan — avoids duplication
-                const pendingWishlist = kidsProposals.filter(
-                  p => !planItems.some(item => item.activityId === p.activityId)
-                );
-                if (pendingWishlist.length === 0) return null;
-                return (
-                  <div className="border-b bg-orange-50">
-                    <div className="px-4 py-2.5 flex items-center gap-2">
-                      <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
-                      <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold shrink-0">
-                        {pendingWishlist.length}
-                      </span>
-                      <button
-                        onClick={() => {
-                          const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-                          const updated = all.map(p => p.status === 'pending' ? { ...p, status: 'declined' } : p);
-                          localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
-                          window.dispatchEvent(new Event('storage'));
-                        }}
-                        className="ml-auto text-xs text-orange-500 hover:text-orange-700 hover:underline transition-colors"
-                      >
-                        Clear all
-                      </button>
-                    </div>
-                    <div className="divide-y divide-orange-100 max-h-48 overflow-y-auto">
-                      {pendingWishlist.map(p => (
-                        <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
-                          {p.activityImage ? (
-                            <img src={p.activityImage} alt={p.activityName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
-                          ) : (
-                            <div className="w-9 h-9 rounded-lg bg-orange-200 flex items-center justify-center text-base shrink-0">🎪</div>
-                          )}
-                          <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
-                          <button
-                            onClick={() => addProposalToPlan(p)}
-                            className="shrink-0 px-2.5 py-1 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition-colors"
-                          >
-                            + Add
-                          </button>
-                          <button
-                            onClick={() => dismissProposal(p.id)}
-                            className="shrink-0 p-1 rounded hover:bg-orange-200 text-orange-400 hover:text-orange-700 transition-colors"
-                            title="Remove from wishlist"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Plan items */}
-              {planItems.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
-                  <span className="text-5xl">🗓️</span>
-                  <p className="text-muted-foreground">
-                    {kidsProposals.length > 0 ? 'Tap + to add kids\' picks above' : 'No activities added yet'}
-                  </p>
-                  <Button variant="outline" size="sm" onClick={() => setViewMode('grid')}>
-                    Browse activities →
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex-1 divide-y overflow-y-auto">
-                  {planItems.map((item, idx) => (
-                    <div key={item.activityId} className="p-4 flex gap-3 hover:bg-accent/30 transition-colors">
-                      {/* Number badge */}
-                      <div className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center mt-0.5">
-                        {idx + 1}
-                      </div>
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.startTime}–{item.endTime} · {item.durationMinutes} min</p>
-                        {item.address && <p className="text-xs text-muted-foreground truncate">{item.address}</p>}
-                      </div>
-                      {/* Actions */}
-                      <div className="flex flex-col gap-1 shrink-0">
-                        <button onClick={() => movePlanItem(idx, 'up')} disabled={idx === 0} className="p-1 rounded hover:bg-accent disabled:opacity-30 transition-colors" title="Move up">
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M18 15l-6-6-6 6"/></svg>
-                        </button>
-                        <button onClick={() => movePlanItem(idx, 'down')} disabled={idx === planItems.length - 1} className="p-1 rounded hover:bg-accent disabled:opacity-30 transition-colors" title="Move down">
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6"/></svg>
-                        </button>
-                        <button onClick={() => removeFromPlan(item.activityId)} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors" title="Remove">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Footer: totals + save / submit */}
-              <div className="p-4 border-t bg-card space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  Total: {planTotals.totalMinutes} min · {planItems.length} stops
-                </div>
-                {/* Missing-coords note */}
-                {planItems.length > planPath.length && (
-                  <p className="text-xs text-muted-foreground">
-                    📍 {planItems.length - planPath.length} stop{planItems.length - planPath.length > 1 ? 's' : ''} without coordinates — not shown on map
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setViewMode('grid')} className="flex-1">
-                    + Add more
-                  </Button>
-                  {mode === 'kid' ? (
-                    <Button
-                      size="sm"
-                      onClick={submitKidPlan}
-                      disabled={savingPlan || planItems.length === 0}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                    >
-                      {savingPlan ? 'Sending…' : '💌 Send to parent'}
-                    </Button>
-                  ) : (
-                    <Button size="sm" onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1">
-                      {savingPlan ? 'Saving…' : '💾 Save & Share'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: route map — always visible; shows user/default location when plan is empty */}
-            <div className="relative w-full lg:w-3/5 h-64 lg:h-full">
-              <MapView
-                places={[
-                  ...(showAllOnPlanMap ? places : []),
-                  // Always show wishlist items as orange heart pins
-                  ...wishlistMapPlaces.filter(w =>
-                    !planItems.some(p => p.activityId === w.id) &&
-                    !(showAllOnPlanMap && places.some(pl => pl.id === w.id))
-                  ),
-                ]}
-                path={planPath}
-                className="h-full rounded-none border-0"
-                center={
-                  planPath.length > 0
-                    ? { lat: planPath[0].lat, lon: planPath[0].lon }
-                    : wishlistMapPlaces.length > 0
-                    ? { lat: wishlistMapPlaces[0].lat, lon: wishlistMapPlaces[0].lon }
-                    : (userLocation ?? center)
-                }
-                userLocation={userLocation}
-                onSelect={(id) => setPlanMapSelectedId(id)}
-                onAddToPlan={(id) => {
-                  const a = allActivitiesForMap.find(x => x.id === id);
-                  if (a) addToPlan(a);
-                }}
-                planItemIds={planItems.map(p => p.activityId)}
-                wishlistItemIds={wishlistMapPlaces.map(w => w.id)}
-                overlay={
-                  <div className="flex flex-col gap-1.5 items-end">
-                    <button
-                      onClick={() => setShowAllOnPlanMap(v => !v)}
-                      className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-md transition-colors',
-                        showAllOnPlanMap
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background border border-border text-foreground hover:bg-accent'
-                      )}
-                      title="Show all activities on map so you can add nearby ones to your plan"
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                      {showAllOnPlanMap ? 'All activities shown' : 'Show all activities'}
-                    </button>
-                    {showAllOnPlanMap && (
-                      <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow">
-                        Click any pin to preview
-                      </p>
-                    )}
-                    {!showAllOnPlanMap && planPath.length === 0 && (
-                      <p className="bg-background/90 text-xs text-muted-foreground px-2 py-1 rounded shadow text-right max-w-[160px] leading-snug">
-                        Add activities to see route
-                      </p>
-                    )}
-                  </div>
-                }
-              />
-
-              {/* Plan map activity preview card — appears when a pin is clicked */}
-              {planMapSelectedId && (() => {
-                const sel = allActivitiesForMap.find(a => a.id === planMapSelectedId);
-                if (!sel) return null;
-                const inPlan = planItems.some(p => p.activityId === sel.id);
-                const fallbackVisual = getActivityVisual(sel);
-                const FallbackIcon = fallbackVisual.Icon;
-                return (
-                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-card border-t border-border shadow-xl p-3 flex gap-3 items-start">
-                    {/* Thumbnail */}
-                    {sel.imageurlthumb ? (
-                      <img
-                        src={sel.imageurlthumb}
-                        alt={sel.name}
-                        className="w-16 h-16 rounded-md object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className={cn('w-16 h-16 rounded-md shrink-0 flex items-center justify-center', fallbackVisual.className)}>
-                        <FallbackIcon className="w-7 h-7" />
-                      </div>
-                    )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{sel.name}</p>
-                      {sel.location_address && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{sel.location_address}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatPriceRange(sel.min_price, sel.max_price, regionConfig)}
-                        {sel.duration_minutes ? ` · ${sel.duration_minutes} min` : ''}
-                      </p>
-                      {sel.age_buckets && sel.age_buckets.length > 0 && (
-                        <p className="text-xs text-muted-foreground">👧 {sel.age_buckets.join(', ')} yrs</p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col gap-1.5 shrink-0">
-                      <Button
-                        size="sm"
-                        variant={inPlan ? 'secondary' : 'default'}
-                        className="text-xs h-7 px-2.5 whitespace-nowrap"
-                        onClick={() => {
-                          if (inPlan) {
-                            removeFromPlan(sel.id);
-                            toast.success(`Removed "${sel.name}" from plan`);
-                          } else {
-                            addToPlan(sel);
-                            toast.success(`Added "${sel.name}" to plan`);
-                          }
-                          setPlanMapSelectedId(null);
-                        }}
-                      >
-                        {inPlan ? '✓ In plan' : '+ Add to plan'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs h-7 px-2.5"
-                        onClick={() => setPlanMapSelectedId(null)}
-                      >
-                        <X className="w-3 h-3 mr-1" /> Dismiss
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
-
-        {/* ── Focused Spot Modal ── */}
-        <Dialog open={spotModalOpen} onOpenChange={(open) => { setSpotModalOpen(open); if (!open) setSpotModalShowAll(false); }}>
-          <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-            {spotModalPlace && (() => {
-              const inPlan = planItems.some(p => p.activityId === spotModalPlace.id);
-              // Other activities to show on map when toggle is on — use allActivitiesForMap
-              // so ALL matching activities appear (not just the current paginated 50)
-              const otherPlaces = spotModalShowAll
-                ? allActivitiesForMap
-                    .filter(a => a.id !== spotModalPlace.id && typeof a.location_lat === 'number' && typeof a.location_lon === 'number')
-                    .map(a => ({
-                      id: a.id, name: a.name,
-                      lat: a.location_lat!, lon: a.location_lon!,
-                      imageurlthumb: a.imageurlthumb,
-                      location_address: a.location_address,
-                      min_price: a.min_price, max_price: a.max_price,
-                      age_buckets: a.age_buckets, urlmoreinfo: a.urlmoreinfo, urlmoreinfo_status: a.urlmoreinfo_status,
-                    }))
-                : [];
-              return (
-                <>
-                  {/* Activity header */}
-                  <div className="px-4 pt-4 pb-3 border-b space-y-2">
-                    <div>
-                      <p className="font-semibold text-base leading-tight">{spotModalPlace.name}</p>
-                      {spotModalPlace.location_address && (
-                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 shrink-0" />{spotModalPlace.location_address}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatPriceRange(spotModalPlace.min_price ?? null, spotModalPlace.max_price ?? null, regionConfig)}
-                        {spotModalPlace.age_buckets?.length ? ` · ${spotModalPlace.age_buckets.join(', ')} yrs` : ''}
-                      </p>
-                    </div>
-
-                    {/* Action buttons */}
+                    {/* Key info pills */}
                     <div className="flex flex-wrap gap-2">
-                      {/* Add / Remove from plan */}
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="gap-1.5"
-                        onClick={() => {
-                          if (!inPlan && spotModalActivity) {
-                            addToPlan(spotModalActivity);
-                          }
-                          setSpotModalOpen(false);
-                          setSpotModalShowAll(false);
-                          setViewMode('plan');
-                        }}
-                      >
-                        {inPlan ? '🗓️ Go to Plan' : '+ Add & Go to Plan'}
-                      </Button>
-
-                      {/* Show all activities toggle */}
-                      <Button
-                        size="sm"
-                        variant={spotModalShowAll ? 'secondary' : 'outline'}
-                        className="gap-1.5"
-                        onClick={() => setSpotModalShowAll(v => !v)}
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                        {spotModalShowAll ? 'Hide others' : 'Show all'}
-                      </Button>
-
-                      {/* Back / close */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-1 ml-auto text-muted-foreground"
-                        onClick={() => { setSpotModalOpen(false); setSpotModalShowAll(false); }}
-                      >
-                        <X className="w-3.5 h-3.5" /> Back
-                      </Button>
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm font-semibold">
+                        <Euro className="w-3.5 h-3.5" />{price}
+                      </span>
+                      {activity.duration_minutes && (
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm">
+                          <Timer className="w-3.5 h-3.5 text-muted-foreground" />{activity.duration_minutes} min
+                        </span>
+                      )}
+                      {(activity.age_buckets?.length ?? 0) > 0 && (
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm">
+                          <Users className="w-3.5 h-3.5 text-muted-foreground" />{activity.age_buckets.join(', ')} yrs
+                        </span>
+                      )}
                     </div>
+                    {/* Location */}
+                    {activity.location_address && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <span className="text-muted-foreground">{activity.location_address}</span>
+                      </div>
+                    )}
+                    {/* Event date */}
+                    {activity.event_starttime && (
+                      <div className="flex items-center gap-2 px-3 py-2.5 bg-primary/10 rounded-xl text-sm font-semibold text-primary">
+                        🎟️ {formatDate(activity.event_starttime, regionConfig)} at {formatTime(activity.event_starttime, regionConfig)}
+                      </div>
+                    )}
+                    {/* Description */}
+                    {displayDescription && (
+                      <p className="text-sm text-muted-foreground leading-relaxed">{displayDescription}</p>
+                    )}
+                    {/* Highlights */}
+                    {(activity.highlights?.length ?? 0) > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Highlights</p>
+                        {activity.highlights.map((h: string) => (
+                          <div key={h} className="flex items-start gap-2 text-sm">
+                            <span className="text-primary mt-0.5">✓</span>
+                            <span>{h}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Accessibility */}
+                    {(activity.accessibility_wheelchair || activity.accessibility_stroller || activity.sensory_friendly || activity.transit_accessible || activity.fenced || activity.facilities_restrooms) && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accessibility</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activity.accessibility_wheelchair && <span className="px-2.5 py-1 bg-muted rounded-full text-xs">♿ Wheelchair</span>}
+                          {activity.accessibility_stroller && <span className="px-2.5 py-1 bg-muted rounded-full text-xs">🚼 Stroller</span>}
+                          {activity.sensory_friendly && <span className="px-2.5 py-1 bg-muted rounded-full text-xs">🤫 Sensory friendly</span>}
+                          {activity.transit_accessible && <span className="px-2.5 py-1 bg-muted rounded-full text-xs">🚇 Transit</span>}
+                          {activity.fenced && <span className="px-2.5 py-1 bg-muted rounded-full text-xs">🔒 Fenced</span>}
+                          {activity.facilities_restrooms && <span className="px-2.5 py-1 bg-muted rounded-full text-xs">🚻 Restrooms</span>}
+                        </div>
+                      </div>
+                    )}
+                    {/* Tags */}
+                    {(activity.activity_type?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {activity.activity_type.map((type: string) => (
+                          <span key={type} className="px-2.5 py-1 bg-muted/60 rounded-full text-xs text-muted-foreground">{type}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
+                </div>
+                {/* Bottom action bar */}
+                <div className="px-5 py-3 border-t bg-background flex gap-3 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+                  {activity.urlmoreinfo && activity.urlmoreinfo_status === 'ok' && (
+                    <a href={activity.urlmoreinfo} target="_blank" rel="noopener noreferrer" className="h-12 px-4 rounded-2xl border border-border flex items-center justify-center text-sm font-medium tap-highlight shrink-0">
+                      Web ↗
+                    </a>
+                  )}
+                  {typeof activity.location_lat === 'number' && (
+                    <button onClick={() => { setDetailActivity(null); handleShowOnMap(activity); }} className="h-12 px-4 rounded-2xl border border-border flex items-center justify-center tap-highlight shrink-0">
+                      <MapIcon className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canEdit(activity) && (
+                    <button onClick={() => { setDetailActivity(null); navigate(`/activities/${activity.id}/edit`); }} className="h-12 px-4 rounded-2xl border border-border text-sm font-medium tap-highlight shrink-0">Edit</button>
+                  )}
+                  {mode === 'kid' ? (
+                    <button
+                      onClick={() => { wishlistActivity(activity); setDetailActivity(null); }}
+                      className={cn('flex-1 h-12 rounded-2xl text-sm font-semibold tap-highlight', isWishlisted ? 'bg-red-500 text-white' : 'bg-primary text-primary-foreground')}
+                    >
+                      {isWishlisted ? '❤️ Wishlisted' : '🤍 Add to Wishlist'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { inPlan ? removeFromPlan(activity.id) : addToPlan(activity); setDetailActivity(null); }}
+                      className={cn('flex-1 h-12 rounded-2xl text-sm font-semibold tap-highlight', inPlan ? 'bg-muted text-foreground border border-border' : 'bg-primary text-primary-foreground')}
+                    >
+                      {inPlan ? '✓ In plan — remove' : '+ Add to Plan'}
+                    </button>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
 
-                  {/* Map — selected spot as path pin #1 (blue circle), others as normal markers */}
-                  <div className="h-[360px]">
-                    <MapView
-                      places={otherPlaces}
-                      path={[{ id: spotModalPlace.id, lat: spotModalPlace.lat, lon: spotModalPlace.lon, name: spotModalPlace.name }]}
-                      center={spotModalCenter}
-                    />
+      {/* ── Filter bottom sheet ── */}
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="bottom" className="h-[88vh] rounded-t-3xl pt-0 overflow-hidden flex flex-col">
+          <SheetHeader className="px-5 py-4 border-b shrink-0">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-base">
+                Filters{activeFilterCount > 0 ? ` · ${activeFilterCount} active` : ''}
+              </SheetTitle>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <button onClick={clearFilters} className="text-sm text-primary font-medium tap-highlight">Clear all</button>
+                )}
+                <SheetClose className="w-8 h-8 rounded-full bg-muted flex items-center justify-center tap-highlight">
+                  <X className="w-4 h-4" />
+                </SheetClose>
+              </div>
+            </div>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+            {/* City */}
+            {availableCities.length > 0 && (
+              <ScalableMultiPicker label="City / Area" emoji="📍" options={availableCities} selected={selectedCities} onChange={setSelectedCities} emptyLabel="All cities" searchPlaceholder="Search cities…" />
+            )}
+            {/* Curated lists */}
+            {curatedLists.length > 0 && (
+              <ScalableSinglePicker
+                label="Curated Lists" emoji="📋"
+                options={curatedLists.map(l => ({ value: l.slug, label: l.title, description: l.description }))}
+                selected={selectedCuratedListSlug}
+                onChange={selectCuratedList}
+                allLabel="All activities"
+                searchPlaceholder="Search lists…"
+              />
+            )}
+            {/* Category */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Category</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setSelectedCategories([])} className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', selectedCategories.length === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>All</button>
+                {CATEGORIES.map(cat => (
+                  <button key={cat} onClick={() => setSelectedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', selectedCategories.includes(cat) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {KID_CATEGORY_EMOJIS[cat]} {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Age */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Age Group</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setSelectedAges([])} className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', selectedAges.length === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>All Ages</button>
+                {AGE_BUCKETS.map(age => (
+                  <button key={age} onClick={() => setSelectedAges(prev => prev.includes(age) ? prev.filter(a => a !== age) : [...prev, age])}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', selectedAges.includes(age) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {age} yrs
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Involvement */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Involvement</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setSelectedInvolvement('')} className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', !selectedInvolvement ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>Any</button>
+                {INVOLVEMENT_OPTIONS.map(opt => (
+                  <button key={opt.value} onClick={() => setSelectedInvolvement(opt.value)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', selectedInvolvement === opt.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Budget */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Budget</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setMaxPrice('any')} className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', maxPrice === 'any' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>Any</button>
+                {PRICE_OPTIONS.map(opt => (
+                  <button key={opt.value} onClick={() => setMaxPrice(opt.value)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', maxPrice === opt.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Environment */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Environment</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { state: rainSuitable, set: setRainSuitable, label: '🌧️ Rain suitable' },
+                  { state: indoorOnly, set: setIndoorOnly, label: '🏠 Indoor only' },
+                  { state: eventsOnly, set: setEventsOnly, label: '🎟️ Events only' },
+                ].map(({ state, set, label }) => (
+                  <button key={label} onClick={() => set((v: boolean) => !v)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', state ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Timing */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Timing</p>
+              <div className="flex flex-wrap gap-2">
+                {(['any', 'now', 'today', 'tomorrow', 'weekend'] as const).map(t => (
+                  <button key={t} onClick={() => setTimingFilter(t)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium capitalize transition-colors tap-highlight', timingFilter === t ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {t === 'any' ? 'Anytime' : t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Duration */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Duration</p>
+              <div className="flex flex-wrap gap-2">
+                {[{ value: 'any' as const, label: 'Any' }, { value: '<60' as const, label: '< 1h' }, { value: '60-120' as const, label: '1–2h' }, { value: '120-240' as const, label: '2–4h' }, { value: '240+' as const, label: 'Full day' }].map(({ value, label }) => (
+                  <button key={value} onClick={() => setDurationFilter(value)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', durationFilter === value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Accessibility */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Accessibility</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { state: wheelchairAccessible, set: setWheelchairAccessible, label: '♿ Wheelchair' },
+                  { state: strollerFriendly, set: setStrollerFriendly, label: '🚼 Stroller' },
+                  { state: sensoryFriendly, set: setSensoryFriendly, label: '🤫 Sensory friendly' },
+                  { state: transitAccessible, set: setTransitAccessible, label: '🚇 Transit' },
+                  { state: fencedArea, set: setFencedArea, label: '🔒 Fenced' },
+                ].map(({ state, set, label }) => (
+                  <button key={label} onClick={() => set((v: boolean) => !v)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', state ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* GPS Nearby */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Nearby</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={handleLocateMe} disabled={locatingGPS}
+                  className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight flex items-center gap-1.5',
+                    userLocation ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  )}>
+                  <Locate className="w-3.5 h-3.5" />
+                  {locatingGPS ? 'Locating…' : userLocation ? 'Located ✓' : 'Use my location'}
+                </button>
+                {userLocation && distanceOptions.map(opt => (
+                  <button key={opt.value} onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
+                    className={cn('h-9 px-4 rounded-full text-sm font-medium transition-colors tap-highlight', nearbyKm === opt.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="h-4" />
+          </div>
+          {/* Apply */}
+          <div className="px-5 py-3 border-t bg-background shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+            <SheetClose className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center">
+              Show {totalCount > 0 ? `${totalCount} ` : ''}activities
+            </SheetClose>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Focused spot map dialog ── */}
+      <Dialog open={spotModalOpen} onOpenChange={open => { setSpotModalOpen(open); if (!open) setSpotModalShowAll(false); }}>
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+          {spotModalPlace && (() => {
+            const inPlan = planItems.some(p => p.activityId === spotModalPlace.id);
+            const otherPlaces = spotModalShowAll
+              ? allActivitiesForMap.filter(a => a.id !== spotModalPlace.id && typeof a.location_lat === 'number' && typeof a.location_lon === 'number').map(a => ({
+                  id: a.id, name: a.name, lat: a.location_lat!, lon: a.location_lon!,
+                  imageurlthumb: a.imageurlthumb, location_address: a.location_address,
+                  min_price: a.min_price, max_price: a.max_price, age_buckets: a.age_buckets,
+                  urlmoreinfo: a.urlmoreinfo, urlmoreinfo_status: a.urlmoreinfo_status,
+                }))
+              : [];
+            return (
+              <>
+                <div className="px-4 pt-4 pb-3 border-b space-y-2">
+                  <p className="font-semibold text-base">{spotModalPlace.name}</p>
+                  {spotModalPlace.location_address && <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3 shrink-0" />{spotModalPlace.location_address}</p>}
+                  <p className="text-xs text-muted-foreground">{formatPriceRange(spotModalPlace.min_price ?? null, spotModalPlace.max_price ?? null, regionConfig)}</p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" onClick={() => { if (!inPlan && spotModalActivity) addToPlan(spotModalActivity); setSpotModalOpen(false); setSpotModalShowAll(false); setViewMode('plan'); }}>
+                      {inPlan ? '🗓️ Go to Plan' : '+ Add & Go to Plan'}
+                    </Button>
+                    <Button size="sm" variant={spotModalShowAll ? 'secondary' : 'outline'} onClick={() => setSpotModalShowAll(v => !v)}>
+                      <Layers className="w-3.5 h-3.5 mr-1" />{spotModalShowAll ? 'Hide others' : 'Show all'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setSpotModalOpen(false); setSpotModalShowAll(false); }} className="ml-auto text-muted-foreground">
+                      <X className="w-3.5 h-3.5 mr-1" /> Close
+                    </Button>
                   </div>
-                </>
-              );
-            })()}
-          </DialogContent>
-        </Dialog>
-      </main>
+                </div>
+                <div className="h-[360px]">
+                  <MapView places={otherPlaces} path={[{ id: spotModalPlace.id, lat: spotModalPlace.lat, lon: spotModalPlace.lon, name: spotModalPlace.name }]} center={spotModalCenter} />
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* ── Lightbox ── */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
           <div className="relative w-full h-[95vh] flex items-center justify-center">
-            <Button
-              variant="ghost" size="icon"
-              className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
-              onClick={() => setLightboxOpen(false)}
-            >
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-white hover:bg-white/20" onClick={() => setLightboxOpen(false)}>
               <X className="h-6 w-6" />
             </Button>
-
             {lightboxImages.length > 1 && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
-                {currentImageIndex + 1} / {lightboxImages.length}
-              </div>
+              <>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-black/50 text-white px-4 py-2 rounded-full text-sm">{currentImageIndex + 1} / {lightboxImages.length}</div>
+                <Button variant="ghost" size="icon" className="absolute left-4 z-50 text-white hover:bg-white/20 h-12 w-12" onClick={prevImage}><ChevronLeft className="h-8 w-8" /></Button>
+                <Button variant="ghost" size="icon" className="absolute right-4 z-50 text-white hover:bg-white/20 h-12 w-12" onClick={nextImage}><ChevronRight className="h-8 w-8" /></Button>
+              </>
             )}
-
-            {lightboxImages.length > 1 && (
-              <Button
-                variant="ghost" size="icon"
-                className="absolute left-4 z-50 text-white hover:bg-white/20 h-12 w-12"
-                onClick={prevImage}
-              >
-                <ChevronLeft className="h-8 w-8" />
-              </Button>
-            )}
-
-            <img
-              src={lightboxImages[currentImageIndex]}
-              alt={`Full size image ${currentImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain"
-            />
-
-            {lightboxImages.length > 1 && (
-              <Button
-                variant="ghost" size="icon"
-                className="absolute right-4 z-50 text-white hover:bg-white/20 h-12 w-12"
-                onClick={nextImage}
-              >
-                <ChevronRight className="h-8 w-8" />
-              </Button>
-            )}
+            <img src={lightboxImages[currentImageIndex]} alt={`Image ${currentImageIndex + 1}`} className="max-w-full max-h-full object-contain" />
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* ── Sticky plan bar ── */}
-      {planItems.length > 0 && viewMode !== 'plan' && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg border-t">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-screen-xl">
-            <div className="flex items-center gap-3 text-sm">
-              <span className="font-semibold">🗓️ {planItems.length} {planItems.length === 1 ? 'activity' : 'activities'}</span>
-              {planTotals.overrunsBy > 0 && (
-                <span className="px-2 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs font-bold">
-                  Overruns by {Math.round(planTotals.overrunsBy / 60 * 10) / 10}h
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPlanItems([])}
-                title="Clear plan"
-                className="p-1.5 rounded-md hover:bg-primary-foreground/20 text-primary-foreground/70 hover:text-primary-foreground transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setViewMode('plan')}
-                className="font-semibold"
-              >
-                View Plan →
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Share sheet (parent — shown after Save & Share) ── */}
+      {/* ── Share sheet ── */}
       {planShareData && (
         <ShareSheet
           trip={planShareData}
           hideEmail={mode === 'kid'}
-          onClose={() => {
-            setPlanShareData(null);
-            setPlanItems([]);
-            setViewMode('grid');
-          }}
+          onClose={() => { setPlanShareData(null); setPlanItems([]); setViewMode('grid'); }}
         />
       )}
-
-      <Footer />
     </div>
   );
 }

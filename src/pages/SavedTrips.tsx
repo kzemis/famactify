@@ -2,51 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, Trash2, Share2, MapPin, Clock } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import { ShareSheet, type ShareSheetTripData } from "@/components/ShareSheet";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface TripEvent {
-  id?: string;
-  title?: string;       // v02
-  image?: string;       // v02
-  date?: string;
-  time?: string;
-  name?: string;        // v03
-  imageurlthumb?: string; // v03
-  activityId?: string;
-  startTime?: string;
-  endTime?: string;
-  durationMinutes?: number;
-  location?: string;
-  address?: string;
-  lat?: number;
-  lon?: number;
-  description?: string;
-  price?: string;
-}
-
-interface SavedTrip {
-  id: string;
-  name: string;
-  events: TripEvent[];
-  total_cost: number;
-  total_events: number;
-  created_at: string;
-  recipients: string[] | null;
-  share_token: string | null;
-  confirmations?: {
-    total: number;
-    confirmed: number;
-    confirmedEmails: string[];
-    pendingEmails: string[];
-  };
-}
+import { authService, tripsService, type SavedTrip, type TripEvent } from "@/services";
 
 // ---------------------------------------------------------------------------
 // Field normalizers — handle both v02 {title,image} and v03 {name,imageurlthumb}
@@ -114,45 +74,31 @@ const SavedTrips = () => {
   useEffect(() => { fetchTrips(); }, []);
 
   const fetchTrips = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate("/auth"); return; }
-    const { data, error } = await supabase
-      .from("saved_trips")
-      .select("id, name, events, total_cost, total_events, created_at, recipients, share_token")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast({ title: "Error loading trips", description: error.message, variant: "destructive" });
-    } else {
-      const tripsWithConfirmations = await Promise.all(
-        (data || []).map(async (trip) => {
-          const { data: confirmations } = await supabase
-            .from("trip_confirmations").select("confirmed, recipient_email").eq("trip_id", trip.id);
-          return {
-            ...trip,
-            events: Array.isArray(trip.events) ? trip.events as TripEvent[] : [],
-            total_cost: trip.total_cost ?? 0,
-            total_events: trip.total_events ?? 0,
-            confirmations: {
-              total: confirmations?.length || 0,
-              confirmed: confirmations?.filter(c => c.confirmed).length || 0,
-              confirmedEmails: confirmations?.filter(c => c.confirmed).map(c => c.recipient_email) || [],
-              pendingEmails: confirmations?.filter(c => !c.confirmed).map(c => c.recipient_email) || [],
-            },
-          };
-        })
-      );
-      setTrips(tripsWithConfirmations);
+    try {
+      const user = await authService.getCurrentUser();
+      if (!user) { navigate("/auth"); return; }
+      const savedTrips = await tripsService.listCurrentUserWithConfirmations();
+      setTrips(savedTrips);
+    } catch (error: any) {
+      if (error.message?.includes('auth') || error.message?.includes('signed in')) {
+        navigate("/auth");
+      } else {
+        toast({ title: "Error loading trips", description: error.message, variant: "destructive" });
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const deleteTrip = async (id: string) => {
     if (!confirm('Delete this trip? This cannot be undone.')) return;
-    const { error } = await supabase.from("saved_trips").delete().eq("id", id);
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    setTrips(trips.filter(t => t.id !== id));
-    toast({ title: "Trip deleted" });
+    try {
+      await tripsService.deleteTrip(id);
+      setTrips(trips.filter(t => t.id !== id));
+      toast({ title: "Trip deleted" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   const openInPlanner = (trip: SavedTrip) => {

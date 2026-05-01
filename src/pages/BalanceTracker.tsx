@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { activitiesService, authService, tripsService } from '@/services';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -54,19 +54,6 @@ function loadHorizonQuotas(year: number, month: number): Record<string, number> 
 }
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface SavedTrip {
-  id: string;
-  events: any[];
-}
-
-interface ActivitySpotRow {
-  id: string;
-  primary_category: string | null;
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export default function BalanceTracker() {
@@ -89,23 +76,18 @@ export default function BalanceTracker() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const session = await authService.getCurrentSession();
         if (!session) {
           setDoneCounts({});
           setLoading(false);
           return;
         }
 
-        const { data: trips, error: tripsError } = await supabase
-          .from('saved_trips')
-          .select('id, events')
-          .eq('user_id', session.user.id);
-
-        if (tripsError) throw tripsError;
+        const trips = await tripsService.listForUser(session.user.id);
 
         // Collect all activityIds from all trips
         const activityIds: string[] = [];
-        for (const trip of (trips as SavedTrip[]) ?? []) {
+        for (const trip of trips) {
           if (Array.isArray(trip.events)) {
             for (const ev of trip.events) {
               if (ev?.activityId) activityIds.push(ev.activityId);
@@ -113,27 +95,7 @@ export default function BalanceTracker() {
           }
         }
 
-        if (activityIds.length === 0) {
-          setDoneCounts({});
-          setLoading(false);
-          return;
-        }
-
-        const { data: spots, error: spotsError } = await supabase
-          .from('activityspots')
-          .select('id, primary_category')
-          .in('id', activityIds);
-
-        if (spotsError) throw spotsError;
-
-        // Count by category
-        const counts: Record<string, number> = {};
-        for (const spot of (spots as ActivitySpotRow[]) ?? []) {
-          if (spot.primary_category) {
-            counts[spot.primary_category] = (counts[spot.primary_category] ?? 0) + 1;
-          }
-        }
-
+        const counts = await activitiesService.fetchCategoriesForActivityIds(activityIds);
         setDoneCounts(counts);
       } catch {
         // Graceful degradation — show empty state

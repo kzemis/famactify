@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,28 +8,9 @@ import { toast } from 'sonner';
 import { ArrowLeft, ArrowUp, ArrowDown, Trash2, Plus, Search, MapPin } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
+import { authService, curatedListsService, type AuthorType, type CuratedActivitySearchResult, type EditableListItem } from '@/services';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface ActivitySpot {
-  id: string;
-  name: string;
-  imageurlthumb: string | null;
-  location_address: string | null;
-  min_price: number | null;
-  max_price: number | null;
-}
-
-interface ListItem {
-  activity_id: string;
-  name: string;
-  imageurlthumb: string | null;
-  sort_order: number;
-  note: string;
-}
-
-type AuthorType = 'editor' | 'municipality' | 'partner' | '';
+type AuthorTypeInput = AuthorType | '';
 
 // ---------------------------------------------------------------------------
 // Slug helper
@@ -57,16 +37,16 @@ export default function AdminListEdit() {
   const [slugManual, setSlugManual] = useState(false);
   const [description, setDescription] = useState('');
   const [authorName, setAuthorName] = useState('');
-  const [authorType, setAuthorType] = useState<AuthorType>('');
+  const [authorType, setAuthorType] = useState<AuthorTypeInput>('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [isPublished, setIsPublished] = useState(false);
 
   // Items in this list
-  const [listItems, setListItems] = useState<ListItem[]>([]);
+  const [listItems, setListItems] = useState<EditableListItem[]>([]);
 
   // Activity search
   const [activitySearch, setActivitySearch] = useState('');
-  const [searchResults, setSearchResults] = useState<ActivitySpot[]>([]);
+  const [searchResults, setSearchResults] = useState<CuratedActivitySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -77,7 +57,7 @@ export default function AdminListEdit() {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await authService.getCurrentUser();
       if (!user) navigate('/auth');
     };
     checkAuth();
@@ -90,49 +70,21 @@ export default function AdminListEdit() {
     if (isNew || !id) return;
     const fetchList = async () => {
       setLoading(true);
-      const { data: listData, error } = await supabase
-        .from('curated_lists')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error || !listData) {
+      const result = await curatedListsService.getEditable(id);
+      if (!result) {
         toast.error('List not found');
         navigate('/admin/lists');
         return;
       }
-      setTitle(listData.title);
-      setSlug(listData.slug);
-      setDescription(listData.description || '');
-      setAuthorName(listData.author_name || '');
-      setAuthorType((listData.author_type as AuthorType) || '');
-      setCoverImageUrl(listData.cover_image_url || '');
-      setIsPublished(listData.is_published ?? false);
+      setTitle(result.list.title);
+      setSlug(result.list.slug);
+      setDescription(result.list.description || '');
+      setAuthorName(result.list.author_name || '');
+      setAuthorType(result.list.author_type || '');
+      setCoverImageUrl(result.list.cover_image_url || '');
+      setIsPublished(result.list.is_published ?? false);
       setSlugManual(true); // treat existing slug as manually set
-
-      // Fetch items
-      const { data: itemsData } = await supabase
-        .from('curated_list_items')
-        .select(`
-          activity_id,
-          sort_order,
-          note,
-          activity:activity_id (id, name, imageurlthumb, location_address, min_price, max_price)
-        `)
-        .eq('list_id', id)
-        .order('sort_order', { ascending: true });
-
-      if (itemsData) {
-        const items: ListItem[] = (itemsData as any[])
-          .filter(row => row.activity !== null)
-          .map(row => ({
-            activity_id: row.activity_id,
-            name: row.activity.name,
-            imageurlthumb: row.activity.imageurlthumb,
-            sort_order: row.sort_order,
-            note: row.note || '',
-          }));
-        setListItems(items);
-      }
+      setListItems(result.items);
       setLoading(false);
     };
     fetchList();
@@ -158,12 +110,8 @@ export default function AdminListEdit() {
     }
     const timer = setTimeout(async () => {
       setSearching(true);
-      const { data } = await supabase
-        .from('activityspots')
-        .select('id, name, imageurlthumb, location_address, min_price, max_price')
-        .ilike('name', `%${activitySearch}%`)
-        .limit(20);
-      setSearchResults(data || []);
+      const data = await curatedListsService.searchActivities(activitySearch);
+      setSearchResults(data);
       setSearching(false);
     }, 300);
     return () => clearTimeout(timer);
@@ -172,12 +120,12 @@ export default function AdminListEdit() {
   // ---------------------------------------------------------------------------
   // Add activity to list
   // ---------------------------------------------------------------------------
-  const addActivity = (activity: ActivitySpot) => {
+  const addActivity = (activity: CuratedActivitySearchResult) => {
     if (listItems.some(i => i.activity_id === activity.id)) {
       toast.error('Activity already in list');
       return;
     }
-    const newItem: ListItem = {
+    const newItem: EditableListItem = {
       activity_id: activity.id,
       name: activity.name,
       imageurlthumb: activity.imageurlthumb,
@@ -233,58 +181,19 @@ export default function AdminListEdit() {
 
     setSaving(true);
     try {
-      let listId = id;
-
-      if (isNew) {
-        const { data, error } = await supabase
-          .from('curated_lists')
-          .insert({
-            slug,
-            title,
-            description: description || null,
-            author_name: authorName || null,
-            author_type: authorType || null,
-            cover_image_url: coverImageUrl || null,
-            is_published: isPublished,
-          })
-          .select('id')
-          .single();
-        if (error) throw error;
-        listId = data.id;
-      } else {
-        const { error } = await supabase
-          .from('curated_lists')
-          .update({
-            slug,
-            title,
-            description: description || null,
-            author_name: authorName || null,
-            author_type: authorType || null,
-            cover_image_url: coverImageUrl || null,
-            is_published: isPublished,
-          })
-          .eq('id', id);
-        if (error) throw error;
-      }
-
-      // Replace all list items
-      if (listId) {
-        await supabase.from('curated_list_items').delete().eq('list_id', listId);
-
-        if (listItems.length > 0) {
-          const { error: itemsError } = await supabase
-            .from('curated_list_items')
-            .insert(
-              listItems.map(item => ({
-                list_id: listId,
-                activity_id: item.activity_id,
-                sort_order: item.sort_order,
-                note: item.note || null,
-              })),
-            );
-          if (itemsError) throw itemsError;
-        }
-      }
+      await curatedListsService.saveList({
+        id,
+        list: {
+          slug,
+          title,
+          description: description || null,
+          author_name: authorName || null,
+          author_type: authorType || null,
+          cover_image_url: coverImageUrl || null,
+          is_published: isPublished,
+        },
+        items: listItems,
+      });
 
       toast.success(isNew ? 'List created' : 'List updated');
       navigate('/admin/lists');
@@ -379,7 +288,7 @@ export default function AdminListEdit() {
                 <select
                   id="author-type"
                   value={authorType}
-                  onChange={(e) => setAuthorType(e.target.value as AuthorType)}
+                  onChange={(e) => setAuthorType(e.target.value as AuthorTypeInput)}
                   className="w-full mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   <option value="">— select —</option>
@@ -415,7 +324,15 @@ export default function AdminListEdit() {
 
           {/* ── Activity picker ── */}
           <div className="p-6 border rounded-lg bg-card space-y-4">
-            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Add activities</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Add activities</h2>
+                <p className="text-xs text-muted-foreground mt-1">Search existing activities, or contribute a new one first and then add it here.</p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/contribute">Contribute new activity</Link>
+              </Button>
+            </div>
 
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

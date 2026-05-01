@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,47 +23,8 @@ import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
-
-// ---------------------------------------------------------------------------
-// Pagination & column constants (module-level)
-// ---------------------------------------------------------------------------
-const PAGE_SIZE = 50;
-
-// Grid view: all columns needed for card rendering. `json` is included because the carousel
-// uses json.images — but since we paginate (50 rows), this is ~150 KB max vs 6 MB for 2000 rows.
-const GRID_COLUMNS = [
-  'id', 'name', 'description', 'primary_category', 'activity_type', 'age_buckets',
-  'location_address', 'location_lat', 'location_lon', 'imageurlthumb', 'urlmoreinfo', 'urlmoreinfo_status',
-  'min_price', 'max_price', 'involvement', 'location_environment', 'rain_suitable',
-  'booking_required', 'tags', 'duration_minutes', 'excitement_score', 'country_code',
-  'accessibility_wheelchair', 'accessibility_stroller', 'sensory_friendly',
-  'transit_accessible', 'fenced', 'event_starttime', 'event_endtime',
-  'ticket_url', 'organizer', 'created_at', 'city', 'age_min', 'age_max',
-  'facilities_restrooms', 'foodvenue_kidamenities', 'foodvenue_kidcorner',
-  'foodvenue_kidmenu', 'source', 'created_by', 'json',
-].join(', ');
-
-// Map / slim data: only the columns needed for pins, popups, and addToPlan
-const MAP_COLUMNS = [
-  'id', 'name', 'location_lat', 'location_lon', 'location_address',
-  'imageurlthumb', 'min_price', 'max_price', 'duration_minutes', 'age_buckets', 'urlmoreinfo', 'urlmoreinfo_status',
-  'primary_category', 'location_environment', 'activity_type', 'tags',
-].join(', ');
-
-// ---------------------------------------------------------------------------
-// Haversine distance helper (module-level — no closure needed)
-// ---------------------------------------------------------------------------
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * (Math.PI / 180)) *
-    Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+import { activitiesService, authService, tripsService, curatedListsService, ACTIVITY_PAGE_SIZE as PAGE_SIZE, type ActivityFilters, type ActivitySpot, type CuratedList, type SlimActivity } from '@/services';
+import type { User } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
 // Time calculation helpers (session planner)
@@ -79,58 +39,21 @@ function minutesToHHMM(total: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const radiusKm = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * (Math.PI / 180)) *
+    Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) ** 2;
+  return radiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ---------------------------------------------------------------------------
 // Types & constants
 // ---------------------------------------------------------------------------
-interface ActivitySpot {
-  id: string;
-  name: string;
-  description: string;
-  activity_type: string[];
-  age_buckets: string[];
-  location_address: string | null;
-  location_lat: number | null;
-  location_lon: number | null;
-  imageurlthumb: string | null;
-  urlmoreinfo: string | null;
-  urlmoreinfo_status: string | null;
-  min_price: number | null;
-  max_price: number | null;
-  accessibility_wheelchair: boolean | null;
-  accessibility_stroller: boolean | null;
-  facilities_restrooms: boolean | null;
-  foodvenue_kidamenities: boolean | null;
-  foodvenue_kidcorner: boolean | null;
-  foodvenue_kidmenu: boolean | null;
-  source: string | null;
-  created_by: string | null;
-  created_at: string;
-  // v3.1 schema fields
-  primary_category: string | null;
-  involvement: string | null;
-  city: string | null;
-  age_min: number | null;
-  age_max: number | null;
-  location_environment: string | null;
-  rain_suitable: boolean | null;
-  booking_required: boolean | null;
-  tags: string[] | null;
-  highlights: string[] | null;
-  excitement_score: number | null;
-  country_code: string | null;
-  duration_minutes: number | null;
-  json: any;
-  // v3.2 schema fields
-  sensory_friendly: boolean | null;
-  transit_accessible: boolean | null;
-  fenced: boolean | null;
-  // event fields
-  event_starttime: string | null;
-  event_endtime: string | null;
-  ticket_url: string | null;
-  organizer: string | null;
-}
-
 type ActivityVisualInput = {
   primary_category?: string | null;
   location_environment?: string | null;
@@ -197,26 +120,6 @@ function getActivityVisual(activity: ActivityVisualInput) {
   };
 }
 
-/** Lightweight type returned by the MAP_COLUMNS query — enough for pins, plan, and addToPlan */
-interface SlimActivity {
-  id: string;
-  name: string;
-  location_lat: number | null;
-  location_lon: number | null;
-  location_address: string | null;
-  imageurlthumb: string | null;
-  min_price: number | null;
-  max_price: number | null;
-  duration_minutes: number | null;
-  age_buckets: string[] | null;
-  urlmoreinfo: string | null;
-  urlmoreinfo_status: string | null;
-  primary_category: string | null;
-  location_environment: string | null;
-  activity_type: string[] | null;
-  tags: string[] | null;
-}
-
 const CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];
 const AGE_BUCKETS = ['0-2', '3-5', '6-8', '9-12', '13+'];
 const INVOLVEMENT_OPTIONS = [
@@ -248,9 +151,9 @@ export default function CommunityActivities() {
   const { isKid, isLittleExplorer, mode, currentProfile } = useFamilyMode();
 
   // Current authenticated user (for edit permission check)
-  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string; app_metadata?: any } | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user as any));
+    authService.getCurrentUser().then(setCurrentUser).catch(() => setCurrentUser(null));
   }, []);
 
   // Data — paginated grid + slim map dataset
@@ -299,6 +202,15 @@ export default function CommunityActivities() {
   // City / area filter — multi-select
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+
+  // Curated list lens — list selection filters the main activity view
+  const [curatedLists, setCuratedLists] = useState<CuratedList[]>([]);
+  const [selectedCuratedListSlug, setSelectedCuratedListSlug] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('list') || '';
+  });
+  const [selectedCuratedList, setSelectedCuratedList] = useState<CuratedList | null>(null);
+  const [curatedActivityIds, setCuratedActivityIds] = useState<string[] | undefined>(undefined);
 
   // GPS / Nearby filter
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -405,20 +317,62 @@ export default function CommunityActivities() {
   // Fetch distinct cities for current country — used for city quick-filter
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    supabase
-      .from('activityspots')
-      .select('city')
-      .eq('country_code', countryCode)
-      .not('city', 'is', null)
-      .limit(1000)
-      .then(({ data }) => {
-        const cities = [
-          ...new Set((data || []).map((r: any) => r.city as string).filter(Boolean)),
-        ].sort();
-        setAvailableCities(cities);
-        setSelectedCities([]); // reset when switching countries
-      });
+    activitiesService.fetchCities(countryCode)
+      .then(setAvailableCities)
+      .catch(() => setAvailableCities([]))
+      .finally(() => setSelectedCities([])); // reset when switching countries
   }, [countryCode]);
+
+
+  // ---------------------------------------------------------------------------
+  // Curated list lens — public lists filter this same /activities surface
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    curatedListsService.listPublished()
+      .then(setCuratedLists)
+      .catch(() => setCuratedLists([]));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCuratedListSlug) {
+      setSelectedCuratedList(null);
+      setCuratedActivityIds(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    curatedListsService.getBySlug(selectedCuratedListSlug)
+      .then(result => {
+        if (cancelled) return;
+        if (!result) {
+          setSelectedCuratedList(null);
+          setCuratedActivityIds([]);
+          toast.error('Curated list not found');
+          return;
+        }
+        setSelectedCuratedList(result.list);
+        setCuratedActivityIds(result.items.map(item => item.activity.id));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSelectedCuratedList(null);
+          setCuratedActivityIds([]);
+          toast.error('Failed to load curated list');
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedCuratedListSlug]);
+
+  const selectCuratedList = (slug: string) => {
+    setSelectedCuratedListSlug(slug);
+    const params = new URLSearchParams(window.location.search);
+    if (slug) params.set('list', slug);
+    else params.delete('list');
+    params.delete('kidplan');
+    const query = params.toString();
+    navigate(query ? `/activities?${query}` : '/activities', { replace: true });
+  };
 
   // ---------------------------------------------------------------------------
   // Pending plan from ParentInbox (kid plan approval → pre-fill plan builder)
@@ -436,29 +390,26 @@ export default function CommunityActivities() {
 
     // Fetch full activity data for each id so we have price/duration/coords
     const ids = pending.items.map(i => i.activityId);
-    supabase
-      .from('activityspots')
-      .select(MAP_COLUMNS + ', duration_minutes, min_price, max_price, location_address, location_lat, location_lon')
-      .in('id', ids)
-      .then(({ data }) => {
-        const byId = Object.fromEntries((data || []).map((a: any) => [a.id, a]));
+    activitiesService.fetchPlanActivities(ids)
+      .then((data) => {
+        const byId = Object.fromEntries(data.map((activity) => [activity.id, activity]));
         // Preserve kid's ordering
         const newItems: PlanItem[] = pending.items
           .filter(i => byId[i.activityId])
           .map(i => {
-            const a = byId[i.activityId];
+            const activity = byId[i.activityId];
             return {
-              activityId: a.id,
-              name: a.name,
+              activityId: activity.id,
+              name: activity.name,
               startTime: '00:00',
               endTime: '00:00',
-              durationMinutes: a.duration_minutes || 60,
-              minPrice: a.min_price,
-              maxPrice: a.max_price,
-              address: a.location_address,
-              lat: a.location_lat,
-              lon: a.location_lon,
-              imageurlthumb: a.imageurlthumb,
+              durationMinutes: activity.duration_minutes || 60,
+              minPrice: activity.min_price,
+              maxPrice: activity.max_price,
+              address: activity.location_address,
+              lat: activity.location_lat,
+              lon: activity.location_lon,
+              imageurlthumb: activity.imageurlthumb,
             };
           });
         setPlanItems(prev => {
@@ -530,101 +481,6 @@ export default function CommunityActivities() {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build a Supabase filter chain from the current UI filter state.
-   * Works on any query — call before .select()/.range() so both grid and map
-   * queries share identical filter logic.
-   */
-  const applyServerFilters = useCallback((q: any): any => {
-    const now = new Date();
-    const nowIso = now.toISOString();
-
-    // Always exclude activities whose event has already ended
-    q = q.eq('country_code', countryCode)
-         .or(`event_endtime.is.null,event_endtime.gt.${nowIso}`);
-
-    // Events-only: only upcoming events
-    if (eventsOnly) {
-      q = q.not('event_starttime', 'is', null).gt('event_starttime', nowIso);
-    }
-
-    // Timing filter — permanent venues (no event_starttime) always pass via the IS NULL branch
-    if (timingFilter !== 'any') {
-      const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-      const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
-      const tmrStart   = new Date(todayEnd); tmrStart.setDate(tmrStart.getDate() + 1); tmrStart.setHours(0, 0, 0, 0);
-      const tmrEnd     = new Date(tmrStart); tmrEnd.setHours(23, 59, 59, 999);
-      const daysToSat  = now.getDay() === 0 ? 6 : 6 - now.getDay();
-      const wkdStart   = new Date(now); wkdStart.setDate(wkdStart.getDate() + daysToSat); wkdStart.setHours(0, 0, 0, 0);
-      const wkdEnd     = new Date(wkdStart); wkdEnd.setDate(wkdEnd.getDate() + 1); wkdEnd.setHours(23, 59, 59, 999);
-      const twoHours   = new Date(now.getTime() + 2 * 3600_000);
-
-      const ranges: Record<string, string> = {
-        now:      `event_starttime.is.null,and(event_starttime.gte.${nowIso},event_starttime.lte.${twoHours.toISOString()})`,
-        today:    `event_starttime.is.null,and(event_starttime.gte.${todayStart.toISOString()},event_starttime.lte.${todayEnd.toISOString()})`,
-        tomorrow: `event_starttime.is.null,and(event_starttime.gte.${tmrStart.toISOString()},event_starttime.lte.${tmrEnd.toISOString()})`,
-        weekend:  `event_starttime.is.null,and(event_starttime.gte.${wkdStart.toISOString()},event_starttime.lte.${wkdEnd.toISOString()})`,
-      };
-      if (ranges[timingFilter]) q = q.or(ranges[timingFilter]);
-    }
-
-    // Duration filter — null duration always passes
-    if (durationFilter !== 'any') {
-      const dMap: Record<string, string> = {
-        '<60':     'duration_minutes.is.null,duration_minutes.lt.60',
-        '60-120':  'duration_minutes.is.null,and(duration_minutes.gte.60,duration_minutes.lte.120)',
-        '120-240': 'duration_minutes.is.null,and(duration_minutes.gt.120,duration_minutes.lte.240)',
-        '240+':    'duration_minutes.is.null,duration_minutes.gt.240',
-      };
-      if (dMap[durationFilter]) q = q.or(dMap[durationFilter]);
-    }
-
-    // Full-text search across name, description, address, tags
-    const sq = searchQuery.trim();
-    if (sq) {
-      q = q.or(`name.ilike.%${sq}%,description.ilike.%${sq}%,location_address.ilike.%${sq}%`);
-    }
-
-    // Category
-    if (selectedCategories.length > 0) q = q.in('primary_category', selectedCategories);
-
-    // Age buckets — overlaps means at least one bucket matches
-    if (selectedAges.length > 0) q = q.overlaps('age_buckets', selectedAges);
-
-    // Involvement
-    if (selectedInvolvement) q = q.eq('involvement', selectedInvolvement);
-
-    // Budget — null min_price treated as "unknown / free entry"
-    if (maxPrice === 'free') q = q.or('min_price.eq.0,min_price.is.null');
-    else if (maxPrice === '10') q = q.or('min_price.lte.10,min_price.is.null');
-    else if (maxPrice === '20') q = q.or('min_price.lte.20,min_price.is.null');
-
-    // Environment
-    if (indoorOnly) q = q.in('location_environment', ['indoor', 'both']);
-
-    // Boolean flags
-    if (rainSuitable)       q = q.eq('rain_suitable', true);
-    if (wheelchairAccessible) q = q.or('accessibility_wheelchair.eq.true,tags.cs.{wheelchair-accessible}');
-    if (strollerFriendly)   q = q.or('accessibility_stroller.eq.true,tags.cs.{stroller-friendly}');
-    if (sensoryFriendly)    q = q.or('sensory_friendly.eq.true,tags.cs.{sensory-friendly}');
-    if (transitAccessible)  q = q.or('transit_accessible.eq.true,tags.cs.{transit-friendly}');
-    if (fencedArea)         q = q.or('fenced.eq.true,tags.cs.{fenced}');
-
-    // City / area filter
-    if (selectedCities.length > 0) q = q.in('city', selectedCities);
-
-    return q;
-  }, [
-    countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
-    maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
-    sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
-    selectedCities,
-  ]);
-
-  /** Ref so loadMore always uses the latest applyServerFilters without stale closure */
-  const applyServerFiltersRef = useRef(applyServerFilters);
-  applyServerFiltersRef.current = applyServerFilters;
-
-  /**
    * Main fetch effect — fires when filters change (debounced for search),
    * resets to page 0 and runs two parallel queries:
    *   1. Grid (paginated, full columns)
@@ -633,69 +489,50 @@ export default function CommunityActivities() {
    * nearbyKm is applied client-side after fetch because PostGIS is not required.
    * When nearbyKm is active, the grid also fetches all (no range) so haversine can filter.
    */
+  const activityFilters = useMemo<ActivityFilters>(() => ({
+    countryCode,
+    searchQuery,
+    selectedCategories,
+    selectedAges,
+    selectedInvolvement,
+    maxPrice,
+    indoorOnly,
+    rainSuitable,
+    wheelchairAccessible,
+    strollerFriendly,
+    sensoryFriendly,
+    transitAccessible,
+    fencedArea,
+    eventsOnly,
+    timingFilter,
+    durationFilter,
+    selectedCities,
+    curatedActivityIds,
+  }), [
+    countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
+    maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
+    sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
+    selectedCities, curatedActivityIds,
+  ]);
+
   useEffect(() => {
     const delay = searchQuery.trim() ? 400 : 0;
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setCurrentPage(0);
       try {
-        const isNearby = nearbyKm !== null && userLocation !== null;
+        const result = await activitiesService.fetchActivities(activityFilters, {
+          page: 0,
+          pageSize: PAGE_SIZE,
+          nearbyKm,
+          userLocation,
+        });
 
-        // ── Grid query — ordered by excitement_score then recency ────────────
-        let gridQ = applyServerFiltersRef.current(
-          supabase.from('activityspots').select(GRID_COLUMNS, { count: 'exact' })
-        )
-          .order('excitement_score', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false });
-
-        if (!isNearby) {
-          gridQ = gridQ.range(0, PAGE_SIZE - 1);
-        }
-        // (when nearby, skip range so we can haversine-filter the full result)
-
-        // ── Map/slim query — all matching pins (no bbox limit) ──────────────
-        const mapQ = applyServerFiltersRef.current(
-          supabase.from('activityspots').select(MAP_COLUMNS)
-        )
-          .not('location_lat', 'is', null)
-          .not('location_lon', 'is', null)
-          .order('excitement_score', { ascending: false, nullsFirst: false })
-          .limit(isNearby ? 5000 : 1000);
-
-        const [gridResult, mapResult] = await Promise.all([gridQ, mapQ]);
-
-        if (gridResult.error) throw gridResult.error;
-
-        let gridData: ActivitySpot[] = (gridResult.data as ActivitySpot[]) || [];
-        let mapData: SlimActivity[]  = (mapResult.data  as SlimActivity[])  || [];
-        let count = gridResult.count ?? gridData.length;
-
-        // Client-side haversine post-filter (only when nearbyKm set, no PostGIS required)
-        if (isNearby) {
-          gridData = gridData.filter(a =>
-            typeof a.location_lat === 'number' && typeof a.location_lon === 'number' &&
-            haversineKm(userLocation!.lat, userLocation!.lon, a.location_lat, a.location_lon) <= nearbyKm!
-          );
-          mapData = mapData.filter(a =>
-            typeof a.location_lat === 'number' && typeof a.location_lon === 'number' &&
-            haversineKm(userLocation!.lat, userLocation!.lon, a.location_lat, a.location_lon) <= nearbyKm!
-          );
-          count = gridData.length;
-        }
-
-        setActivities(gridData);
-        setTotalCount(count);
-        setHasMore(!isNearby && count > PAGE_SIZE);
-        setAllActivitiesForMap(mapData);
-
-        // Set default map center from first result with coordinates
-        if (mapData.length > 0) {
-          setCenter({ lat: mapData[0].location_lat!, lon: mapData[0].location_lon! });
-        } else {
-          setCenter(countryCode === 'US'
-            ? { lat: 37.7749, lon: -122.4194 }
-            : { lat: 56.9496, lon: 24.1052 });
-        }
+        setActivities(result.activities);
+        setTotalCount(result.totalCount);
+        setHasMore(result.hasMore);
+        setAllActivitiesForMap(result.mapActivities);
+        setCenter(result.center);
       } catch (err: any) {
         console.error('Error fetching activities:', err);
         toast.error('Failed to load activities');
@@ -705,12 +542,7 @@ export default function CommunityActivities() {
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [
-    countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
-    maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
-    sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
-    nearbyKm, userLocation, selectedCities,
-  ]);
+  }, [activityFilters, nearbyKm, searchQuery, userLocation]);
 
   /** Load the next page of grid results (appends to current activities) */
   const loadMore = async () => {
@@ -718,13 +550,8 @@ export default function CommunityActivities() {
     const nextPage = currentPage + 1;
     setIsLoadingMore(true);
     try {
-      const { data } = await applyServerFiltersRef.current(
-        supabase.from('activityspots').select(GRID_COLUMNS)
-      )
-        .order('created_at', { ascending: false })
-        .range(nextPage * PAGE_SIZE, (nextPage + 1) * PAGE_SIZE - 1);
-
-      setActivities(prev => [...prev, ...((data as ActivitySpot[]) || [])]);
+      const data = await activitiesService.fetchActivityPage(activityFilters, nextPage, PAGE_SIZE);
+      setActivities(prev => [...prev, ...data]);
       setCurrentPage(nextPage);
       setHasMore(totalCount > (nextPage + 1) * PAGE_SIZE);
     } catch (err) {
@@ -771,6 +598,7 @@ export default function CommunityActivities() {
     let n = 0;
     if (searchQuery) n++;
     if (selectedCities.length > 0) n++;
+    if (selectedCuratedListSlug) n++;
     if (selectedCategories.length > 0) n++;
     if (selectedAges.length > 0) n++;
     if (selectedInvolvement) n++;
@@ -787,11 +615,12 @@ export default function CommunityActivities() {
     if (timingFilter !== 'any') n++;
     if (durationFilter !== 'any') n++;
     return n;
-  }, [searchQuery, selectedCities, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
+  }, [searchQuery, selectedCities, selectedCuratedListSlug, selectedCategories, selectedAges, selectedInvolvement, maxPrice, indoorOnly, rainSuitable, nearbyKm, wheelchairAccessible, strollerFriendly, sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCities([]);
+    selectCuratedList('');
     setSelectedCategories([]);
     setSelectedAges([]);
     setSelectedInvolvement('');
@@ -886,12 +715,8 @@ export default function CommunityActivities() {
     if (slim) {
       addToPlan(slim);
     } else {
-      const { data } = await supabase
-        .from('activityspots')
-        .select('id, name, duration_minutes, min_price, max_price, location_address, location_lat, location_lon, imageurlthumb')
-        .eq('id', proposal.activityId)
-        .single();
-      if (data) addToPlan(data as any);
+      const activity = await activitiesService.fetchPlanActivity(proposal.activityId);
+      if (activity) addToPlan(activity);
     }
     // Mark proposal approved so it leaves the wishlist
     const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
@@ -965,7 +790,7 @@ export default function CommunityActivities() {
   }, [kidsProposals, planItems, allActivitiesForMap]);
 
   const savePlan = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await authService.getCurrentUser();
     if (!user) { navigate('/auth'); return; }
     if (planItems.length === 0) { toast.error('Add at least one activity'); return; }
     setSavingPlan(true);
@@ -983,16 +808,15 @@ export default function CommunityActivities() {
         lon: p.lon ?? null,
         imageurlthumb: p.imageurlthumb,
       }));
-      const { data: savedData, error } = await supabase.from('saved_trips').insert({
+      const savedData = await tripsService.createTrip({
         user_id: user.id,
         name: planName,
         events,
         total_cost: planTotals.totalCost,
         total_events: planItems.length,
-      }).select('id, share_token').single();
-      if (error) throw error;
-      const shareToken = (savedData as any)?.share_token as string | null;
-      const tripId = (savedData as any)?.id as string;
+      });
+      const shareToken = savedData.share_token;
+      const tripId = savedData.id;
       const shareUrl = shareToken
         ? `${window.location.origin}/trip/${shareToken}`
         : `${window.location.origin}/activities?view=plan`;
@@ -1339,6 +1163,40 @@ export default function CommunityActivities() {
                         )}
                       >
                         {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Curated lists */}
+              {curatedLists.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Curated Lists</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => selectCuratedList('')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        !selectedCuratedListSlug
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50',
+                      )}
+                    >
+                      All Lists
+                    </button>
+                    {curatedLists.map(list => (
+                      <button
+                        key={list.id}
+                        onClick={() => selectCuratedList(list.slug)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                          selectedCuratedListSlug === list.slug
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background border-border hover:border-primary/50',
+                        )}
+                      >
+                        {list.title}
                       </button>
                     ))}
                   </div>

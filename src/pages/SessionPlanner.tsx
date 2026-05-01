@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { toast } from 'sonner';
 import { Search, Plus, ArrowUp, ArrowDown, Trash2, Clock, MapPin } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
+import { activitiesService, tripsService, type PlannerActivity } from '@/services';
 
 // ---------------------------------------------------------------------------
 // Provider pattern — export so a future genAI flow can slot in
@@ -17,18 +17,6 @@ export type PlanSource = 'human' | 'ai';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-interface ActivitySpot {
-  id: string;
-  name: string;
-  imageurlthumb: string | null;
-  duration_minutes: number | null;
-  min_price: number | null;
-  max_price: number | null;
-  location_address: string | null;
-  age_buckets: string[];
-  description: string | null;
-}
-
 interface PlanItem {
   activityId: string;
   name: string;
@@ -78,8 +66,8 @@ export default function SessionPlanner() {
 
   // Activity search
   const [searchQuery, setSearchQuery] = useState('');
-  const [activities, setActivities] = useState<ActivitySpot[]>([]);
-  const [filteredActivities, setFilteredActivities] = useState<ActivitySpot[]>([]);
+  const [activities, setActivities] = useState<PlannerActivity[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<PlannerActivity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
 
   // Plan items
@@ -92,17 +80,15 @@ export default function SessionPlanner() {
   useEffect(() => {
     const fetchActivities = async () => {
       setLoadingActivities(true);
-      const { data, error } = await supabase
-        .from('activityspots')
-        .select('id, name, imageurlthumb, duration_minutes, min_price, max_price, location_address, age_buckets, description')
-        .order('name', { ascending: true });
-      if (error) {
+      try {
+        const data = await activitiesService.fetchPlannerActivities();
+        setActivities(data);
+        setFilteredActivities(data);
+      } catch {
         toast.error('Failed to load activities');
-      } else {
-        setActivities(data || []);
-        setFilteredActivities(data || []);
+      } finally {
+        setLoadingActivities(false);
       }
-      setLoadingActivities(false);
     };
     fetchActivities();
   }, []);
@@ -192,12 +178,6 @@ export default function SessionPlanner() {
 
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('You must be signed in to save a plan');
-        return;
-      }
-
       const totalCost = planItems.reduce((sum, item) => {
         return sum + (item.minPrice ?? 0);
       }, 0);
@@ -209,15 +189,12 @@ export default function SessionPlanner() {
         planDate: planDate || null,
       }));
 
-      const { error } = await supabase.from('saved_trips').insert({
+      await tripsService.createTrip({
         name: planName,
         events: eventsWithMeta,
         total_cost: totalCost,
         total_events: planItems.length,
-        user_id: user.id,
       });
-
-      if (error) throw error;
 
       toast.success('Plan saved!');
       navigate('/saved-trips');

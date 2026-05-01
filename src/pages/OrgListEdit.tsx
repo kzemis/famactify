@@ -7,8 +7,7 @@
  *  - navigates back to /org/dashboard after save
  */
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,34 +16,8 @@ import { toast } from 'sonner';
 import { ArrowLeft, ArrowUp, ArrowDown, Trash2, Plus, Search, MapPin, Globe } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface ActivitySpot {
-  id: string;
-  name: string;
-  imageurlthumb: string | null;
-  location_address: string | null;
-  min_price: number | null;
-  max_price: number | null;
-}
-
-interface ListItem {
-  activity_id: string;
-  name: string;
-  imageurlthumb: string | null;
-  sort_order: number;
-  note: string;
-}
-
-interface OrgProfile {
-  org_name: string;
-  org_type: 'municipality' | 'partner';
-  logo_url: string | null;
-  website_url: string | null;
-  verified: boolean;
-}
+import { authService, curatedListsService, type CuratedActivitySearchResult, type EditableListItem, type OrgProfile } from '@/services';
+import type { User } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
 // Slug helper
@@ -65,7 +38,7 @@ export default function OrgListEdit() {
   const { id } = useParams<{ id: string }>();
   const isNew = !id;
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [orgProfile, setOrgProfile] = useState<OrgProfile | null>(null);
 
   // Form state
@@ -77,11 +50,11 @@ export default function OrgListEdit() {
   const [isPublished, setIsPublished] = useState(false);
 
   // Items
-  const [listItems, setListItems] = useState<ListItem[]>([]);
+  const [listItems, setListItems] = useState<EditableListItem[]>([]);
 
   // Activity search
   const [activitySearch, setActivitySearch] = useState('');
-  const [searchResults, setSearchResults] = useState<ActivitySpot[]>([]);
+  const [searchResults, setSearchResults] = useState<CuratedActivitySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -92,17 +65,12 @@ export default function OrgListEdit() {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/auth'); return; }
-      setUser(user);
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) { navigate('/auth'); return; }
+      setUser(currentUser);
 
       // Check org profile
-      const { data: orgData } = await (supabase as any)
-        .from('org_profiles')
-        .select('org_name, org_type, logo_url, website_url, verified')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
+      const orgData = await curatedListsService.getCurrentOrgProfile();
       if (!orgData) {
         toast.error('You need to register an organization profile first.');
         navigate('/org/setup');
@@ -112,56 +80,20 @@ export default function OrgListEdit() {
 
       // Load existing list (edit mode)
       if (!isNew && id) {
-        const { data: listData, error } = await supabase
-          .from('curated_lists')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error || !listData) {
-          toast.error('List not found');
+        const result = await curatedListsService.getEditable(id, currentUser.id);
+        if (!result) {
+          toast.error('List not found or you do not have permission to edit it');
           navigate('/org/dashboard');
           return;
         }
 
-        // Verify ownership
-        if ((listData as any).created_by !== user.id) {
-          toast.error('You do not have permission to edit this list');
-          navigate('/org/dashboard');
-          return;
-        }
-
-        setTitle(listData.title);
-        setSlug(listData.slug);
-        setDescription(listData.description || '');
-        setCoverImageUrl(listData.cover_image_url || '');
-        setIsPublished(listData.is_published ?? false);
+        setTitle(result.list.title);
+        setSlug(result.list.slug);
+        setDescription(result.list.description || '');
+        setCoverImageUrl(result.list.cover_image_url || '');
+        setIsPublished(result.list.is_published ?? false);
         setSlugManual(true);
-
-        // Fetch items
-        const { data: itemsData } = await supabase
-          .from('curated_list_items')
-          .select(`
-            activity_id,
-            sort_order,
-            note,
-            activity:activity_id (id, name, imageurlthumb, location_address, min_price, max_price)
-          `)
-          .eq('list_id', id)
-          .order('sort_order', { ascending: true });
-
-        if (itemsData) {
-          const items: ListItem[] = (itemsData as any[])
-            .filter(row => row.activity !== null)
-            .map(row => ({
-              activity_id: row.activity_id,
-              name: row.activity.name,
-              imageurlthumb: row.activity.imageurlthumb,
-              sort_order: row.sort_order,
-              note: row.note || '',
-            }));
-          setListItems(items);
-        }
+        setListItems(result.items);
       }
 
       setLoading(false);
@@ -184,12 +116,8 @@ export default function OrgListEdit() {
     if (!activitySearch.trim()) { setSearchResults([]); return; }
     const timer = setTimeout(async () => {
       setSearching(true);
-      const { data } = await supabase
-        .from('activityspots')
-        .select('id, name, imageurlthumb, location_address, min_price, max_price')
-        .ilike('name', `%${activitySearch}%`)
-        .limit(20);
-      setSearchResults(data || []);
+      const data = await curatedListsService.searchActivities(activitySearch);
+      setSearchResults(data);
       setSearching(false);
     }, 300);
     return () => clearTimeout(timer);
@@ -198,7 +126,7 @@ export default function OrgListEdit() {
   // ---------------------------------------------------------------------------
   // List item management
   // ---------------------------------------------------------------------------
-  const addActivity = (activity: ActivitySpot) => {
+  const addActivity = (activity: CuratedActivitySearchResult) => {
     if (listItems.some(i => i.activity_id === activity.id)) {
       toast.error('Already in list');
       return;
@@ -251,51 +179,20 @@ export default function OrgListEdit() {
 
     setSaving(true);
     try {
-      let listId = id;
-
-      const listPayload = {
-        slug,
-        title,
-        description: description || null,
-        author_name: orgProfile.org_name,
-        author_type: orgProfile.org_type,
-        cover_image_url: coverImageUrl || null,
-        is_published: isPublished,
-      };
-
-      if (isNew) {
-        const { data, error } = await supabase
-          .from('curated_lists')
-          .insert({ ...listPayload, created_by: user.id } as any)
-          .select('id')
-          .single();
-        if (error) throw error;
-        listId = data.id;
-      } else {
-        const { error } = await supabase
-          .from('curated_lists')
-          .update(listPayload)
-          .eq('id', id);
-        if (error) throw error;
-      }
-
-      // Replace all list items
-      if (listId) {
-        await supabase.from('curated_list_items').delete().eq('list_id', listId);
-        if (listItems.length > 0) {
-          const { error: itemsError } = await supabase
-            .from('curated_list_items')
-            .insert(
-              listItems.map(item => ({
-                list_id: listId,
-                activity_id: item.activity_id,
-                sort_order: item.sort_order,
-                note: item.note || null,
-              })),
-            );
-          if (itemsError) throw itemsError;
-        }
-      }
+      await curatedListsService.saveList({
+        id,
+        list: {
+          slug,
+          title,
+          description: description || null,
+          author_name: orgProfile.org_name,
+          author_type: orgProfile.org_type,
+          cover_image_url: coverImageUrl || null,
+          is_published: isPublished,
+          created_by: user?.id ?? null,
+        },
+        items: listItems,
+      });
 
       toast.success(isNew ? 'List created!' : 'List updated');
       navigate('/org/dashboard');

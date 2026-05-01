@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,20 +7,7 @@ import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface CuratedList {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  author_name: string | null;
-  author_type: string | null;
-  is_published: boolean;
-  created_at: string;
-}
+import { authService, curatedListsService, type CuratedList } from '@/services';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -34,10 +20,8 @@ export default function AdminLists() {
   // Auth guard
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-      }
+      const user = await authService.getCurrentUser();
+      if (!user) navigate('/auth');
     };
     checkAuth();
   }, []);
@@ -46,16 +30,14 @@ export default function AdminLists() {
   useEffect(() => {
     const fetchLists = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('curated_lists')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) {
+      try {
+        const data = await curatedListsService.listAll();
+        setLists(data);
+      } catch {
         toast.error('Failed to load lists');
-      } else {
-        setLists(data || []);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchLists();
   }, []);
@@ -63,32 +45,26 @@ export default function AdminLists() {
   // Toggle publish state
   const togglePublish = async (list: CuratedList) => {
     const newValue = !list.is_published;
-    const { error } = await supabase
-      .from('curated_lists')
-      .update({ is_published: newValue })
-      .eq('id', list.id);
-    if (error) {
-      toast.error('Failed to update publish state');
-    } else {
+    try {
+      await curatedListsService.setPublished(list.id, newValue);
       setLists(prev =>
         prev.map(l => l.id === list.id ? { ...l, is_published: newValue } : l),
       );
       toast.success(newValue ? 'List published' : 'List unpublished');
+    } catch {
+      toast.error('Failed to update publish state');
     }
   };
 
   // Delete list
   const deleteList = async (id: string) => {
     if (!confirm('Delete this list? This cannot be undone.')) return;
-    const { error } = await supabase
-      .from('curated_lists')
-      .delete()
-      .eq('id', id);
-    if (error) {
-      toast.error('Failed to delete list');
-    } else {
+    try {
+      await curatedListsService.deleteList(id);
       setLists(prev => prev.filter(l => l.id !== id));
       toast.success('List deleted');
+    } catch {
+      toast.error('Failed to delete list');
     }
   };
 

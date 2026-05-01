@@ -5,7 +5,6 @@
  */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,29 +15,8 @@ import {
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface CuratedList {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  author_name: string | null;
-  author_type: string | null;
-  is_published: boolean;
-  created_at: string;
-}
-
-interface OrgProfile {
-  org_name: string;
-  org_type: 'municipality' | 'partner';
-  description: string | null;
-  logo_url: string | null;
-  website_url: string | null;
-  verified: boolean;
-}
+import { authService, curatedListsService, type CuratedList, type OrgProfile } from '@/services';
+import type { User } from '@supabase/supabase-js';
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   municipality: '🏛️ Municipality',
@@ -50,34 +28,22 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 export default function OrgDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [orgProfile, setOrgProfile] = useState<OrgProfile | null>(null);
   const [lists, setLists] = useState<CuratedList[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/auth'); return; }
-      setUser(user);
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) { navigate('/auth'); return; }
+      setUser(currentUser);
 
-      // Fetch org profile
-      const { data: orgData } = await (supabase as any)
-        .from('org_profiles')
-        .select('org_name, org_type, description, logo_url, website_url, verified')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      setOrgProfile(orgData || null);
+      const orgData = await curatedListsService.getCurrentOrgProfile();
+      setOrgProfile(orgData);
 
-      // Fetch this org's lists only
-      const { data: listsData, error } = await supabase
-        .from('curated_lists')
-        .select('id, slug, title, description, author_name, author_type, is_published, created_at')
-        .eq('created_by' as any, user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) toast.error('Failed to load lists');
-      else setLists((listsData as any[]) || []);
+      const listsData = await curatedListsService.listForCurrentOrg();
+      setLists(listsData);
 
       setLoading(false);
     };
@@ -86,21 +52,24 @@ export default function OrgDashboard() {
 
   const togglePublish = async (list: CuratedList) => {
     const newValue = !list.is_published;
-    const { error } = await supabase
-      .from('curated_lists')
-      .update({ is_published: newValue })
-      .eq('id', list.id);
-    if (error) { toast.error('Failed to update'); return; }
-    setLists(prev => prev.map(l => l.id === list.id ? { ...l, is_published: newValue } : l));
-    toast.success(newValue ? 'List published' : 'Moved to drafts');
+    try {
+      await curatedListsService.setPublished(list.id, newValue);
+      setLists(prev => prev.map(l => l.id === list.id ? { ...l, is_published: newValue } : l));
+      toast.success(newValue ? 'List published' : 'Moved to drafts');
+    } catch {
+      toast.error('Failed to update');
+    }
   };
 
   const deleteList = async (id: string) => {
     if (!confirm('Delete this list? This cannot be undone.')) return;
-    const { error } = await supabase.from('curated_lists').delete().eq('id', id);
-    if (error) { toast.error('Failed to delete'); return; }
-    setLists(prev => prev.filter(l => l.id !== id));
-    toast.success('List deleted');
+    try {
+      await curatedListsService.deleteList(id);
+      setLists(prev => prev.filter(l => l.id !== id));
+      toast.success('List deleted');
+    } catch {
+      toast.error('Failed to delete');
+    }
   };
 
   // ---------------------------------------------------------------------------

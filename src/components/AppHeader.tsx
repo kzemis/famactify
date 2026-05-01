@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { User, Map, Building2, Heart } from "lucide-react";
+import { User, Map, Building2, Heart, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -96,6 +96,14 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
                 <Map className="w-4 h-4 text-muted-foreground" />
               </button>
 
+              <button
+                onClick={() => navigate('/lists')}
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+                title="Curated lists"
+              >
+                <ListChecks className="w-4 h-4 text-muted-foreground" />
+              </button>
+
               {proposalCount > 0 && (
                 <button
                   onClick={openKidsWish}
@@ -110,6 +118,7 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
               )}
 
               <ProfileSwitcher iconOnly />
+              <LocaleSwitcher />
 
               {user ? (
                 <DropdownMenu>
@@ -146,12 +155,17 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
         {/* ── Desktop controls (sm+) — existing full layout ── */}
         <div className="hidden sm:flex items-center gap-2">
           {isLittleExplorer ? (
-            <ProfileSwitcher />
+            <ProfileSwitcher iconOnly />
           ) : (
             <>
               <Button variant="default" onClick={() => navigate('/activities')} size="icon" className="sm:w-auto sm:px-4">
                 <Map className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Activities</span>
+              </Button>
+
+              <Button variant="ghost" onClick={() => navigate('/lists')} size="icon" className="sm:w-auto sm:px-4">
+                <ListChecks className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Lists</span>
               </Button>
 
               {proposalCount > 0 && (
@@ -168,7 +182,7 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
                 </button>
               )}
 
-              <ProfileSwitcher />
+              <ProfileSwitcher iconOnly />
               <LocaleSwitcher />
 
               {user ? (

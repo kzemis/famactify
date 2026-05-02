@@ -90,14 +90,16 @@ const Profile = () => {
       {/* ── Menu view ── */}
       {activeSection === 'menu' && (
         <>
-          {/* Profile hero */}
-          <div className="px-4 pt-6 pb-4 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-              <User className="w-10 h-10 text-primary" />
+          {/* Profile hero — compact one-row */}
+          <div className="px-4 pt-4 pb-3 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="w-6 h-6 text-primary" />
             </div>
-            <h1 className="text-xl font-bold">{profile.full_name || 'Your Profile'}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{userEmail}</p>
-            {profile.city && <p className="text-xs text-muted-foreground mt-0.5">📍 {profile.city}</p>}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-base truncate">{profile.full_name || 'Your Profile'}</p>
+              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+              {profile.city && <p className="text-xs text-muted-foreground truncate">📍 {profile.city}</p>}
+            </div>
           </div>
 
           {/* Menu sections */}

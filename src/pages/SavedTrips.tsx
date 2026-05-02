@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Trash2, Share2, MapPin, Clock, Plus } from "lucide-react";
+import { Calendar, Trash2, Share2, MapPin, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ShareSheet, type ShareSheetTripData } from "@/components/ShareSheet";
 import { authService, tripsService, type SavedTrip, type TripEvent } from "@/services";
@@ -79,19 +79,9 @@ const SavedTrips = () => {
     <div className="min-h-[100dvh] bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Saved Trips</h1>
-          <button
-            onClick={() => navigate('/activities')}
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md tap-highlight active:scale-95 transition-transform"
-            aria-label="Plan new trip"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 py-3 flex items-center" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', minHeight: 56 }}>
         {!loading && trips.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-0.5">{trips.length} saved {trips.length === 1 ? 'trip' : 'trips'}</p>
+          <p className="text-sm text-muted-foreground">{trips.length} saved {trips.length === 1 ? 'trip' : 'trips'}</p>
         )}
       </div>
 

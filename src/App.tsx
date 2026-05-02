@@ -53,7 +53,7 @@ import KasparsPage from "./pages/KasparsPage";
 
 const queryClient = new QueryClient();
 
-const TAB_ROUTES = ['/activities', '/plan', '/saved-trips', '/kids', '/profile'];
+const TAB_ROUTES = ['/', '/activities', '/plan', '/saved-trips', '/kids', '/profile'];
 
 function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();

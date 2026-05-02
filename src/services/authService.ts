@@ -6,15 +6,20 @@ export const authService = {
   async getCurrentUser(): Promise<User | null> {
     assertSupabaseProvider('authService.getCurrentUser');
     const { data, error } = await supabase.auth.getUser();
-    throwIfError('authService.getCurrentUser', error);
-    return data.user;
+    // "Auth session missing" is the normal logged-out state — return null instead of throwing
+    if (error && error.name !== 'AuthSessionMissingError') {
+      throwIfError('authService.getCurrentUser', error);
+    }
+    return data?.user ?? null;
   },
 
   async getCurrentSession(): Promise<Session | null> {
     assertSupabaseProvider('authService.getCurrentSession');
     const { data, error } = await supabase.auth.getSession();
-    throwIfError('authService.getCurrentSession', error);
-    return data.session;
+    if (error && error.name !== 'AuthSessionMissingError') {
+      throwIfError('authService.getCurrentSession', error);
+    }
+    return data?.session ?? null;
   },
 
   onAuthStateChange(callback: (session: Session | null) => void): () => void {

@@ -8,7 +8,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
-import AppHeader from "@/components/AppHeader";
 import { useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
@@ -353,12 +352,10 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Desktop nav only — mobile has swipe UX */}
-      <div className="hidden md:block"><AppHeader /></div>
+    <div className="bg-background">
 
       {/* ═══════════════════════════════════════════════════
-          MOBILE — horizontal swipe carousel
+          MOBILE — horizontal swipe carousel (full app home)
       ═══════════════════════════════════════════════════ */}
       <div className="md:hidden flex flex-col bg-background" style={{ height: '100dvh' }}>
         {/* Slides */}
@@ -368,9 +365,9 @@ const Landing = () => {
           className="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth overflow-y-hidden"
           style={{ scrollbarWidth: 'none' }}
         >
-          {/* ── Slide 1: Hero ── */}
-          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
-               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 32px)', paddingBottom: 32 }}>
+          {/* ── Slide 1: Hero — what is FamActify ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
             <div className="text-2xl font-black text-primary tracking-tight">FamActify</div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium w-fit">
               <Sparkles className="w-3 h-3" /> Public Beta · Free to use
@@ -383,70 +380,32 @@ const Landing = () => {
               Every parent knows that Friday feeling — no plan, another weekend disappears into screens.
               FamActify helps you plan the perfect family day in minutes.
             </p>
-            <div className="flex gap-3">
-              <Button size="lg" onClick={() => navigate("/activities")}
-                className="flex-1 rounded-2xl py-5 text-base font-semibold shadow-lg">
-                <Search className="w-4 h-4 mr-2" /> Browse
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/kids")}
-                className="flex-1 rounded-2xl py-5 text-base font-semibold relative">
-                <Users className="w-4 h-4 mr-2" /> Kid mode
-                {kidProposalCount > 0 && (
-                  <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">{kidProposalCount}</span>
-                )}
-              </Button>
-            </div>
-            <img src={heroImage} alt="Family activities" className="rounded-3xl shadow-xl w-full object-cover" style={{ height: 200 }} />
-            <p className="text-center text-xs text-muted-foreground pb-2">Swipe to explore →</p>
+            <img src={heroImage} alt="Family activities" className="rounded-3xl shadow-xl w-full object-cover" style={{ height: 220 }} />
+            <p className="text-center text-xs text-muted-foreground pt-2">Swipe to see what's inside →</p>
           </div>
 
-          {/* ── Slide 2: How it works ── */}
-          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
-               style={{ paddingTop: 32, paddingBottom: 32 }}>
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">How it works</p>
-              <h2 className="text-3xl font-black leading-tight">From Friday panic to Saturday sorted</h2>
+          {/* ── Slide 2: Activities tab — what you can do there ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Search className="w-5 h-5 text-primary" /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tab 1</p>
+                <h2 className="text-2xl font-black leading-tight">Activities</h2>
+              </div>
             </div>
-            <div className="space-y-5">
+            <p className="text-base text-muted-foreground leading-relaxed">
+              1,400+ family-friendly activities near you. Filter by what matters today.
+            </p>
+            <div className="space-y-3">
               {([
-                { Icon: Monitor, iconCls: "text-slate-500 bg-slate-100", step: "01", head: "Another unplanned weekend", body: "Friday arrives with no plan. Kids end up on screens. Parents feel the guilt." },
-                { Icon: Sparkles, iconCls: "text-primary bg-primary/10", step: "02", head: "FamActify finds the plan", body: "Filter by age, budget, weather and mood. Discover 1,400+ activities near you." },
-                { Icon: CheckCircle2, iconCls: "text-green-600 bg-green-50", step: "03", head: "Saturday sorted", body: "Screens off, family out. Kids chose it — so they're actually excited to go." },
-              ] as const).map((s) => (
-                <div key={s.head} className="flex gap-4">
-                  <div className={`w-12 h-12 rounded-2xl ${s.iconCls} flex items-center justify-center shrink-0`}>
-                    <s.Icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground mb-0.5">Step {s.step}</p>
-                    <p className="font-semibold text-sm">{s.head}</p>
-                    <p className="text-sm text-muted-foreground leading-snug mt-0.5">{s.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Button size="lg" onClick={() => navigate("/activities")} className="rounded-2xl py-5 text-base font-semibold shadow-lg">
-              <Search className="w-4 h-4 mr-2" /> Discover activities
-            </Button>
-          </div>
-
-          {/* ── Slide 3: Discover + Plan ── */}
-          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
-               style={{ paddingTop: 32, paddingBottom: 32 }}>
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Features</p>
-              <h2 className="text-3xl font-black leading-tight">Find it. Plan it. Do it.</h2>
-            </div>
-            <div className="space-y-4">
-              {([
-                { Icon: Search, head: "Smart filters", body: "Age, budget, weather, accessibility, timing — find activities that actually work for your family." },
-                { Icon: MapPin, head: "Map view + GPS", body: "See activities near you on a map. Tap to get details, add to plan." },
-                { Icon: Calendar, head: "Day planner", body: "Build a timeline, set start time, watch the schedule fill in. Share with the family." },
-                { Icon: Sparkles, head: "Mood suggestions", body: "Not sure what you want? Answer 4 quick questions and get matched activities instantly." },
+                { Icon: Search, head: "Smart filters", body: "Age, budget, weather, accessibility, timing." },
+                { Icon: MapPin, head: "Map view + GPS", body: "See activities near you. Locate me with one tap." },
+                { Icon: Sparkles, head: "Mood suggestions", body: "Not sure? Answer 4 questions, get matched." },
               ] as const).map(({ Icon, head, body }) => (
                 <div key={head} className="flex gap-3 items-start">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-foreground" />
                   </div>
                   <div>
                     <p className="font-semibold text-sm">{head}</p>
@@ -455,38 +414,69 @@ const Landing = () => {
                 </div>
               ))}
             </div>
-            <Button size="lg" onClick={() => navigate("/activities")} className="rounded-2xl py-5 text-base font-semibold shadow-lg">
-              Try it now →
-            </Button>
+            <p className="text-xs text-muted-foreground text-center pt-2">Tap <span className="font-semibold text-foreground">Activities</span> below to start →</p>
           </div>
 
-          {/* ── Slide 4: Kid Mode + CTA ── */}
-          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
-               style={{ paddingTop: 32, paddingBottom: 'calc(env(safe-area-inset-bottom) + 32px)' }}>
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kid Mode</p>
-              <h2 className="text-3xl font-black leading-tight">Let kids pick — they'll actually be excited to go</h2>
+          {/* ── Slide 3: Plan + Trips ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Calendar className="w-5 h-5 text-primary" /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tabs 2 & 3</p>
+                <h2 className="text-2xl font-black leading-tight">Plan & Trips</h2>
+              </div>
             </div>
             <p className="text-base text-muted-foreground leading-relaxed">
-              Kids browse activities in their own view, add to their wishlist, and send picks to the parent plan. No more arguing about what to do.
+              Build the day, share with the family, save it for next time.
+            </p>
+            <div className="space-y-3">
+              {([
+                { Icon: Plus, head: "Add to plan", body: "Tap + on any activity to drop it into today's plan." },
+                { Icon: Calendar, head: "Timeline & start time", body: "Set start, see the schedule fill in. Reorder with a tap." },
+                { Icon: Share2, head: "Share & save", body: "Share with family, save trips to repeat or remix later." },
+              ] as const).map(({ Icon, head, body }) => (
+                <div key={head} className="flex gap-3 items-start">
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{head}</p>
+                    <p className="text-xs text-muted-foreground leading-snug mt-0.5">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Slide 4: Mode + Get started ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary" /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tab 4</p>
+                <h2 className="text-2xl font-black leading-tight">Mode</h2>
+              </div>
+            </div>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              Switch between adult, kid, and little-explorer views. Each gets a UI tuned for them — kids' picks flow into your plan automatically.
             </p>
             <ActivityCardsVisual />
-            <div className="space-y-3 pt-2">
-              <Button size="lg" onClick={() => navigate("/activities")}
+            <div className="pt-2 space-y-3">
+              <Button size="lg" onClick={() => navigate("/auth")}
                 className="w-full rounded-2xl py-5 text-base font-semibold shadow-lg">
-                <Search className="w-4 h-4 mr-2" /> Browse activities — it's free
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/auth")}
-                className="w-full rounded-2xl py-5 text-base font-semibold">
                 Create account
               </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                No account needed to browse — just tap any tab below to start.
+              </p>
             </div>
-            <p className="text-center text-xs text-muted-foreground">No account needed to browse. Free forever.</p>
           </div>
         </div>
 
-        {/* Dots */}
-        <div className="flex justify-center gap-2 py-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+        {/* Dots — sit above the fixed tab bar */}
+        <div className="flex justify-center gap-2 py-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}>
           {Array.from({ length: MOBILE_SLIDES }).map((_, i) => (
             <button
               key={i}
@@ -500,7 +490,7 @@ const Landing = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════════
-          DESKTOP — original scroll layout
+          DESKTOP — scroll layout (no top nav, just bottom tabs)
       ═══════════════════════════════════════════════════ */}
       <div className="hidden md:block">
 

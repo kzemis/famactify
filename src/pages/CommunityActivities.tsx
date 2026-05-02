@@ -1076,9 +1076,17 @@ export default function CommunityActivities() {
   }, [kidsProposals, planItems, allActivitiesForMap]);
 
   const savePlan = async () => {
-    const user = await authService.getCurrentUser();
-    if (!user) { navigate('/auth'); return; }
     if (planItems.length === 0) { toast.error('Add at least one activity'); return; }
+    let user;
+    try {
+      user = await authService.getCurrentUser();
+    } catch (e) {
+      user = null;
+    }
+    if (!user) {
+      toast.info('Sign in to save and share your plan', { action: { label: 'Sign in', onClick: () => navigate('/auth') } });
+      return;
+    }
     setSavingPlan(true);
     try {
       const events = planItems.map(p => ({
@@ -1258,6 +1266,7 @@ export default function CommunityActivities() {
   // Mobile UI state
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detailActivity, setDetailActivity] = useState<ActivitySpot | null>(null);
+  const [mapPlanOnly, setMapPlanOnly] = useState(false); // when true, map shows only plan items
 
   // ---------------------------------------------------------------------------
   // Render
@@ -1268,87 +1277,57 @@ export default function CommunityActivities() {
       {/* ── Sticky top header ── */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
-        {/* Row 1: Brand */}
-        <div className="flex items-center px-4 pt-3 pb-2">
+        {/* Row 1: Brand — tappable logo navigates home */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
           {isLittleExplorer ? (
             <div className="flex items-center gap-2">
               <span className="text-2xl">🌟</span>
               <span className="text-xl font-black text-orange-500">Hi {currentProfile?.name ?? 'Explorer'}!</span>
             </div>
+          ) : mode === 'kid' ? (
+            <span className="text-xl font-bold">{currentProfile?.emoji ?? '🧒'} My Day</span>
           ) : (
-            <h1 className="text-xl font-bold text-primary">
-              {mode === 'kid' ? `${currentProfile?.emoji ?? '🧒'} My Day` : 'Discover'}
-            </h1>
+            <button onClick={() => navigate('/')} className="text-xl font-black text-primary tracking-tight tap-highlight">
+              FamActify
+            </button>
           )}
         </div>
 
-        {/* Row 2: Search bar (hidden for little explorer) */}
+        {/* Row 2: Search + Map + Filter (one compact row) */}
         {!isLittleExplorer && (
-          <div className="px-4 pb-2">
-            <div className="relative">
+          <div className="flex items-center gap-2 px-4 pb-3">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search activities…"
-                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Row 3: Category chips + filter button (hidden for little explorer) */}
-        {!isLittleExplorer && (
-          <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
-            {/* Mood chip */}
             <button
-              onClick={enterMoodMode}
-              className={cn(
-                'shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight flex items-center gap-1.5',
-                viewMode === 'mood'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border border-pink-200',
-              )}
+              onClick={() => setViewMode('map')}
+              aria-label="Open map view"
+              className="shrink-0 w-11 h-11 rounded-full bg-muted/80 flex items-center justify-center tap-highlight active:scale-95 transition-transform"
             >
-              <Sparkles className="w-3 h-3" />Mood
+              <MapIcon className="w-5 h-5" />
             </button>
-            <div className="shrink-0 w-px h-5 bg-border" />
-            <button
-              onClick={() => setSelectedCategories([])}
-              className={cn('shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight',
-                selectedCategories.length === 0 && viewMode !== 'mood' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              )}
-            >All</button>
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])}
-                className={cn('shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight',
-                  selectedCategories.includes(cat) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                )}
-              >
-                {KID_CATEGORY_EMOJIS[cat]} {cat}
-              </button>
-            ))}
-            <div className="shrink-0 w-px h-5 bg-border mx-1" />
             <button
               onClick={() => setFiltersOpen(true)}
+              aria-label="Open filters"
               className={cn(
-                'shrink-0 h-8 px-3 rounded-full flex items-center gap-1.5 text-sm font-medium transition-colors tap-highlight border',
-                activeFilterCount > 0
-                  ? 'bg-primary/10 text-primary border-primary/30'
-                  : 'bg-background border-border text-muted-foreground'
+                'shrink-0 w-11 h-11 rounded-full flex items-center justify-center tap-highlight active:scale-95 transition-transform relative',
+                activeFilterCount > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted/80 text-foreground',
               )}
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filters
+              <SlidersHorizontal className="w-5 h-5" />
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 border-2 border-background">
                   {activeFilterCount}
                 </span>
               )}
@@ -1419,7 +1398,7 @@ export default function CommunityActivities() {
             const categoryEmoji = KID_CATEGORY_EMOJIS[activity.primary_category ?? ''] ?? '⭐';
             const isWishlisted = wishlisted.has(activity.id);
             return (
-              <div key={activity.id} className="rounded-3xl overflow-hidden shadow-lg bg-card active:scale-[0.98] transition-transform">
+              <div key={activity.id} className="rounded-3xl overflow-hidden shadow-lg bg-card active:scale-[0.98] transition-transform relative">
                 <div className="relative h-52">
                   {displayImage ? (
                     <img src={displayImage} alt={activity.name} className="w-full h-full object-cover" />
@@ -1432,8 +1411,18 @@ export default function CommunityActivities() {
                     {categoryEmoji}
                   </span>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-black leading-tight">{activity.name}</h3>
+                <div className="p-4 flex items-center gap-3">
+                  <h3 className="flex-1 text-lg font-black leading-tight">{activity.name}</h3>
+                  <button
+                    onClick={() => wishlistActivity(activity)}
+                    aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                    className={cn(
+                      'shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all tap-highlight active:scale-90',
+                      isWishlisted ? 'bg-red-100' : 'bg-muted',
+                    )}
+                  >
+                    {isWishlisted ? '❤️' : '🤍'}
+                  </button>
                 </div>
               </div>
             );
@@ -1555,16 +1544,7 @@ export default function CommunityActivities() {
         </div>
       )}
 
-      {/* ── Map FAB ── */}
-      {!isLittleExplorer && viewMode !== 'map' && (
-        <button
-          onClick={() => setViewMode('map')}
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+80px)] right-4 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center tap-highlight active:scale-95 transition-transform"
-          aria-label="Show map"
-        >
-          <MapIcon className="w-6 h-6" />
-        </button>
-      )}
+      {/* Map FAB removed — map button now lives in the sticky header (always reachable) */}
 
       {/* ── Plan sticky bar (above tab bar) ── */}
       {planItems.length > 0 && viewMode !== 'plan' && (
@@ -1588,16 +1568,35 @@ export default function CommunityActivities() {
         </div>
       )}
 
-      {/* ── Map full-screen overlay ── */}
-      {viewMode === 'map' && (
-        <div className="fixed inset-0 z-50 bg-background">
+      {/* ── Map full-screen overlay (sits above content, leaves bottom tab bar visible) ── */}
+      {viewMode === 'map' && (() => {
+        // Build the places list — full set, or just plan items if entered from plan
+        const planIds = new Set(planItems.map(p => p.activityId));
+        const mapPlaces = mapPlanOnly
+          ? places.filter(p => planIds.has(p.id))
+          : places;
+        // Auto-center on plan items when in plan-only mode
+        const planCenter = mapPlanOnly && planItems.length > 0
+          ? (() => {
+              const valid = planItems.filter(p => p.lat != null && p.lon != null);
+              if (valid.length === 0) return center;
+              const lat = valid.reduce((s, p) => s + (p.lat as number), 0) / valid.length;
+              const lon = valid.reduce((s, p) => s + (p.lon as number), 0) / valid.length;
+              return { lat, lon };
+            })()
+          : center;
+        return (
+        <div className="fixed top-0 left-0 right-0 z-40 bg-background" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 64px)' }}>
           {/* Top controls — always visible above the map */}
           <div
             className="absolute left-0 right-0 z-10 flex items-center gap-2 px-3 flex-wrap"
             style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
           >
             <button
-              onClick={() => setViewMode('grid')}
+              onClick={() => {
+                if (mapPlanOnly) { setMapPlanOnly(false); setViewMode('plan'); }
+                else { setViewMode('grid'); }
+              }}
               className="h-10 pl-3 pr-4 rounded-full bg-background border border-border shadow-md flex items-center gap-2 text-sm font-medium tap-highlight"
             >
               <ChevronLeft className="w-4 h-4" /> Back
@@ -1612,7 +1611,18 @@ export default function CommunityActivities() {
               <Locate className="w-4 h-4" />
               {locatingGPS ? 'Locating…' : userLocation ? 'Located ✓' : 'GPS'}
             </button>
-            {userLocation && distanceOptions.map(opt => (
+            {/* Plan-only ↔ All toggle */}
+            {planItems.length > 0 && (
+              <button
+                onClick={() => setMapPlanOnly(prev => !prev)}
+                className={cn('h-10 px-4 rounded-full shadow-md flex items-center gap-2 text-sm font-medium tap-highlight',
+                  mapPlanOnly ? 'bg-background border border-border' : 'bg-primary text-primary-foreground'
+                )}
+              >
+                {mapPlanOnly ? `Show all activities` : `Show only plan (${planItems.length})`}
+              </button>
+            )}
+            {!mapPlanOnly && userLocation && distanceOptions.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
@@ -1625,37 +1635,36 @@ export default function CommunityActivities() {
             ))}
           </div>
           <MapView
-            places={places}
-            center={center}
+            places={mapPlaces}
+            center={planCenter}
             userLocation={userLocation}
-            nearbyKm={nearbyKm}
+            nearbyKm={mapPlanOnly ? null : nearbyKm}
             onSelect={id => setSelectedId(id)}
             onAddToPlan={id => { const a = allActivitiesForMap.find(x => x.id === id); if (a) addToPlan(a); }}
             planItemIds={planItems.map(p => p.activityId)}
             className="h-full"
           />
         </div>
-      )}
+        );
+      })()}
 
-      {/* ── Plan full-screen overlay ── */}
+      {/* ── Plan full-screen overlay (sits above content, leaves bottom tab bar visible) ── */}
       {viewMode === 'plan' && (
-        <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
-            <button onClick={() => navigate('/activities')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+        <div className="fixed top-0 left-0 right-0 z-40 bg-background flex flex-col" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 64px)' }}>
+          {/* Top bar */}
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center gap-3 shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
             <input
               type="text"
               value={planName}
               onChange={e => setPlanName(e.target.value)}
-              className="flex-1 text-lg font-semibold bg-transparent border-0 focus:outline-none"
+              className="flex-1 text-base font-semibold bg-transparent border-0 focus:outline-none"
               placeholder="My Plan"
             />
             {planItems.length > 0 && (
               <button
                 onClick={() => { if (window.confirm('Clear plan?')) setPlanItems([]); }}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 tap-highlight"
+                aria-label="Clear plan"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -1709,54 +1718,88 @@ export default function CommunityActivities() {
               <button onClick={() => setViewMode('grid')} className="h-11 px-6 rounded-full bg-primary text-primary-foreground font-medium text-sm tap-highlight mt-2">Browse activities</button>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto divide-y">
-              {planItems.map((item, idx) => (
-                <div key={item.activityId} className="flex gap-3 px-4 py-3 items-center">
-                  <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{idx + 1}</div>
-                  {item.imageurlthumb ? (
-                    <img src={item.imageurlthumb} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                      <CalendarDays className="w-5 h-5 text-muted-foreground" />
+            <div className="flex-1 overflow-y-auto">
+              {/* Quick actions row */}
+              <div className="flex gap-2 px-4 pt-3 pb-1">
+                <button
+                  onClick={() => { setMapPlanOnly(true); setViewMode('map'); }}
+                  className="flex-1 h-10 rounded-full bg-muted text-foreground text-sm font-medium tap-highlight active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
+                >
+                  <MapIcon className="w-4 h-4" /> Show on map
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className="flex-1 h-10 rounded-full bg-muted text-foreground text-sm font-medium tap-highlight active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Add more
+                </button>
+              </div>
+              {/* Items list */}
+              <div className="divide-y">
+                {planItems.map((item, idx) => {
+                  const fullActivity = activities.find(a => a.id === item.activityId);
+                  const priceLabel = item.minPrice == null && item.maxPrice == null
+                    ? null
+                    : item.minPrice === 0 && (item.maxPrice == null || item.maxPrice === 0)
+                      ? 'Free'
+                      : formatPriceRange(item.minPrice, item.maxPrice, regionConfig);
+                  return (
+                    <div key={item.activityId} className="flex gap-3 px-4 py-3 items-center">
+                      <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{idx + 1}</div>
+                      <button
+                        onClick={() => fullActivity && setDetailActivity(fullActivity)}
+                        disabled={!fullActivity}
+                        className="flex flex-1 items-center gap-3 min-w-0 text-left tap-highlight rounded-lg active:scale-[0.99] transition-transform disabled:opacity-100 disabled:active:scale-100"
+                      >
+                        {item.imageurlthumb ? (
+                          <img src={item.imageurlthumb} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.startTime}–{item.endTime} · {item.durationMinutes} min{priceLabel ? ` · ${priceLabel}` : ''}</p>
+                          {item.address && <p className="text-xs text-muted-foreground truncate">📍 {item.address}</p>}
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button onClick={() => movePlanItem(idx, 'up')} disabled={idx === 0} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30 tap-highlight">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                        <button onClick={() => movePlanItem(idx, 'down')} disabled={idx === planItems.length - 1} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30 tap-highlight">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <button onClick={() => removeFromPlan(item.activityId)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-destructive tap-highlight">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.startTime}–{item.endTime} · {item.durationMinutes} min</p>
-                    {item.address && <p className="text-xs text-muted-foreground truncate">{item.address}</p>}
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <button onClick={() => movePlanItem(idx, 'up')} disabled={idx === 0} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30 tap-highlight">
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M18 15l-6-6-6 6"/></svg>
-                    </button>
-                    <button onClick={() => movePlanItem(idx, 'down')} disabled={idx === planItems.length - 1} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30 tap-highlight">
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <button onClick={() => removeFromPlan(item.activityId)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-destructive tap-highlight">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           )}
           {/* Plan footer */}
           <div className="px-4 py-3 border-t bg-card space-y-2 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
             {planItems.length > 0 && (
-              <p className="text-sm text-muted-foreground">{planItems.length} stops · {planTotals.totalMinutes} min total</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{planItems.length} stops · {planTotals.totalMinutes} min total</span>
+                {planTotals.totalCost > 0 && (
+                  <span className="font-semibold">{formatPriceRange(planTotals.totalCost, planTotals.totalCost, regionConfig)}</span>
+                )}
+              </div>
             )}
-            <div className="flex gap-2">
-              <button onClick={() => setViewMode('grid')} className="flex-1 h-11 rounded-2xl border border-border text-sm font-medium tap-highlight">+ Add more</button>
-              {mode === 'kid' ? (
-                <button onClick={submitKidPlan} disabled={savingPlan || planItems.length === 0} className="flex-1 h-11 rounded-2xl bg-orange-500 text-white text-sm font-semibold tap-highlight disabled:opacity-50">
-                  {savingPlan ? 'Sending…' : '💌 Send to parent'}
-                </button>
-              ) : (
-                <button onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight disabled:opacity-50">
-                  {savingPlan ? 'Saving…' : '💾 Save & Share'}
-                </button>
-              )}
-            </div>
+            {mode === 'kid' ? (
+              <button onClick={submitKidPlan} disabled={savingPlan || planItems.length === 0} className="w-full h-11 rounded-2xl bg-orange-500 text-white text-sm font-semibold tap-highlight disabled:opacity-50">
+                {savingPlan ? 'Sending…' : '💌 Send to parent'}
+              </button>
+            ) : (
+              <button onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="w-full h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight disabled:opacity-50">
+                {savingPlan ? 'Saving…' : '💾 Save & Share'}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1917,25 +1960,31 @@ export default function CommunityActivities() {
         </SheetContent>
       </Sheet>
 
-      {/* ── Filter bottom sheet ── */}
+      {/* ── Filter sheet (full-screen) ── */}
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="bottom" className="h-[88vh] rounded-t-3xl pt-0 overflow-hidden flex flex-col">
-          <SheetHeader className="px-5 py-4 border-b shrink-0">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="text-base">
-                Filters{activeFilterCount > 0 ? ` · ${activeFilterCount} active` : ''}
-              </SheetTitle>
-              <div className="flex items-center gap-2">
-                {activeFilterCount > 0 && (
-                  <button onClick={clearFilters} className="text-sm text-primary font-medium tap-highlight">Clear all</button>
-                )}
-                <SheetClose className="w-8 h-8 rounded-full bg-muted flex items-center justify-center tap-highlight">
-                  <X className="w-4 h-4" />
-                </SheetClose>
-              </div>
-            </div>
+        <SheetContent side="bottom" className="h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none p-0 border-0 flex flex-col gap-0">
+          <SheetHeader className="px-5 border-b shrink-0 flex-row items-center justify-between space-y-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
+            <SheetTitle className="text-base font-semibold">
+              Filters{activeFilterCount > 0 ? ` · ${activeFilterCount} active` : ''}
+            </SheetTitle>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters} className="text-sm text-primary font-medium tap-highlight mr-10">Clear all</button>
+            )}
+            {/* Built-in SheetClose (X) is rendered automatically by SheetContent at top-right */}
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 96px)' }}>
+            {/* Mood quick-action — special wizard for fast filtering */}
+            <button
+              onClick={() => { setFiltersOpen(false); enterMoodMode(); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border border-pink-200 tap-highlight active:scale-[0.99] transition-transform"
+            >
+              <Sparkles className="w-5 h-5" />
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Smart Mood Suggestions</p>
+                <p className="text-xs text-pink-600/80">Answer 4 questions, get matched activities</p>
+              </div>
+              <ChevronRight className="w-4 h-4" />
+            </button>
             {/* City */}
             {availableCities.length > 0 && (
               <ScalableMultiPicker label="City / Area" emoji="📍" options={availableCities} selected={selectedCities} onChange={setSelectedCities} emptyLabel="All cities" searchPlaceholder="Search cities…" />

@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
 import AppHeader from "@/components/AppHeader";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -323,9 +323,13 @@ const Badge = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
 // Page
 // ---------------------------------------------------------------------------
 
+const MOBILE_SLIDES = 4;
+
 const Landing = () => {
   const navigate = useNavigate();
   const [kidProposalCount, setKidProposalCount] = useState(0);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slidesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const refresh = () => {
@@ -337,9 +341,168 @@ const Landing = () => {
     return () => window.removeEventListener("storage", refresh);
   }, []);
 
+  const handleSlidesScroll = () => {
+    if (!slidesRef.current) return;
+    const { scrollLeft, offsetWidth } = slidesRef.current;
+    setActiveSlide(Math.round(scrollLeft / offsetWidth));
+  };
+
+  const goSlide = (i: number) => {
+    if (!slidesRef.current) return;
+    slidesRef.current.scrollTo({ left: i * slidesRef.current.offsetWidth, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader />
+      {/* Desktop nav only — mobile has swipe UX */}
+      <div className="hidden md:block"><AppHeader /></div>
+
+      {/* ═══════════════════════════════════════════════════
+          MOBILE — horizontal swipe carousel
+      ═══════════════════════════════════════════════════ */}
+      <div className="md:hidden flex flex-col bg-background" style={{ height: '100dvh' }}>
+        {/* Slides */}
+        <div
+          ref={slidesRef}
+          onScroll={handleSlidesScroll}
+          className="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth overflow-y-hidden"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {/* ── Slide 1: Hero ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 32px)', paddingBottom: 32 }}>
+            <div className="text-2xl font-black text-primary tracking-tight">FamActify</div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium w-fit">
+              <Sparkles className="w-3 h-3" /> Public Beta · Free to use
+            </div>
+            <h1 className="text-4xl font-black leading-tight tracking-tight">
+              Turn screen time{" "}
+              <span className="text-primary">into family time</span>
+            </h1>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              Every parent knows that Friday feeling — no plan, another weekend disappears into screens.
+              FamActify helps you plan the perfect family day in minutes.
+            </p>
+            <div className="flex gap-3">
+              <Button size="lg" onClick={() => navigate("/activities")}
+                className="flex-1 rounded-2xl py-5 text-base font-semibold shadow-lg">
+                <Search className="w-4 h-4 mr-2" /> Browse
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/kids")}
+                className="flex-1 rounded-2xl py-5 text-base font-semibold relative">
+                <Users className="w-4 h-4 mr-2" /> Kid mode
+                {kidProposalCount > 0 && (
+                  <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">{kidProposalCount}</span>
+                )}
+              </Button>
+            </div>
+            <img src={heroImage} alt="Family activities" className="rounded-3xl shadow-xl w-full object-cover" style={{ height: 200 }} />
+            <p className="text-center text-xs text-muted-foreground pb-2">Swipe to explore →</p>
+          </div>
+
+          {/* ── Slide 2: How it works ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
+               style={{ paddingTop: 32, paddingBottom: 32 }}>
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">How it works</p>
+              <h2 className="text-3xl font-black leading-tight">From Friday panic to Saturday sorted</h2>
+            </div>
+            <div className="space-y-5">
+              {([
+                { Icon: Monitor, iconCls: "text-slate-500 bg-slate-100", step: "01", head: "Another unplanned weekend", body: "Friday arrives with no plan. Kids end up on screens. Parents feel the guilt." },
+                { Icon: Sparkles, iconCls: "text-primary bg-primary/10", step: "02", head: "FamActify finds the plan", body: "Filter by age, budget, weather and mood. Discover 1,400+ activities near you." },
+                { Icon: CheckCircle2, iconCls: "text-green-600 bg-green-50", step: "03", head: "Saturday sorted", body: "Screens off, family out. Kids chose it — so they're actually excited to go." },
+              ] as const).map((s) => (
+                <div key={s.head} className="flex gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${s.iconCls} flex items-center justify-center shrink-0`}>
+                    <s.Icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground mb-0.5">Step {s.step}</p>
+                    <p className="font-semibold text-sm">{s.head}</p>
+                    <p className="text-sm text-muted-foreground leading-snug mt-0.5">{s.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button size="lg" onClick={() => navigate("/activities")} className="rounded-2xl py-5 text-base font-semibold shadow-lg">
+              <Search className="w-4 h-4 mr-2" /> Discover activities
+            </Button>
+          </div>
+
+          {/* ── Slide 3: Discover + Plan ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
+               style={{ paddingTop: 32, paddingBottom: 32 }}>
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Features</p>
+              <h2 className="text-3xl font-black leading-tight">Find it. Plan it. Do it.</h2>
+            </div>
+            <div className="space-y-4">
+              {([
+                { Icon: Search, head: "Smart filters", body: "Age, budget, weather, accessibility, timing — find activities that actually work for your family." },
+                { Icon: MapPin, head: "Map view + GPS", body: "See activities near you on a map. Tap to get details, add to plan." },
+                { Icon: Calendar, head: "Day planner", body: "Build a timeline, set start time, watch the schedule fill in. Share with the family." },
+                { Icon: Sparkles, head: "Mood suggestions", body: "Not sure what you want? Answer 4 quick questions and get matched activities instantly." },
+              ] as const).map(({ Icon, head, body }) => (
+                <div key={head} className="flex gap-3 items-start">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{head}</p>
+                    <p className="text-xs text-muted-foreground leading-snug mt-0.5">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button size="lg" onClick={() => navigate("/activities")} className="rounded-2xl py-5 text-base font-semibold shadow-lg">
+              Try it now →
+            </Button>
+          </div>
+
+          {/* ── Slide 4: Kid Mode + CTA ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-6 overflow-y-auto"
+               style={{ paddingTop: 32, paddingBottom: 'calc(env(safe-area-inset-bottom) + 32px)' }}>
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kid Mode</p>
+              <h2 className="text-3xl font-black leading-tight">Let kids pick — they'll actually be excited to go</h2>
+            </div>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              Kids browse activities in their own view, add to their wishlist, and send picks to the parent plan. No more arguing about what to do.
+            </p>
+            <ActivityCardsVisual />
+            <div className="space-y-3 pt-2">
+              <Button size="lg" onClick={() => navigate("/activities")}
+                className="w-full rounded-2xl py-5 text-base font-semibold shadow-lg">
+                <Search className="w-4 h-4 mr-2" /> Browse activities — it's free
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/auth")}
+                className="w-full rounded-2xl py-5 text-base font-semibold">
+                Create account
+              </Button>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">No account needed to browse. Free forever.</p>
+          </div>
+        </div>
+
+        {/* Dots */}
+        <div className="flex justify-center gap-2 py-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+          {Array.from({ length: MOBILE_SLIDES }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goSlide(i)}
+              className={`rounded-full transition-all duration-200 ${
+                activeSlide === i ? 'w-6 h-2 bg-primary' : 'w-2 h-2 bg-muted-foreground/30'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════
+          DESKTOP — original scroll layout
+      ═══════════════════════════════════════════════════ */}
+      <div className="hidden md:block">
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/10">
@@ -778,6 +941,7 @@ const Landing = () => {
       </section>
 
       <Footer />
+      </div>{/* end desktop md:block */}
     </div>
   );
 };

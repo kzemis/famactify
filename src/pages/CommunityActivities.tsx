@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -385,6 +385,7 @@ export default function CommunityActivities() {
   const { t } = useLanguage();
   const { countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { isKid, isLittleExplorer, mode, currentProfile } = useFamilyMode();
 
   // Current authenticated user (for edit permission check)
@@ -481,6 +482,17 @@ export default function CommunityActivities() {
     if (params.get('view') === 'plan' || params.get('kidplan')) return 'plan';
     return 'grid';
   });
+
+  // Sync viewMode with URL — makes Plan tab and Discover tab work via React Router navigation
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const wantPlan = params.get('view') === 'plan' || !!params.get('kidplan');
+    setViewMode(prev => {
+      if (wantPlan && prev !== 'plan') return 'plan';
+      if (!wantPlan && prev === 'plan') return 'grid';
+      return prev; // map / mood stay as-is — entered via in-page buttons only
+    });
+  }, [search]);
 
   // Family ages derived from profile — pre-seeded into mood mode
   const [familyAges, setFamilyAges] = useState<string[]>([]);
@@ -1579,6 +1591,39 @@ export default function CommunityActivities() {
       {/* ── Map full-screen overlay ── */}
       {viewMode === 'map' && (
         <div className="fixed inset-0 z-50 bg-background">
+          {/* Top controls — always visible above the map */}
+          <div
+            className="absolute left-0 right-0 z-10 flex items-center gap-2 px-3 flex-wrap"
+            style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
+          >
+            <button
+              onClick={() => setViewMode('grid')}
+              className="h-10 pl-3 pr-4 rounded-full bg-background border border-border shadow-md flex items-center gap-2 text-sm font-medium tap-highlight"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <button
+              onClick={handleLocateMe}
+              disabled={locatingGPS}
+              className={cn('h-10 px-4 rounded-full shadow-md flex items-center gap-2 text-sm font-medium tap-highlight',
+                userLocation ? 'bg-primary text-primary-foreground' : 'bg-background border border-border'
+              )}
+            >
+              <Locate className="w-4 h-4" />
+              {locatingGPS ? 'Locating…' : userLocation ? 'Located ✓' : 'GPS'}
+            </button>
+            {userLocation && distanceOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
+                className={cn('h-8 px-3 rounded-full shadow-md text-xs font-medium tap-highlight',
+                  nearbyKm === opt.value ? 'bg-primary text-primary-foreground' : 'bg-background border border-border'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <MapView
             places={places}
             center={center}
@@ -1588,61 +1633,7 @@ export default function CommunityActivities() {
             onAddToPlan={id => { const a = allActivitiesForMap.find(x => x.id === id); if (a) addToPlan(a); }}
             planItemIds={planItems.map(p => p.activityId)}
             className="h-full"
-            overlay={
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className="h-10 pl-3 pr-4 rounded-full bg-background border border-border shadow-md flex items-center gap-2 text-sm font-medium tap-highlight"
-                >
-                  <ChevronLeft className="w-4 h-4" /> Back
-                </button>
-                <button
-                  onClick={handleLocateMe}
-                  disabled={locatingGPS}
-                  className={cn('h-10 px-4 rounded-full shadow-md flex items-center gap-2 text-sm font-medium tap-highlight',
-                    userLocation ? 'bg-primary text-primary-foreground' : 'bg-background border border-border'
-                  )}
-                >
-                  <Locate className="w-4 h-4" />
-                  {locatingGPS ? '…' : 'Me'}
-                </button>
-                {userLocation && distanceOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setNearbyKm(prev => prev === opt.value ? null : opt.value)}
-                    className={cn('h-8 px-3 rounded-full shadow-md text-xs font-medium tap-highlight',
-                      nearbyKm === opt.value ? 'bg-primary text-primary-foreground' : 'bg-background border border-border'
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            }
           />
-          {selectedId && (() => {
-            const sel = allActivitiesForMap.find(a => a.id === selectedId);
-            if (!sel) return null;
-            const inPlan = planItems.some(p => p.activityId === sel.id);
-            return (
-              <div className="absolute left-4 right-4 z-20 bg-card rounded-2xl shadow-xl p-3 flex gap-3 items-start" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
-                {sel.imageurlthumb && (
-                  <img src={sel.imageurlthumb} alt={sel.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{sel.name}</p>
-                  {sel.location_address && <p className="text-xs text-muted-foreground truncate">{sel.location_address}</p>}
-                  <p className="text-xs text-muted-foreground mt-0.5">{formatPriceRange(sel.min_price, sel.max_price, regionConfig)}</p>
-                </div>
-                <div className="flex flex-col gap-1.5 shrink-0">
-                  <button onClick={() => inPlan ? removeFromPlan(sel.id) : addToPlan(sel)} className={cn('px-3 py-2 rounded-xl text-xs font-semibold tap-highlight', inPlan ? 'bg-primary text-primary-foreground' : 'border border-border bg-background')}>
-                    {inPlan ? '✓ In plan' : '+ Plan'}
-                  </button>
-                  <button onClick={() => setSelectedId(null)} className="px-3 py-1.5 text-xs text-muted-foreground tap-highlight text-center">Dismiss</button>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       )}
 
@@ -1651,7 +1642,7 @@ export default function CommunityActivities() {
         <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
-            <button onClick={() => setViewMode('grid')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight">
+            <button onClick={() => navigate('/activities')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight">
               <ChevronLeft className="w-5 h-5" />
             </button>
             <input

@@ -21,7 +21,8 @@ import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
-import { activitiesService, authService, tripsService, curatedListsService, ACTIVITY_PAGE_SIZE as PAGE_SIZE, type ActivityFilters, type ActivitySpot, type CuratedList, type SlimActivity } from '@/services';
+import { activitiesService, authService, tripsService, curatedListsService, profileService, ACTIVITY_PAGE_SIZE as PAGE_SIZE, type ActivityFilters, type ActivitySpot, type CuratedList, type SlimActivity } from '@/services';
+import MoodSuggest, { type MoodFilters } from '@/components/MoodSuggest';
 import type { User } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
@@ -390,7 +391,23 @@ export default function CommunityActivities() {
   // Current authenticated user (for edit permission check)
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   useEffect(() => {
-    authService.getCurrentUser().then(setCurrentUser).catch(() => setCurrentUser(null));
+    authService.getCurrentUser().then(user => {
+      setCurrentUser(user);
+      if (!user) return;
+      // Load family profile ages silently for mood mode pre-seeding
+      profileService.getCurrentProfile().then(({ profile }) => {
+        const kids = ((profile as any)?.children as any[]) || [];
+        const buckets = kids.map((c: any) => {
+          const age = Number(c.age);
+          if (age <= 2) return '0-2';
+          if (age <= 5) return '3-5';
+          if (age <= 8) return '6-8';
+          if (age <= 12) return '9-12';
+          return '13+';
+        });
+        setFamilyAges([...new Set(buckets)]);
+      }).catch(() => {});
+    }).catch(() => setCurrentUser(null));
   }, []);
 
   // Data — paginated grid + slim map dataset
@@ -460,11 +477,14 @@ export default function CommunityActivities() {
   const [center, setCenter] = useState<{ lat: number; lon: number } | undefined>(undefined);
 
   // Read ?view=plan / ?kidplan= from URL
-  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan'>(() => {
+  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'plan' | 'mood'>(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'plan' || params.get('kidplan')) return 'plan';
     return 'grid';
   });
+
+  // Family ages derived from profile — pre-seeded into mood mode
+  const [familyAges, setFamilyAges] = useState<string[]>([]);
 
   // Share dialog (kid plan link)
 
@@ -877,6 +897,24 @@ export default function CommunityActivities() {
   };
 
   // ---------------------------------------------------------------------------
+  // Mood suggest helpers
+  // ---------------------------------------------------------------------------
+  const enterMoodMode = () => {
+    clearFilters();
+    if (familyAges.length > 0) setSelectedAges(familyAges);
+    setViewMode('mood');
+  };
+
+  const applyMoodFilters = (filters: MoodFilters) => {
+    if (filters.categories !== undefined) setSelectedCategories(filters.categories);
+    if (filters.ages !== undefined) setSelectedAges(filters.ages);
+    if (filters.indoor !== undefined) setIndoorOnly(filters.indoor);
+    if (filters.rainSuitable !== undefined) setRainSuitable(filters.rainSuitable);
+    if (filters.duration !== undefined) setDurationFilter(filters.duration);
+    if (filters.maxPrice !== undefined) setMaxPrice(filters.maxPrice);
+  };
+
+  // ---------------------------------------------------------------------------
   // GPS / locate me
   // ---------------------------------------------------------------------------
   const handleLocateMe = () => {
@@ -1259,10 +1297,23 @@ export default function CommunityActivities() {
         {/* Row 3: Category chips + filter button (hidden for little explorer) */}
         {!isLittleExplorer && (
           <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
+            {/* Mood chip */}
+            <button
+              onClick={enterMoodMode}
+              className={cn(
+                'shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight flex items-center gap-1.5',
+                viewMode === 'mood'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border border-pink-200',
+              )}
+            >
+              <Sparkles className="w-3 h-3" />Mood
+            </button>
+            <div className="shrink-0 w-px h-5 bg-border" />
             <button
               onClick={() => setSelectedCategories([])}
               className={cn('shrink-0 h-8 px-3.5 rounded-full text-sm font-medium transition-colors tap-highlight',
-                selectedCategories.length === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                selectedCategories.length === 0 && viewMode !== 'mood' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               )}
             >All</button>
             {CATEGORIES.map(cat => (
@@ -1298,8 +1349,20 @@ export default function CommunityActivities() {
         )}
       </div>
 
+      {/* ── Mood Suggest view ── */}
+      {viewMode === 'mood' && (
+        <MoodSuggest
+          matchCount={totalCount}
+          loading={loading}
+          onFilterChange={applyMoodFilters}
+          onShowResults={() => setViewMode('grid')}
+          onReset={() => { clearFilters(); setViewMode('grid'); }}
+          familyAges={familyAges}
+        />
+      )}
+
       {/* ── Result count ── */}
-      {!loading && !isLittleExplorer && activities.length > 0 && (
+      {viewMode !== 'mood' && !loading && !isLittleExplorer && activities.length > 0 && (
         <div className="px-4 py-2 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             {totalCount} {totalCount === 1 ? 'activity' : 'activities'}
@@ -1312,7 +1375,7 @@ export default function CommunityActivities() {
       )}
 
       {/* ── Loading skeletons ── */}
-      {loading && (
+      {loading && viewMode !== 'mood' && (
         <div className="px-4 py-3 space-y-3">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="rounded-2xl border bg-card overflow-hidden animate-pulse flex gap-3 p-3">
@@ -1328,7 +1391,7 @@ export default function CommunityActivities() {
       )}
 
       {/* ── Empty state ── */}
-      {!loading && activities.length === 0 && (
+      {!loading && activities.length === 0 && viewMode !== 'mood' && (
         <div className="flex flex-col items-center justify-center px-8 py-16 text-center">
           <span className="text-5xl mb-4">🔍</span>
           <p className="text-base font-semibold mb-1">No activities found</p>
@@ -1340,7 +1403,7 @@ export default function CommunityActivities() {
       )}
 
       {/* ── Little Explorer grid ── */}
-      {!loading && isLittleExplorer && activities.length > 0 && (
+      {!loading && isLittleExplorer && viewMode !== 'mood' && activities.length > 0 && (
         <div className="px-4 py-3 grid grid-cols-1 gap-4">
           {activities.map(activity => {
             const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
@@ -1377,7 +1440,7 @@ export default function CommunityActivities() {
       )}
 
       {/* ── Parent / Kid feed ── */}
-      {!loading && !isLittleExplorer && activities.length > 0 && (
+      {!loading && !isLittleExplorer && viewMode !== 'mood' && activities.length > 0 && (
         <div className="px-4 py-2 space-y-3">
           {activities.map(activity => {
             const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
@@ -1478,7 +1541,7 @@ export default function CommunityActivities() {
       )}
 
       {/* ── Load more ── */}
-      {!loading && hasMore && (
+      {!loading && hasMore && viewMode !== 'mood' && (
         <div className="px-4 py-4">
           <button
             onClick={loadMore}

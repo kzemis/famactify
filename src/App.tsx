@@ -49,6 +49,7 @@ import BalanceTracker from "./pages/BalanceTracker";
 import OrgSetup from "./pages/OrgSetup";
 import OrgDashboard from "./pages/OrgDashboard";
 import OrgListEdit from "./pages/OrgListEdit";
+import KasparsPage from "./pages/KasparsPage";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => (
           <Route path="/org/dashboard" element={<ProtectedRoute><OrgDashboard /></ProtectedRoute>} />
           <Route path="/org/lists/new" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           <Route path="/org/lists/:id" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
+          <Route path="/kaspars" element={<KasparsPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

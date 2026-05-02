@@ -28,11 +28,11 @@ export default function BottomTabBar() {
   };
 
   const TABS = [
-    { id: 'discover', label: 'Discover',  icon: Compass,      onTap: () => navigate('/activities')          },
-    { id: 'plan',     label: 'Plan',       icon: CalendarDays,  onTap: () => navigate('/activities?view=plan') },
-    { id: 'saved',    label: 'Saved',      icon: BookMarked,    onTap: () => navigate('/saved-trips')         },
-    { id: 'kids',     label: 'Kid Mode',   icon: Sparkles,      onTap: () => navigate('/kids')                },
-    { id: 'me',       label: 'Me',         icon: User,          onTap: () => navigate('/profile')             },
+    { id: 'discover', label: 'Activities', icon: Compass,      onTap: () => navigate('/activities')          },
+    { id: 'plan',     label: 'Plan',        icon: CalendarDays, onTap: () => navigate('/activities?view=plan') },
+    { id: 'saved',    label: 'Trips',       icon: BookMarked,   onTap: () => navigate('/saved-trips')         },
+    { id: 'kids',     label: 'Mode',        icon: Sparkles,     onTap: () => navigate('/kids')                },
+    { id: 'me',       label: 'Me',          icon: User,         onTap: () => navigate('/profile')             },
   ] as const;
 
   return (
@@ -43,7 +43,7 @@ export default function BottomTabBar() {
       <div className="flex items-stretch h-16 max-w-lg mx-auto">
         {TABS.map(({ id, label, icon: Icon, onTap }) => {
           const active = isActive(id);
-          const isKids = id === 'kids';
+          const showBadge = id === 'plan';
           return (
             <button
               key={id}
@@ -59,7 +59,7 @@ export default function BottomTabBar() {
                   className={cn('w-5 h-5', active && 'fill-primary stroke-primary')}
                   strokeWidth={active ? 2.5 : 1.8}
                 />
-                {isKids && kidBadge > 0 && (
+                {showBadge && kidBadge > 0 && (
                   <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-0.5">
                     {kidBadge}
                   </span>

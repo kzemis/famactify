@@ -75,7 +75,10 @@ export function ShareSheet({ trip, onClose, hideEmail = false }: ShareSheetProps
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-background rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 space-y-4 z-10">
+      <div
+        className="relative w-full max-w-sm bg-background rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 pt-5 space-y-4 z-10 max-h-[calc(100dvh-72px)] overflow-y-auto"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 88px)' }}
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between">

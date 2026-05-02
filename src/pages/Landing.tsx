@@ -8,8 +8,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
-import AppHeader from "@/components/AppHeader";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -323,9 +322,13 @@ const Badge = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
 // Page
 // ---------------------------------------------------------------------------
 
+const MOBILE_SLIDES = 4;
+
 const Landing = () => {
   const navigate = useNavigate();
   const [kidProposalCount, setKidProposalCount] = useState(0);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slidesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const refresh = () => {
@@ -337,9 +340,159 @@ const Landing = () => {
     return () => window.removeEventListener("storage", refresh);
   }, []);
 
+  const handleSlidesScroll = () => {
+    if (!slidesRef.current) return;
+    const { scrollLeft, offsetWidth } = slidesRef.current;
+    setActiveSlide(Math.round(scrollLeft / offsetWidth));
+  };
+
+  const goSlide = (i: number) => {
+    if (!slidesRef.current) return;
+    slidesRef.current.scrollTo({ left: i * slidesRef.current.offsetWidth, behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
+    <div className="bg-background">
+
+      {/* ═══════════════════════════════════════════════════
+          MOBILE — horizontal swipe carousel (full app home)
+      ═══════════════════════════════════════════════════ */}
+      <div className="md:hidden flex flex-col bg-background" style={{ height: '100dvh' }}>
+        {/* Slides */}
+        <div
+          ref={slidesRef}
+          onScroll={handleSlidesScroll}
+          className="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth overflow-y-hidden"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {/* ── Slide 1: Hero — what is FamActify ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="text-2xl font-black text-primary tracking-tight">FamActify</div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium w-fit">
+              <Sparkles className="w-3 h-3" /> Public Beta · Free to use
+            </div>
+            <h1 className="text-4xl font-black leading-tight tracking-tight">
+              Turn screen time{" "}
+              <span className="text-primary">into family time</span>
+            </h1>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              Every parent knows that Friday feeling — no plan, another weekend disappears into screens.
+              FamActify helps you plan the perfect family day in minutes.
+            </p>
+            <img src={heroImage} alt="Family activities" className="rounded-3xl shadow-xl w-full object-cover" style={{ height: 220 }} />
+            <p className="text-center text-xs text-muted-foreground pt-2">Swipe to see what's inside →</p>
+          </div>
+
+          {/* ── Slide 2: Activities tab — what you can do there ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Search className="w-5 h-5 text-primary" /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tab 1</p>
+                <h2 className="text-2xl font-black leading-tight">Activities</h2>
+              </div>
+            </div>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              1,400+ family-friendly activities near you. Filter by what matters today.
+            </p>
+            <div className="space-y-3">
+              {([
+                { Icon: Search, head: "Smart filters", body: "Age, budget, weather, accessibility, timing." },
+                { Icon: MapPin, head: "Map view + GPS", body: "See activities near you. Locate me with one tap." },
+                { Icon: Sparkles, head: "Mood suggestions", body: "Not sure? Answer 4 questions, get matched." },
+              ] as const).map(({ Icon, head, body }) => (
+                <div key={head} className="flex gap-3 items-start">
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{head}</p>
+                    <p className="text-xs text-muted-foreground leading-snug mt-0.5">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground text-center pt-2">Tap <span className="font-semibold text-foreground">Activities</span> below to start →</p>
+          </div>
+
+          {/* ── Slide 3: Plan + Trips ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Calendar className="w-5 h-5 text-primary" /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tabs 2 & 3</p>
+                <h2 className="text-2xl font-black leading-tight">Plan & Trips</h2>
+              </div>
+            </div>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              Build the day, share with the family, save it for next time.
+            </p>
+            <div className="space-y-3">
+              {([
+                { Icon: Plus, head: "Add to plan", body: "Tap + on any activity to drop it into today's plan." },
+                { Icon: Calendar, head: "Timeline & start time", body: "Set start, see the schedule fill in. Reorder with a tap." },
+                { Icon: Share2, head: "Share & save", body: "Share with family, save trips to repeat or remix later." },
+              ] as const).map(({ Icon, head, body }) => (
+                <div key={head} className="flex gap-3 items-start">
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{head}</p>
+                    <p className="text-xs text-muted-foreground leading-snug mt-0.5">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Slide 4: Mode + Get started ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary" /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tab 4</p>
+                <h2 className="text-2xl font-black leading-tight">Mode</h2>
+              </div>
+            </div>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              Switch between adult, kid, and little-explorer views. Each gets a UI tuned for them — kids' picks flow into your plan automatically.
+            </p>
+            <ActivityCardsVisual />
+            <div className="pt-2 space-y-3">
+              <Button size="lg" onClick={() => navigate("/auth")}
+                className="w-full rounded-2xl py-5 text-base font-semibold shadow-lg">
+                Create account
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                No account needed to browse — just tap any tab below to start.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Dots — sit above the fixed tab bar */}
+        <div className="flex justify-center gap-2 py-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}>
+          {Array.from({ length: MOBILE_SLIDES }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goSlide(i)}
+              className={`rounded-full transition-all duration-200 ${
+                activeSlide === i ? 'w-6 h-2 bg-primary' : 'w-2 h-2 bg-muted-foreground/30'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════
+          DESKTOP — scroll layout (no top nav, just bottom tabs)
+      ═══════════════════════════════════════════════════ */}
+      <div className="hidden md:block">
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/10">
@@ -778,6 +931,7 @@ const Landing = () => {
       </section>
 
       <Footer />
+      </div>{/* end desktop md:block */}
     </div>
   );
 };

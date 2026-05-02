@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useFamilyMode, type FamilyMode, type FamilyProfile } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -43,25 +43,16 @@ export default function KidModePage() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="min-h-[100dvh] bg-background">
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-4">
-        <div>
-          <h1 className="text-xl font-black tracking-tight">Who's using FamActify?</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Pick your profile to get started</p>
-        </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-muted flex items-center justify-center tap-highlight active:scale-90 transition-transform"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
+      {/* Top bar */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex flex-col justify-center" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
+        <p className="text-sm font-semibold">Who's using FamActify?</p>
+        <p className="text-xs text-muted-foreground">Pick a mode — adult, kid, or little explorer</p>
       </div>
 
       {/* Profile grid */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-3">
+      <div className="px-5 pt-4 pb-tab-bar space-y-3">
         {profiles.map(profile => {
           const isSelected = currentProfile?.id === profile.id;
           return (

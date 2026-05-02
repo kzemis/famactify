@@ -54,6 +54,7 @@ const STEPS: Step[] = [
       { label: 'Get Active',           emoji: '🏃', filters: { categories: ['Sport'] } },
       { label: 'Learn Something New',  emoji: '🔬', filters: { categories: ['Education'] } },
       { label: 'Social Hangout',       emoji: '🤝', filters: { categories: ['Social'] } },
+      { label: 'Any vibe',             emoji: '🌈', filters: { categories: [] } },
     ],
   },
   {
@@ -64,7 +65,7 @@ const STEPS: Step[] = [
       { label: 'Outdoors all the way', emoji: '☀️',  filters: { indoor: false } },
       { label: 'Keep us inside',       emoji: '🏠',  filters: { indoor: true } },
       { label: 'Rain? Still going!',   emoji: '🌧️', filters: { rainSuitable: true, indoor: false } },
-      { label: "We don't mind",        emoji: '🤷',  filters: {} },
+      { label: 'Any setting',          emoji: '🤷',  filters: { indoor: undefined, rainSuitable: undefined } as any },
     ],
   },
   {
@@ -76,6 +77,7 @@ const STEPS: Step[] = [
       { label: '1–2 hours',         emoji: '🕐', filters: { duration: '60-120' } },
       { label: 'Half day  (2–4h)',   emoji: '🌅', filters: { duration: '120-240' } },
       { label: 'Full day  (4h+)',    emoji: '🌞', filters: { duration: '240+' } },
+      { label: 'Any duration',       emoji: '🌈', filters: { duration: 'any' } },
     ],
   },
   {
@@ -86,6 +88,7 @@ const STEPS: Step[] = [
       { label: 'Free is perfect',   emoji: '💚', filters: { maxPrice: 'free' } },
       { label: 'Small spend is ok', emoji: '💛', filters: { maxPrice: '20' } },
       { label: 'Open to anything',  emoji: '✨', filters: { maxPrice: 'any' } },
+      { label: 'Any budget',        emoji: '🌈', filters: { maxPrice: 'any' } },
     ],
   },
 ];
@@ -162,10 +165,12 @@ export default function MoodSuggest({
     setAccumulated(next);
     onFilterChange(next);
 
-    // Auto-advance after short delay
+    // Auto-advance after short delay; on the last step, auto-show results
     setTimeout(() => {
       if (!isLast) {
         goTo(step + 1, 'forward');
+      } else {
+        onShowResults();
       }
     }, 260);
   };
@@ -175,6 +180,7 @@ export default function MoodSuggest({
     newSelected[step] = -1; // -1 = skipped
     setSelected(newSelected);
     if (!isLast) goTo(step + 1, 'forward');
+    else onShowResults();
   };
 
   const goBack = () => {

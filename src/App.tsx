@@ -2,12 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { CountryProvider } from "@/i18n/CountryContext";
 import { FamilyModeProvider } from "@/contexts/FamilyModeContext";
 import { PlanBoardProvider } from "@/contexts/PlanBoardContext";
+import BottomTabBar from "@/components/BottomTabBar";
+import { type ReactNode } from "react";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -47,8 +49,17 @@ import BalanceTracker from "./pages/BalanceTracker";
 import OrgSetup from "./pages/OrgSetup";
 import OrgDashboard from "./pages/OrgDashboard";
 import OrgListEdit from "./pages/OrgListEdit";
+import KasparsPage from "./pages/KasparsPage";
 
 const queryClient = new QueryClient();
+
+const TAB_ROUTES = ['/activities', '/plan', '/saved-trips', '/kids', '/profile'];
+
+function AppShell({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  const showTabBar = TAB_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+  return <>{children}{showTabBar && <BottomTabBar />}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -60,6 +71,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AppShell>
           <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -102,9 +114,11 @@ const App = () => (
           <Route path="/org/dashboard" element={<ProtectedRoute><OrgDashboard /></ProtectedRoute>} />
           <Route path="/org/lists/new" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           <Route path="/org/lists/:id" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
+          <Route path="/kaspars" element={<KasparsPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
+          </AppShell>
         </BrowserRouter>
         <Analytics />
       </TooltipProvider>

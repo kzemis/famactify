@@ -308,6 +308,46 @@ const Kid6PlusMock = () => (
 );
 
 // ---------------------------------------------------------------------------
+// Little Explorer phone-frame mock — used on Mode slide of mobile carousel
+// ---------------------------------------------------------------------------
+
+const LittleExplorerVisual = () => (
+  <div className="rounded-3xl border bg-gradient-to-b from-orange-50 to-pink-50 p-4 shadow-md select-none">
+    {/* Greeting */}
+    <div className="flex items-center gap-2 mb-3 px-1">
+      <span className="text-xl">🌟</span>
+      <span className="text-base font-black text-orange-500 tracking-tight">Hi Tomsy!</span>
+    </div>
+    {/* Cards */}
+    <div className="space-y-3">
+      {([
+        { grad: 'from-amber-200 via-rose-200 to-rose-300', emoji: '🐷', name: 'Little Farm — meet the piglets', wished: false, cat: '🌿' },
+        { grad: 'from-sky-200 via-emerald-200 to-amber-200', emoji: '🏞️', name: 'Tunnel Tops Playground', wished: true, cat: '🎉' },
+      ] as const).map((c) => (
+        <div key={c.name} className="rounded-2xl overflow-hidden shadow-sm bg-white">
+          <div className={`relative h-24 bg-gradient-to-br ${c.grad} flex items-center justify-center text-5xl`}>
+            <span>{c.emoji}</span>
+            <span className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/95 shadow flex items-center justify-center text-base">
+              {c.cat}
+            </span>
+          </div>
+          <div className="p-2.5 flex items-center gap-2">
+            <p className="flex-1 text-[13px] font-black leading-tight">{c.name}</p>
+            <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base ${c.wished ? 'bg-red-100' : 'bg-muted'}`}>
+              {c.wished ? '❤️' : '🤍'}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+    {/* Caption */}
+    <p className="text-center text-[11px] text-muted-foreground mt-3 px-2">
+      Big cards · simple words · tap the heart to send to mom & dad
+    </p>
+  </div>
+);
+
+// ---------------------------------------------------------------------------
 // Reusable section badge
 // ---------------------------------------------------------------------------
 
@@ -462,7 +502,7 @@ const Landing = () => {
             <p className="text-base text-muted-foreground leading-relaxed">
               Switch between adult, kid, and little-explorer views. Each gets a UI tuned for them — kids' picks flow into your plan automatically.
             </p>
-            <ActivityCardsVisual />
+            <LittleExplorerVisual />
             <div className="pt-2 space-y-3">
               <Button size="lg" onClick={() => navigate("/auth")}
                 className="w-full rounded-2xl py-5 text-base font-semibold shadow-lg">

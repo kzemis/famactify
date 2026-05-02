@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { profileService, authService } from "@/services";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useCountry, COUNTRIES, type CountryCode } from "@/i18n/CountryContext";
 
 const CHILD_INTERESTS = ['animals', 'science', 'art', 'music', 'cooking', 'water', 'climbing', 'sports', 'trains', 'dinosaurs', 'space', 'building'] as const;
 const FAMILY_INTERESTS = ['nature', 'culture', 'sport', 'education', 'music', 'art', 'food', 'adventure', 'community', 'animals', 'science', 'history'] as const;
@@ -19,7 +21,9 @@ interface AddChildForm { age: string; name: string; interests: string[]; }
 const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'children' | 'interests'>('menu');
+  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'children' | 'interests' | 'settings'>('menu');
+  const { language, setLanguage } = useLanguage();
+  const { country, setCountry } = useCountry();
   const [profile, setProfile] = useState({ full_name: "", city: "", family_size: "", children_ages: "", bio: "", discoverable: false });
   const [children, setChildren] = useState<Child[]>([]);
   const [familyInterests, setFamilyInterests] = useState<string[]>([]);
@@ -136,6 +140,17 @@ const Profile = () => {
 
             {/* Quick links */}
             <div className="rounded-2xl border bg-card overflow-hidden">
+              <button onClick={() => setActiveSection('settings')} className="w-full flex items-center gap-3 px-4 py-4 tap-highlight active:bg-muted/50 transition-colors">
+                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Settings className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold">Region & Language</p>
+                  <p className="text-xs text-muted-foreground">{COUNTRIES[country.code].flag} {country.name} · {language.toUpperCase()}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <div className="border-t" />
               <button onClick={() => navigate('/saved-trips')} className="w-full flex items-center gap-3 px-4 py-4 tap-highlight active:bg-muted/50 transition-colors">
                 <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                   <BookMarked className="w-4 h-4 text-blue-600" />
@@ -279,6 +294,49 @@ const Profile = () => {
                 <Plus className="w-4 h-4" /> Add a child
               </button>
             )}
+          </div>
+        </>
+      )}
+
+      {/* ── Settings section ── */}
+      {activeSection === 'settings' && (
+        <>
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-4 flex items-center gap-3">
+            <button onClick={() => setActiveSection('menu')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-bold flex-1">Region & Language</h2>
+          </div>
+          <div className="px-4 py-4 pb-tab-bar space-y-6">
+            {/* Language */}
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Language</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['en', 'lv'] as const).map(lang => (
+                  <button key={lang} onClick={() => setLanguage(lang)}
+                    className={cn('h-12 rounded-2xl border-2 text-sm font-semibold transition-colors tap-highlight',
+                      language === lang ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground')}>
+                    {lang === 'en' ? '🇺🇸 English' : '🇱🇻 Latviešu'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Region */}
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Region</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
+                  <button key={code} onClick={() => setCountry(code)}
+                    className={cn('h-12 rounded-2xl border-2 text-sm font-semibold transition-colors tap-highlight',
+                      country.code === code ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground')}>
+                    {COUNTRIES[code].flag} {COUNTRIES[code].name}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground pt-1">
+                Affects currency, distances and date formats.
+              </p>
+            </div>
           </div>
         </>
       )}

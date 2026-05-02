@@ -16,7 +16,6 @@ import { cn } from '@/lib/utils';
 import { cleanDisplayText } from '@/lib/text';
 import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
 import MapView from '@/components/MapView';
-import ProfileSwitcher from '@/components/ProfileSwitcher';
 import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
@@ -1257,8 +1256,8 @@ export default function CommunityActivities() {
       {/* ── Sticky top header ── */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
-        {/* Row 1: Brand + profile */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        {/* Row 1: Brand */}
+        <div className="flex items-center px-4 pt-3 pb-2">
           {isLittleExplorer ? (
             <div className="flex items-center gap-2">
               <span className="text-2xl">🌟</span>
@@ -1269,9 +1268,6 @@ export default function CommunityActivities() {
               {mode === 'kid' ? `${currentProfile?.emoji ?? '🧒'} My Day` : 'Discover'}
             </h1>
           )}
-          <div className="flex items-center gap-1">
-            <ProfileSwitcher iconOnly />
-          </div>
         </div>
 
         {/* Row 2: Search bar (hidden for little explorer) */}
@@ -1424,14 +1420,8 @@ export default function CommunityActivities() {
                     {categoryEmoji}
                   </span>
                 </div>
-                <div className="p-4 flex items-center gap-3">
-                  <h3 className="text-lg font-black leading-tight flex-1">{activity.name}</h3>
-                  <button
-                    onClick={() => wishlistActivity(activity)}
-                    className={cn('shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-4xl tap-highlight active:scale-90 transition-transform', isWishlisted ? 'bg-red-100' : 'bg-pink-50')}
-                  >
-                    {isWishlisted ? '❤️' : '🤍'}
-                  </button>
+                <div className="p-4">
+                  <h3 className="text-lg font-black leading-tight">{activity.name}</h3>
                 </div>
               </div>
             );

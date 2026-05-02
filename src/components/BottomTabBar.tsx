@@ -3,17 +3,9 @@ import { Compass, BookMarked, Sparkles, User, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
-const TABS = [
-  { label: 'Discover', icon: Compass,      route: '/activities'  },
-  { label: 'Plan',     icon: CalendarDays,  route: '/plan'        },
-  { label: 'Saved',    icon: BookMarked,    route: '/saved-trips' },
-  { label: 'Kids',     icon: Sparkles,      route: '/kids'        },
-  { label: 'Me',       icon: User,          route: '/profile'     },
-] as const;
-
 export default function BottomTabBar() {
   const navigate  = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const [kidBadge, setKidBadge] = useState(0);
 
   useEffect(() => {
@@ -26,19 +18,36 @@ export default function BottomTabBar() {
     return () => window.removeEventListener('storage', read);
   }, []);
 
+  const isActive = (id: string) => {
+    if (id === 'discover') return pathname === '/activities' && !search.includes('view=plan');
+    if (id === 'plan')     return pathname === '/plan' || (pathname === '/activities' && search.includes('view=plan'));
+    if (id === 'saved')    return pathname === '/saved-trips';
+    if (id === 'kids')     return pathname === '/kids';
+    if (id === 'me')       return pathname === '/profile';
+    return false;
+  };
+
+  const TABS = [
+    { id: 'discover', label: 'Discover',  icon: Compass,      onTap: () => navigate('/activities')          },
+    { id: 'plan',     label: 'Plan',       icon: CalendarDays,  onTap: () => navigate('/activities?view=plan') },
+    { id: 'saved',    label: 'Saved',      icon: BookMarked,    onTap: () => navigate('/saved-trips')         },
+    { id: 'kids',     label: 'Kid Mode',   icon: Sparkles,      onTap: () => navigate('/kids')                },
+    { id: 'me',       label: 'Me',         icon: User,          onTap: () => navigate('/profile')             },
+  ] as const;
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border/40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch h-16 max-w-lg mx-auto">
-        {TABS.map(({ label, icon: Icon, route }) => {
-          const active = pathname === route || (route !== '/activities' && pathname.startsWith(route));
-          const isKids = route === '/kids';
+        {TABS.map(({ id, label, icon: Icon, onTap }) => {
+          const active = isActive(id);
+          const isKids = id === 'kids';
           return (
             <button
-              key={route}
-              onClick={() => navigate(route)}
+              key={id}
+              onClick={onTap}
               className={cn(
                 'flex-1 flex flex-col items-center justify-center gap-0.5 relative',
                 'active:scale-90 transition-transform duration-100',

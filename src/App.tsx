@@ -39,7 +39,7 @@ import CatComparison from "./pages/CatComparison";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditActivity from "./pages/EditActivity";
-import SessionPlanner from "./pages/SessionPlanner";
+import KidModePage from "./pages/KidModePage";
 import CuratedLists from "./pages/CuratedLists";
 import CuratedListDetail from "./pages/CuratedListDetail";
 import AdminLists from "./pages/AdminLists";
@@ -100,8 +100,8 @@ const App = () => (
           <Route path="/test-auth" element={<TestAuth />} />
           <Route path="/events-calendar" element={<EventsCalendar />} />
           <Route path="/cats" element={<CatComparison />} />
-          <Route path="/plan" element={<ProtectedRoute><SessionPlanner /></ProtectedRoute>} />
-          <Route path="/kids" element={<Navigate to="/activities" replace />} />
+          <Route path="/plan" element={<Navigate to="/activities?view=plan" replace />} />
+          <Route path="/kids" element={<KidModePage />} />
           <Route path="/lists" element={<CuratedLists />} />
           <Route path="/lists/:slug" element={<CuratedListDetail />} />
           <Route path="/admin/lists" element={<ProtectedRoute><AdminLists /></ProtectedRoute>} />

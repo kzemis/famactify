@@ -1238,12 +1238,11 @@ export default function CommunityActivities() {
   const wishlistActivity = useCallback((activity: { id: string; name: string; imageurlthumb: string | null }) => {
     const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
     if (wishlisted.has(activity.id)) {
-      // Toggle off
+      // Toggle off — no toast (visual heart change + Plan badge tells the story)
       const filtered = proposals.filter((p: any) => p.activityId !== activity.id);
       localStorage.setItem('famactify-kid-proposals', JSON.stringify(filtered));
       window.dispatchEvent(new Event('storage'));
       setWishlisted(prev => { const s = new Set(prev); s.delete(activity.id); return s; });
-      toast('Removed from wishlist 💔');
       return;
     }
     const newProposal = {
@@ -1260,7 +1259,7 @@ export default function CommunityActivities() {
     localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
     window.dispatchEvent(new Event('storage'));
     setWishlisted(prev => new Set([...prev, activity.id]));
-    toast.success(`Added to wishlist! 🌟 Parent will see your pick.`);
+    // No toast — heart turns red + Plan tab badge updates immediately, both are visible feedback
   }, [wishlisted, currentProfile, mode]);
 
   // Mobile UI state
@@ -1302,11 +1301,19 @@ export default function CommunityActivities() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search activities…"
-                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
+              {searchQuery ? (
+                <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
                   <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={enterMoodMode}
+                  aria-label="Smart suggestions"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-9 px-2.5 rounded-full bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border border-pink-200 flex items-center gap-1 text-xs font-semibold tap-highlight active:scale-95 transition-transform"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Smart
                 </button>
               )}
             </div>
@@ -1570,18 +1577,28 @@ export default function CommunityActivities() {
 
       {/* ── Map full-screen overlay (sits above content, leaves bottom tab bar visible) ── */}
       {viewMode === 'map' && (() => {
-        // Build the places list — full set, or just plan items if entered from plan
+        // Build the places list — full set, or plan items + pending wishlist if entered from plan
         const planIds = new Set(planItems.map(p => p.activityId));
+        const pendingWishlistIds = new Set(
+          kidsProposals.filter(p => p.status === 'pending' && !planIds.has(p.activityId)).map(p => p.activityId)
+        );
+        const showIds = new Set([...planIds, ...pendingWishlistIds]);
         const mapPlaces = mapPlanOnly
-          ? places.filter(p => planIds.has(p.id))
+          ? places.filter(p => showIds.has(p.id))
           : places;
-        // Auto-center on plan items when in plan-only mode
-        const planCenter = mapPlanOnly && planItems.length > 0
+        // Auto-center on plan + wishlist items when in plan-only mode
+        const planCenter = mapPlanOnly
           ? (() => {
-              const valid = planItems.filter(p => p.lat != null && p.lon != null);
-              if (valid.length === 0) return center;
-              const lat = valid.reduce((s, p) => s + (p.lat as number), 0) / valid.length;
-              const lon = valid.reduce((s, p) => s + (p.lon as number), 0) / valid.length;
+              const coords: { lat: number; lon: number }[] = [];
+              planItems.forEach(p => { if (p.lat != null && p.lon != null) coords.push({ lat: p.lat, lon: p.lon }); });
+              allActivitiesForMap.forEach(a => {
+                if (pendingWishlistIds.has(a.id) && a.location_lat != null && a.location_lon != null) {
+                  coords.push({ lat: a.location_lat, lon: a.location_lon });
+                }
+              });
+              if (coords.length === 0) return center;
+              const lat = coords.reduce((s, c) => s + c.lat, 0) / coords.length;
+              const lon = coords.reduce((s, c) => s + c.lon, 0) / coords.length;
               return { lat, lon };
             })()
           : center;
@@ -1612,14 +1629,16 @@ export default function CommunityActivities() {
               {locatingGPS ? 'Locating…' : userLocation ? 'Located ✓' : 'GPS'}
             </button>
             {/* Plan-only ↔ All toggle */}
-            {planItems.length > 0 && (
+            {(planItems.length > 0 || (mapPlanOnly && pendingWishlistIds.size > 0)) && (
               <button
                 onClick={() => setMapPlanOnly(prev => !prev)}
                 className={cn('h-10 px-4 rounded-full shadow-md flex items-center gap-2 text-sm font-medium tap-highlight',
                   mapPlanOnly ? 'bg-background border border-border' : 'bg-primary text-primary-foreground'
                 )}
               >
-                {mapPlanOnly ? `Show all activities` : `Show only plan (${planItems.length})`}
+                {mapPlanOnly
+                  ? `Show all activities`
+                  : `Show only plan${pendingWishlistIds.size > 0 ? ` + ${pendingWishlistIds.size} wishlist` : ''}`}
               </button>
             )}
             {!mapPlanOnly && userLocation && distanceOptions.map(opt => (
@@ -1689,6 +1708,12 @@ export default function CommunityActivities() {
                 <div className="px-4 py-2 flex items-center gap-2">
                   <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
                   <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">{pendingWishlist.length}</span>
+                  <button
+                    onClick={() => { setMapPlanOnly(true); setViewMode('map'); }}
+                    className="ml-auto h-7 px-3 rounded-full bg-orange-500 text-white text-xs font-semibold tap-highlight active:scale-95 transition-transform flex items-center gap-1"
+                  >
+                    <MapIcon className="w-3 h-3" /> See on map
+                  </button>
                 </div>
                 <div className="divide-y divide-orange-100 max-h-36 overflow-y-auto">
                   {pendingWishlist.map(p => (

@@ -1,0 +1,138 @@
+import type { ScavengerHunt } from '@/types/hunt';
+
+const LATVIAN_HALL = {
+  lat: 37.7504615783691,
+  lon: -122.440528869629,
+  address: 'Latvian Hall, 425 Hoffman Ave, San Francisco, CA 94114',
+};
+
+export const zklLatvianSchool75: ScavengerHunt = {
+  id: 'zkl-latvian-school-75',
+  slug: 'zkl-latvian-school-75',
+  title: 'Latviešu skola 75: Anniversary Concert Hunt',
+  blurb: 'A short bilingual hunt for families attending the Northern California Latvian School 75th Anniversary Celebration at Latvian Hall.',
+  coverEmoji: '🇱🇻',
+  hostName: 'Ziemeļkalifornijas Latviešu skola',
+  city: 'San Francisco',
+  countryCode: 'US',
+  primaryTheme: 'community',
+  ageMin: 5,
+  ageMax: 14,
+  durationMinutes: 45,
+  difficulty: 'easy',
+  estCostCents: 0,
+  distanceMeters: 0,
+  publishedAt: '2026-05-02',
+  credits: 'Source facts: ZKLB event post “Ziemeļkalifornijas Latviešu skola aicina uz 75 gadu svētku koncertu - 3. maijā”; ZKLB site contact address 425 Hoffman Ave, San Francisco; event poster shared by Kaspars: May 3, 2026 at 12 PM, schoolchildren performances, greetings, raffle, special guest singer Lauris Reiniks.',
+  sponsors: [
+    {
+      name: 'Ziemeļkalifornijas Latviešu biedrība',
+      url: 'https://www.zklatviesi.org/',
+    },
+  ],
+  stops: [
+    {
+      id: 'zkl75-latvian-hall',
+      order: 0,
+      title: 'Find Latvian Hall',
+      ...LATVIAN_HALL,
+      clueText: 'Start outside or near the entrance. Find the place name for today: Latviešu nams — Latvian Hall. This is where Northern California Latvian community events gather.',
+      parentHint: 'Use the address from the poster and ZKLB website: 425 Hoffman Ave, San Francisco. If you are already inside, point out the entrance, program table, or hall sign.',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'What is the event venue address?',
+        options: ['425 Hoffman Ave', '75 Hoffman Ave', '425 Market St', '12 Hoffman Ave'],
+        correctAnswers: ['425 Hoffman Ave'],
+      },
+      reveal: {
+        funFact: 'ZKLB lists 425 Hoffman Ave, San Francisco as its contact address. The same address appears on the anniversary concert poster as “Latviešu namā / Latvian Hall.”',
+      },
+    },
+    {
+      id: 'zkl75-number-75',
+      order: 1,
+      title: 'The Big Number',
+      ...LATVIAN_HALL,
+      clueText: 'Look for the anniversary number on the poster, program, stage, or announcements. It is the number everyone is celebrating today.',
+      parentHint: 'The poster says “Ziemeļkalifornijas Latviešu skolai - 75” and “Northern California Latvian School 75th Anniversary Celebration.”',
+      prompt: {
+        kind: 'text',
+        question: 'What anniversary number is the Latvian School celebrating?',
+        correctAnswers: ['75', 'seventy five', 'seventy-five', '75th'],
+      },
+      reveal: {
+        funFact: 'A 75th anniversary means the school has carried Latvian language and culture across many generations of Bay Area families.',
+      },
+    },
+    {
+      id: 'zkl75-school-name',
+      order: 2,
+      title: 'Say the School Name',
+      ...LATVIAN_HALL,
+      clueText: 'Find the Latvian name of the school. Try saying it slowly: Zie-meļ-ka-li-for-ni-jas Lat-vie-šu sko-la.',
+      parentHint: 'Point to the words “Ziemeļkalifornijas Latviešu skola.” Kids can answer by choosing the full school name.',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'Which phrase means “Northern California Latvian School”?',
+        options: [
+          'Ziemeļkalifornijas Latviešu skola',
+          'Sanfrancisko Jaunais teātris',
+          'Tautas deju kopa Ritenītis',
+          'Ziemeļkalifornijas Latviešu koris',
+        ],
+        correctAnswers: ['Ziemeļkalifornijas Latviešu skola'],
+      },
+      reveal: {
+        funFact: '“Skola” means “school” in Latvian. ZKLB’s website lists the school as one of the organizations under the Northern California Latvian Association.',
+      },
+    },
+    {
+      id: 'zkl75-performance-detective',
+      order: 3,
+      title: 'Performance Detective',
+      ...LATVIAN_HALL,
+      clueText: 'During the program, listen for schoolchildren performing. Notice one thing: a song, a poem, a costume detail, a word you understand, or a moment that makes people smile.',
+      parentHint: 'The event poster says the program includes performances by schoolchildren. Ask your kid to choose one memory, not to interrupt the program.',
+      prompt: {
+        kind: 'observation',
+        question: 'Remember one detail from a schoolchild performance.',
+      },
+      reveal: {
+        funFact: 'The poster says the celebration program includes “skolas bērnu priekšnesumi” — performances by schoolchildren. That makes the kids, not just adults, the center of the celebration.',
+      },
+    },
+    {
+      id: 'zkl75-lauris-reiniks',
+      order: 4,
+      title: 'Special Guest Clue',
+      ...LATVIAN_HALL,
+      clueText: 'The poster names a special guest singer. Find the name on the poster or listen for it during the greetings.',
+      parentHint: 'The special guest listed on the poster is singer Lauris Reiniks.',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'Who is the special guest singer listed for the concert?',
+        options: ['Lauris Reiniks', 'Una Veilande', 'Astrīda Ramāns', 'Ritenītis'],
+        correctAnswers: ['Lauris Reiniks'],
+      },
+      reveal: {
+        funFact: 'The event poster says the program includes greetings, a raffle, and special guest singer Lauris Reiniks.',
+      },
+    },
+    {
+      id: 'zkl75-pattern-memory',
+      order: 5,
+      title: 'Pattern Memory',
+      ...LATVIAN_HALL,
+      clueText: 'Find a Latvian pattern, green-white poster detail, program detail, or decoration. Take a privacy-safe photo — no kids’ faces, please.',
+      parentHint: 'Good photo subjects: the poster border pattern, a printed program, a sign, a decoration, or a close-up of fabric/pattern. Avoid photographing children or private moments.',
+      prompt: {
+        kind: 'photo',
+        question: 'Take one privacy-safe photo of a Latvian pattern, sign, or event detail.',
+        photoSubject: 'Latvian pattern, sign, or event detail without faces',
+      },
+      reveal: {
+        funFact: 'Latvian visual culture often uses geometric folk patterns. In a community event, those patterns become a small bridge between language, music, memory, and belonging.',
+      },
+    },
+  ],
+};

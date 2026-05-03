@@ -53,7 +53,7 @@ export default function Hunts() {
         ) : (
           <>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Place-based mini-adventures: clue → location → answer. Designed for parents <em>and</em> grandparents to do together with kids.
+              Place-based mini-adventures: clue → location → answer. Explore real places through playful challenges.
             </p>
             {hunts.map(h => (
               <button

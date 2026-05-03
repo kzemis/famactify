@@ -1515,7 +1515,7 @@ export default function CommunityActivities() {
               <span className="text-3xl shrink-0">🔍</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-pink-800">Scavenger Hunts</p>
-                <p className="text-xs text-pink-700/80 leading-snug">Place-based mini-adventures — perfect for grandparent + grandkid days out.</p>
+                <p className="text-xs text-pink-700/80 leading-snug">Place-based mini-adventures with clues, stops, and playful challenges.</p>
               </div>
               <ChevronRight className="w-4 h-4 text-pink-700" />
             </button>

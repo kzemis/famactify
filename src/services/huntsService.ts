@@ -1,7 +1,7 @@
 // SCV-01 — Scavenger Hunt service
 // Phase 2: Supabase-backed reads + writes for hunts/stops/sponsors/attempts.
-// Falls back to seed JSON when the Supabase result set is empty (Phase 0 hunts
-// remain visible until at least one published hunt exists in DB).
+// Public reads merge DB hunts with seed JSON so hand-authored Phase 0/1 hunts
+// remain visible until they are explicitly imported into Supabase.
 
 import { supabase } from '@/integrations/supabase/client';
 import type {
@@ -130,8 +130,9 @@ function mapSponsorRow(s: any): HuntSponsor {
 // ── Service ──────────────────────────────────────────────────────────────────
 
 export const huntsService = {
-  /** Public — list published hunts. Falls back to seed data when DB is empty. */
+  /** Public — list published hunts. Merges DB rows with seed data by slug. */
   async listHunts(opts: { countryCode?: string } = {}): Promise<ScavengerHunt[]> {
+    const seedHunts = SEED_HUNTS.filter(h => !opts.countryCode || h.countryCode === opts.countryCode);
     let query = supabase
       .from('hunts')
       .select('*, hunt_stops(*), hunt_sponsors(*)')
@@ -141,13 +142,12 @@ export const huntsService = {
     const { data, error } = await query;
     if (error) {
       console.warn('[huntsService.listHunts] DB error, falling back to seed:', error.message);
-      return SEED_HUNTS.filter(h => !opts.countryCode || h.countryCode === opts.countryCode);
+      return seedHunts;
     }
-    if (!data || data.length === 0) {
-      // Phase 0 fallback: show curated seed hunts so the feature isn't empty
-      return SEED_HUNTS.filter(h => !opts.countryCode || h.countryCode === opts.countryCode);
-    }
-    return data.map((row: any) => mapHuntRow(row, row.hunt_stops ?? [], row.hunt_sponsors ?? []));
+    const dbHunts = (data ?? []).map((row: any) => mapHuntRow(row, row.hunt_stops ?? [], row.hunt_sponsors ?? []));
+    const dbSlugs = new Set(dbHunts.map(h => h.slug));
+    const missingSeedHunts = seedHunts.filter(h => !dbSlugs.has(h.slug));
+    return [...dbHunts, ...missingSeedHunts];
   },
 
   /** Public — get hunt by slug. Falls back to seed if not found in DB. */

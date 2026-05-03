@@ -7,7 +7,9 @@ export type HuntPromptKind =
   | 'text'             // typed answer, case-insensitive contains-match
   | 'multiple_choice'  // pick one
   | 'photo'            // submit a photo of the subject
-  | 'observation';     // no answer required, just acknowledge
+  | 'observation'      // no answer required, just acknowledge
+  | 'audio'            // record a short sound clip (default 5s)
+  | 'drawing';         // draw on an in-app canvas
 
 export interface HuntPrompt {
   kind: HuntPromptKind;
@@ -18,6 +20,12 @@ export interface HuntPrompt {
   correctAnswers?: string[];
   /** for photo — what should the photo contain */
   photoSubject?: string;
+  /** for audio — what to listen for; informative only */
+  audioSubject?: string;
+  /** for audio — max recording length in seconds (default 5; clamped 2..15) */
+  audioMaxSeconds?: number;
+  /** for drawing — what to draw; informative only */
+  drawingSubject?: string;
 }
 
 export interface HuntStop {
@@ -105,6 +113,11 @@ export interface HuntStopResult {
   photoReviewNotes?: string;
   photoReviewedAt?: string;
   photoReviewedBy?: string;
+  /** Audio recording from the `audio` prompt — base64 data URL (e.g. audio/webm) */
+  audioDataUrl?: string;
+  audioDurationMs?: number;
+  /** Drawing from the `drawing` prompt — PNG data URL exported from canvas */
+  drawingDataUrl?: string;
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────

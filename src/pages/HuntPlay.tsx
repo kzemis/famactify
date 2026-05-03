@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download } from 'lucide-react';
+import AudioRecorder from '@/components/AudioRecorder';
+import DrawingPad from '@/components/DrawingPad';
+import { renderHuntPostcard } from '@/lib/huntPostcard';
 import { huntsService, type ScavengerHunt, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
@@ -19,6 +22,13 @@ export default function HuntPlay() {
   const [phase, setPhase] = useState<'clue' | 'prompt' | 'reveal' | 'finished'>('clue');
   const [textAnswer, setTextAnswer] = useState('');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
+  const [audioDurationMs, setAudioDurationMs] = useState<number>(0);
+  const [drawingDataUrl, setDrawingDataUrl] = useState<string | null>(null);
+  const [postcardUrl, setPostcardUrl] = useState<string | null>(null);
+  const [postcardBlob, setPostcardBlob] = useState<Blob | null>(null);
+  const [postcardLoading, setPostcardLoading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [showParentHint, setShowParentHint] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [verifyingPhoto, setVerifyingPhoto] = useState(false);
@@ -45,6 +55,38 @@ export default function HuntPlay() {
   useEffect(() => {
     return () => { try { window.speechSynthesis?.cancel(); } catch {} };
   }, []);
+
+  // Render the postcard once when the hunt finishes.
+  useEffect(() => {
+    if (phase !== 'finished' || !hunt || !attempt) return;
+    if (postcardUrl || postcardLoading) return;
+    let cancelled = false;
+    setPostcardLoading(true);
+    (async () => {
+      try {
+        const blob = await renderHuntPostcard({
+          hunt,
+          attempt,
+          profileName: currentProfile?.name ?? 'Explorer',
+        });
+        if (cancelled || !blob) return;
+        const url = URL.createObjectURL(blob);
+        setPostcardBlob(blob);
+        setPostcardUrl(url);
+      } catch (e) {
+        console.warn('[postcard render]', e);
+      } finally {
+        if (!cancelled) setPostcardLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hunt?.id, attempt?.id]);
+
+  // Revoke the object URL on unmount.
+  useEffect(() => {
+    return () => { if (postcardUrl) URL.revokeObjectURL(postcardUrl); };
+  }, [postcardUrl]);
 
   if (!hunt || !attempt) {
     return (
@@ -145,6 +187,17 @@ export default function HuntPlay() {
       } finally {
         setVerifyingPhoto(false);
       }
+    } else if (currentStop.prompt.kind === 'audio') {
+      if (!audioDataUrl) { toast.error('Record a sound first'); return; }
+      result.answer = '(audio)';
+      result.audioDataUrl = audioDataUrl;
+      result.audioDurationMs = audioDurationMs;
+      result.isCorrect = true; // sound clips are always accepted as a completion
+    } else if (currentStop.prompt.kind === 'drawing') {
+      if (!drawingDataUrl) { toast.error('Draw something first'); return; }
+      result.answer = '(drawing)';
+      result.drawingDataUrl = drawingDataUrl;
+      result.isCorrect = true; // drawings are always accepted as a completion
     } else {
       // observation — just acknowledge
       result.answer = '✓';
@@ -186,6 +239,9 @@ export default function HuntPlay() {
     setAttempt(cleaned);
     setTextAnswer('');
     setPhotoDataUrl(null);
+    setAudioDataUrl(null);
+    setAudioDurationMs(0);
+    setDrawingDataUrl(null);
     setShowParentHint(false);
     try { window.speechSynthesis?.cancel(); } catch {}
     if (cleaned.currentStopOrder >= hunt.stops.length) {
@@ -197,11 +253,65 @@ export default function HuntPlay() {
     }
   };
 
+  // ── Postcard share / download handlers ─────────────────────────────────────
+  const handleSharePostcard = async () => {
+    if (!hunt) return;
+    if (!postcardBlob) {
+      toast.error(postcardLoading ? 'Postcard still rendering…' : 'Couldn\'t prepare postcard');
+      return;
+    }
+    setSharing(true);
+    try {
+      const fileName = `${hunt.slug}-postcard.png`;
+      const file = new File([postcardBlob], fileName, { type: 'image/png' });
+      const shareData: ShareData = {
+        title: `${currentProfile?.name ?? 'We'} finished ${hunt.title}!`,
+        text: `${currentProfile?.name ?? 'We'} just completed the FamActify hunt — walk it yourself: famactify.app/hunts/${hunt.slug}`,
+        url: `${window.location.origin}/hunts/${hunt.slug}`,
+        files: [file],
+      };
+      // Web Share API Level 2 — supports files on iOS 15+, Chrome Android, etc.
+      if (navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+      } else if (navigator.share) {
+        // Fallback — share text/link only (no image)
+        await navigator.share({ title: shareData.title, text: shareData.text, url: shareData.url });
+      } else {
+        // Desktop / unsupported — download instead
+        handleDownloadPostcard();
+        return;
+      }
+    } catch (e: any) {
+      // AbortError = user cancelled the system share sheet — no toast
+      if (e?.name !== 'AbortError') {
+        console.warn('[postcard share]', e);
+        toast.error('Could not share — try the download instead');
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleDownloadPostcard = () => {
+    if (!postcardBlob || !hunt) return;
+    const url = URL.createObjectURL(postcardBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${hunt.slug}-postcard.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success('Postcard saved — share it from your photos!');
+  };
+
   // ── Render: finished summary ────────────────────────────────────────────────
 
   if (isFinished) {
     const correct = attempt.results.filter(r => r.isCorrect && !r.skipped).length;
     const photos = attempt.results.filter(r => r.photoDataUrl).map(r => r.photoDataUrl!);
+    const drawings = attempt.results.filter(r => r.drawingDataUrl).map(r => r.drawingDataUrl!);
+    const audios = attempt.results.filter(r => r.audioDataUrl);
     return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-amber-50 via-pink-50 to-purple-50 pb-tab-bar">
         <div className="px-6 pt-12 pb-6 text-center space-y-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 32px)' }}>
@@ -217,12 +327,58 @@ export default function HuntPlay() {
           </div>
         </div>
 
-        {photos.length > 0 && (
+        {/* Postcard preview — the shareable headline visual */}
+        <div className="px-5 mt-4">
+          {postcardLoading && !postcardUrl ? (
+            <div className="rounded-3xl bg-white/60 border shadow-sm aspect-[4/5] flex flex-col items-center justify-center gap-2 text-muted-foreground">
+              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              <p className="text-xs">Painting your postcard…</p>
+            </div>
+          ) : postcardUrl ? (
+            <button
+              onClick={handleSharePostcard}
+              disabled={sharing}
+              aria-label="Share postcard"
+              className="block w-full rounded-3xl overflow-hidden shadow-xl border bg-white tap-highlight active:scale-[0.99] transition-transform disabled:opacity-90"
+            >
+              <img src={postcardUrl} alt="Hunt completion postcard" className="w-full h-auto block" />
+            </button>
+          ) : null}
+        </div>
+
+        {(photos.length > 0 || drawings.length > 0) && (
           <div className="px-5 space-y-2">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Memories</p>
             <div className="grid grid-cols-2 gap-2">
               {photos.map((p, i) => (
-                <img key={i} src={p} alt="" className="rounded-2xl w-full aspect-square object-cover shadow-sm" />
+                <img key={`p-${i}`} src={p} alt="" className="rounded-2xl w-full aspect-square object-cover shadow-sm" />
+              ))}
+              {drawings.map((d, i) => (
+                <div key={`d-${i}`} className="relative rounded-2xl w-full aspect-square overflow-hidden shadow-sm bg-white">
+                  <img src={d} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-pink-500/90 text-white flex items-center gap-1">
+                    <Pencil className="w-2.5 h-2.5" /> Drawing
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {audios.length > 0 && (
+          <div className="px-5 space-y-2 mt-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sounds you captured</p>
+            <div className="space-y-2">
+              {audios.map((r, i) => (
+                <div key={`a-${i}`} className="flex items-center gap-3 px-3 py-2 rounded-2xl bg-white/80 border shadow-sm">
+                  <div className="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0">
+                    <Mic className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {((r.audioDurationMs ?? 0) / 1000).toFixed(1)}s
+                  </span>
+                  <audio src={r.audioDataUrl!} controls className="flex-1 h-8" />
+                </div>
               ))}
             </div>
           </div>
@@ -230,22 +386,21 @@ export default function HuntPlay() {
 
         <div className="px-5 pt-6 space-y-3">
           <button
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: `We finished ${hunt.title}!`,
-                  text: `${currentProfile?.name ?? 'We'} just completed the FamActify hunt: ${hunt.title}.`,
-                  url: window.location.origin + `/hunts/${hunt.slug}`,
-                }).catch(() => {});
-              } else {
-                navigator.clipboard?.writeText(window.location.origin + `/hunts/${hunt.slug}`);
-                toast.success('Link copied');
-              }
-            }}
-            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2"
+            onClick={handleSharePostcard}
+            disabled={sharing || postcardLoading || !postcardBlob}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <Share2 className="w-4 h-4" /> Share with the family
+            <Share2 className="w-4 h-4" />
+            {sharing ? 'Sharing…' : postcardLoading ? 'Preparing postcard…' : 'Send postcard to grandparents'}
           </button>
+          {postcardBlob && (
+            <button
+              onClick={handleDownloadPostcard}
+              className="w-full h-11 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Save image
+            </button>
+          )}
           <button
             onClick={() => navigate('/saved-trips')}
             className="w-full h-11 rounded-2xl bg-muted text-foreground text-sm font-medium tap-highlight flex items-center justify-center gap-2"
@@ -439,6 +594,26 @@ export default function HuntPlay() {
               </div>
             )}
 
+            {/* Audio — record a short sound clip */}
+            {currentStop.prompt.kind === 'audio' && (
+              <AudioRecorder
+                maxSeconds={currentStop.prompt.audioMaxSeconds ?? 5}
+                subject={currentStop.prompt.audioSubject}
+                initialDataUrl={audioDataUrl ?? undefined}
+                onReady={(url, dur) => { setAudioDataUrl(url); setAudioDurationMs(dur); }}
+                onClear={() => { setAudioDataUrl(null); setAudioDurationMs(0); }}
+              />
+            )}
+
+            {/* Drawing — in-app canvas */}
+            {currentStop.prompt.kind === 'drawing' && (
+              <DrawingPad
+                subject={currentStop.prompt.drawingSubject}
+                initialDataUrl={drawingDataUrl ?? undefined}
+                onChange={(url) => setDrawingDataUrl(url)}
+              />
+            )}
+
             {/* Observation — no input */}
             {currentStop.prompt.kind === 'observation' && (
               <div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
@@ -473,7 +648,8 @@ export default function HuntPlay() {
                   <p className="font-semibold text-sm">
                     {wasSkipped ? 'Skipped' : wasCorrect ? 'Correct!' : 'Not quite — but here\'s the answer'}
                   </p>
-                  {!wasSkipped && lastResult?.answer && lastResult.answer !== '✓' && lastResult.answer !== '(photo)' && (
+                  {!wasSkipped && lastResult?.answer
+                    && !['✓', '(photo)', '(audio)', '(drawing)'].includes(lastResult.answer) && (
                     <p className="text-xs mt-0.5">Your answer: {lastResult.answer}</p>
                   )}
                 </div>
@@ -500,6 +676,24 @@ export default function HuntPlay() {
                 )}
                 {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'approved' && (
                   <p className="text-[11px] text-emerald-700 mt-2">📸 Photo saved!</p>
+                )}
+                {/* Audio capture preview */}
+                {lastResult?.audioDataUrl && (
+                  <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-background/80 border">
+                    <Mic className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    <span className="text-[11px] text-muted-foreground">
+                      Sound saved · {((lastResult.audioDurationMs ?? 0) / 1000).toFixed(1)}s
+                    </span>
+                    <audio src={lastResult.audioDataUrl} controls className="ml-auto h-8" />
+                  </div>
+                )}
+                {/* Drawing capture preview */}
+                {lastResult?.drawingDataUrl && (
+                  <div className="mt-3 flex items-center gap-3 px-3 py-2 rounded-xl bg-background/80 border">
+                    <Pencil className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                    <span className="text-[11px] text-muted-foreground flex-1">Drawing saved</span>
+                    <img src={lastResult.drawingDataUrl} alt="Your drawing" className="w-14 h-14 rounded-lg object-cover border" />
+                  </div>
                 )}
               </div>
 

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
+import { readKidProposals, writeKidProposals } from '@/lib/kidProposals';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,11 +35,10 @@ function timeAgo(iso: string): string {
 }
 
 function loadProposals(): KidProposal[] {
-  return JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+  return readKidProposals() as KidProposal[];
 }
 function saveProposals(proposals: KidProposal[]) {
-  localStorage.setItem('famactify-kid-proposals', JSON.stringify(proposals));
-  window.dispatchEvent(new Event('storage'));
+  writeKidProposals(proposals as any);
 }
 
 // ---------------------------------------------------------------------------

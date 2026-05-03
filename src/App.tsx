@@ -50,10 +50,13 @@ import OrgSetup from "./pages/OrgSetup";
 import OrgDashboard from "./pages/OrgDashboard";
 import OrgListEdit from "./pages/OrgListEdit";
 import KasparsPage from "./pages/KasparsPage";
+import Hunts from "./pages/Hunts";
+import HuntDetail from "./pages/HuntDetail";
+import HuntPlay from "./pages/HuntPlay";
 
 const queryClient = new QueryClient();
 
-const TAB_ROUTES = ['/', '/activities', '/plan', '/saved-trips', '/kids', '/profile'];
+const TAB_ROUTES = ['/', '/activities', '/plan', '/saved-trips', '/kids', '/profile', '/hunts'];
 
 function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -115,6 +118,9 @@ const App = () => (
           <Route path="/org/lists/new" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           <Route path="/org/lists/:id" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           <Route path="/kaspars" element={<KasparsPage />} />
+          <Route path="/hunts" element={<Hunts />} />
+          <Route path="/hunts/:slug" element={<HuntDetail />} />
+          <Route path="/hunts/:slug/play" element={<HuntPlay />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

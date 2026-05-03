@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2 } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle } from 'lucide-react';
 import { huntsService, type ScavengerHunt, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,9 @@ export default function HuntPlay() {
   const [phase, setPhase] = useState<'clue' | 'prompt' | 'reveal' | 'finished'>('clue');
   const [textAnswer, setTextAnswer] = useState('');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [showParentHint, setShowParentHint] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [verifyingPhoto, setVerifyingPhoto] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,12 +33,18 @@ export default function HuntPlay() {
       const h = await huntsService.getHunt(slug);
       if (!h) { navigate('/hunts'); return; }
       setHunt(h);
-      const a = huntsService.startAttempt(h.id, profileId);
+      const a = await huntsService.startAttempt(h.id, profileId);
       setAttempt(a);
       // If completed, jump straight to summary
       if (a.completedAt) setPhase('finished');
     })();
   }, [slug, profileId, navigate]);
+
+  // Stop any ongoing TTS when leaving the page.
+  // Keep this before early returns so React sees the same hook order every render.
+  useEffect(() => {
+    return () => { try { window.speechSynthesis?.cancel(); } catch {} };
+  }, []);
 
   if (!hunt || !attempt) {
     return (
@@ -49,6 +58,27 @@ export default function HuntPlay() {
   const currentStop = isFinished ? null : hunt.stops[attempt.currentStopOrder];
   const totalStops = hunt.stops.length;
   const progress = isFinished ? 1 : attempt.currentStopOrder / totalStops;
+
+  // ── Voice-over (Web Speech API) ──
+  const speak = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      toast.error('Voice-over not supported in this browser');
+      return;
+    }
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+    window.speechSynthesis.cancel(); // clear any queued speech
+    window.speechSynthesis.speak(utterance);
+    setSpeaking(true);
+  };
 
   const handleLocate = () => {
     if (!('geolocation' in navigator)) {
@@ -79,7 +109,7 @@ export default function HuntPlay() {
     reader.readAsDataURL(file);
   };
 
-  const submitAnswer = () => {
+  const submitAnswer = async () => {
     if (!currentStop || !attempt) return;
 
     const result: HuntStopResult = {
@@ -101,19 +131,32 @@ export default function HuntPlay() {
       if (!photoDataUrl) { toast.error('Add a photo first'); return; }
       result.answer = '(photo)';
       result.photoDataUrl = photoDataUrl;
-      result.isCorrect = true; // photos are always accepted
+      result.isCorrect = true; // photos are always accepted as a completion
+      // Verify the photo (currently a stub; CLIP/server model can slot in later)
+      setVerifyingPhoto(true);
+      try {
+        const v = await huntsService.verifyPhotoML(photoDataUrl, currentStop.prompt.photoSubject);
+        result.photoVerified = v.verified;
+        result.photoVerifyConfidence = v.confidence;
+        result.photoNeedsReview = !!v.needsReview;
+        result.photoReviewStatus = v.needsReview ? 'pending' : v.verified ? 'approved' : 'rejected';
+      } catch {
+        result.photoVerified = undefined;
+      } finally {
+        setVerifyingPhoto(false);
+      }
     } else {
       // observation — just acknowledge
       result.answer = '✓';
       result.isCorrect = true;
     }
 
-    const updated = huntsService.recordStop(attempt.id, result, /* advance */ false);
+    const updated = await huntsService.recordStop(attempt.id, result, /* advance */ false);
     if (updated) setAttempt(updated);
     setPhase('reveal');
   };
 
-  const skipStop = () => {
+  const skipStop = async () => {
     if (!currentStop || !attempt) return;
     const result: HuntStopResult = {
       stopId: currentStop.id,
@@ -121,15 +164,15 @@ export default function HuntPlay() {
       answer: '',
       skipped: true,
     };
-    const updated = huntsService.recordStop(attempt.id, result, false);
+    const updated = await huntsService.recordStop(attempt.id, result, false);
     if (updated) setAttempt(updated);
     setPhase('reveal');
   };
 
-  const next = () => {
+  const next = async () => {
     if (!attempt || !hunt) return;
     // advance the pointer in storage now (we recorded the result without advancing)
-    const advanced = huntsService.recordStop(
+    const advanced = await huntsService.recordStop(
       attempt.id,
       { stopId: hunt.stops[attempt.currentStopOrder].id, answeredAt: new Date().toISOString(), answer: '__advance__' },
       true,
@@ -143,8 +186,10 @@ export default function HuntPlay() {
     setAttempt(cleaned);
     setTextAnswer('');
     setPhotoDataUrl(null);
+    setShowParentHint(false);
+    try { window.speechSynthesis?.cancel(); } catch {}
     if (cleaned.currentStopOrder >= hunt.stops.length) {
-      const completed = huntsService.completeAttempt(cleaned.id);
+      const completed = await huntsService.completeAttempt(cleaned.id);
       if (completed) setAttempt(completed);
       setPhase('finished');
     } else {
@@ -208,9 +253,9 @@ export default function HuntPlay() {
             View memories in Trips
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (window.confirm('Play this hunt again from the start?')) {
-                huntsService.abandonAttempt(attempt.id);
+                await huntsService.abandonAttempt(attempt.id);
                 navigate(`/hunts/${hunt.slug}/play`, { replace: true });
                 window.location.reload();
               }
@@ -257,7 +302,14 @@ export default function HuntPlay() {
             <div className="rounded-3xl bg-gradient-to-br from-primary/5 to-pink-50 border p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{currentStop.order + 1}</div>
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Clue</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Clue</span>
+                <button
+                  onClick={() => speak(currentStop.clueText)}
+                  className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
+                  aria-label={speaking ? 'Stop reading' : 'Read clue aloud'}
+                >
+                  {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
               </div>
               <p className="text-base leading-relaxed">{currentStop.clueText}</p>
               {currentStop.address && (
@@ -265,6 +317,23 @@ export default function HuntPlay() {
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">{currentStop.address}</span>
                 </div>
+              )}
+              {/* Parent hint — co-pilot mode */}
+              {currentStop.parentHint && (
+                showParentHint ? (
+                  <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">🤝 Grown-up's hint — read it aloud or paraphrase</p>
+                    <p className="text-sm text-amber-900 leading-relaxed">{currentStop.parentHint}</p>
+                    <button onClick={() => setShowParentHint(false)} className="text-[11px] font-medium text-amber-700 underline">Hide</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowParentHint(true)}
+                    className="w-full h-10 rounded-xl border border-amber-300 text-amber-800 bg-amber-50/50 text-sm font-medium tap-highlight flex items-center justify-center gap-2"
+                  >
+                    <HelpCircle className="w-4 h-4" /> Ask a grown-up
+                  </button>
+                )
               )}
             </div>
 
@@ -381,8 +450,8 @@ export default function HuntPlay() {
               <button onClick={skipStop} className="h-12 px-4 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center gap-1.5">
                 <SkipForward className="w-4 h-4" /> Skip
               </button>
-              <button onClick={submitAnswer} className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5">
-                {currentStop.prompt.kind === 'observation' ? 'Done' : 'Submit'} <ChevronRight className="w-4 h-4" />
+              <button onClick={submitAnswer} disabled={verifyingPhoto} className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5 disabled:opacity-60">
+                {verifyingPhoto ? 'Checking photo…' : currentStop.prompt.kind === 'observation' ? 'Done' : 'Submit'} <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -411,8 +480,27 @@ export default function HuntPlay() {
               </div>
 
               <div className="rounded-3xl bg-gradient-to-br from-primary/5 to-amber-50 border p-5 space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Did you know?</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Did you know?</p>
+                  <button
+                    onClick={() => speak(currentStop.reveal.funFact)}
+                    className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
+                    aria-label={speaking ? 'Stop reading' : 'Read fact aloud'}
+                  >
+                    {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                </div>
                 <p className="text-base leading-relaxed">{currentStop.reveal.funFact}</p>
+                {/* Photo verification feedback */}
+                {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'pending' && (
+                  <p className="text-[11px] text-amber-700 mt-2">📸 Photo saved — queued for a grown-up/admin check.</p>
+                )}
+                {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'rejected' && (
+                  <p className="text-[11px] text-rose-700 mt-2">📸 Photo saved — needs a better match next time.</p>
+                )}
+                {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'approved' && (
+                  <p className="text-[11px] text-emerald-700 mt-2">📸 Photo saved!</p>
+                )}
               </div>
 
               <button onClick={next} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2">

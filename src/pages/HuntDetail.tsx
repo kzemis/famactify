@@ -20,7 +20,7 @@ export default function HuntDetail() {
     (async () => {
       const h = await huntsService.getHunt(slug);
       setHunt(h);
-      if (h) setLatestAttempt(huntsService.findLatestAttempt(h.id, profileId));
+      if (h) setLatestAttempt(await huntsService.findLatestAttempt(h.id, profileId));
       setLoading(false);
     })();
   }, [slug, profileId]);
@@ -124,10 +124,10 @@ export default function HuntDetail() {
         <div className="flex gap-2">
           {isInProgress && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!latestAttempt) return;
                 if (window.confirm('Restart from the first stop? Your progress on this hunt will be cleared.')) {
-                  huntsService.abandonAttempt(latestAttempt.id);
+                  await huntsService.abandonAttempt(latestAttempt.id);
                   navigate(`/hunts/${hunt.slug}/play`);
                 }
               }}

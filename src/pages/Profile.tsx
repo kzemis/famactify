@@ -7,10 +7,13 @@ import { useToast } from "@/hooks/use-toast";
 import { User, Save, Plus, X, LogOut, ChevronRight, BookMarked, CalendarDays, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { profileService, authService } from "@/services";
+import { badgesService } from "@/services/badgesService";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCountry, COUNTRIES, type CountryCode } from "@/i18n/CountryContext";
+import { useFamilyMode } from "@/contexts/FamilyModeContext";
+import type { EarnedBadge } from "@/types/hunt";
 
 const CHILD_INTERESTS = ['animals', 'science', 'art', 'music', 'cooking', 'water', 'climbing', 'sports', 'trains', 'dinosaurs', 'space', 'building'] as const;
 const FAMILY_INTERESTS = ['nature', 'culture', 'sport', 'education', 'music', 'art', 'food', 'adventure', 'community', 'animals', 'science', 'history'] as const;
@@ -18,10 +21,16 @@ const FAMILY_INTERESTS = ['nature', 'culture', 'sport', 'education', 'music', 'a
 interface Child { age: number; name: string; interests: string[]; }
 interface AddChildForm { age: string; name: string; interests: string[]; }
 
+const BADGE_TIER_STYLES: Record<EarnedBadge['tier'], string> = {
+  bronze: 'bg-orange-100 text-orange-800 border-orange-200',
+  silver: 'bg-slate-100 text-slate-800 border-slate-200',
+  gold: 'bg-amber-100 text-amber-800 border-amber-200',
+};
+
 const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'children' | 'interests' | 'settings'>('menu');
+  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'children' | 'interests' | 'settings' | 'badges'>('menu');
   const { language, setLanguage } = useLanguage();
   const { country, setCountry } = useCountry();
   const [profile, setProfile] = useState({ full_name: "", city: "", family_size: "", children_ages: "", bio: "", discoverable: false });
@@ -30,8 +39,12 @@ const Profile = () => {
   const [userEmail, setUserEmail] = useState("");
   const [showAddChild, setShowAddChild] = useState(false);
   const [addChildForm, setAddChildForm] = useState<AddChildForm>({ age: '', name: '', interests: [] });
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const { currentProfile } = useFamilyMode();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const badgeProfileId = currentProfile?.id ?? 'parent-default';
 
   useEffect(() => {
     (async () => {
@@ -46,6 +59,23 @@ const Profile = () => {
       setLoading(false);
     })();
   }, [navigate]);
+
+  useEffect(() => {
+    if (activeSection !== 'badges') return;
+    let cancelled = false;
+    setBadgesLoading(true);
+    badgesService.listEarned(badgeProfileId)
+      .then(list => {
+        if (!cancelled) setBadges(list);
+      })
+      .catch(() => {
+        if (!cancelled) setBadges([]);
+      })
+      .finally(() => {
+        if (!cancelled) setBadgesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeSection, badgeProfileId]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -160,6 +190,17 @@ const Profile = () => {
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold">Saved Trips</p>
                   <p className="text-xs text-muted-foreground">Your planned adventures</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <div className="border-t" />
+              <button onClick={() => setActiveSection('badges')} className="w-full flex items-center gap-3 px-4 py-4 tap-highlight active:bg-muted/50 transition-colors">
+                <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <span className="text-lg leading-none">🎖️</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold">Badges</p>
+                  <p className="text-xs text-muted-foreground">Hunt completion collection</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -369,6 +410,73 @@ const Profile = () => {
             </div>
             {familyInterests.length > 0 && (
               <p className="text-xs text-muted-foreground">{familyInterests.length} selected</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Badges section ── */}
+      {activeSection === 'badges' && (
+        <>
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-4 flex items-center gap-3">
+            <button onClick={() => setActiveSection('menu')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold leading-tight">Badges</h2>
+              <p className="text-xs text-muted-foreground truncate">{currentProfile?.emoji ?? '👨‍👩‍👧'} {currentProfile?.name ?? 'Parent'} hunt collection</p>
+            </div>
+          </div>
+          <div className="px-4 py-4 pb-tab-bar space-y-4">
+            <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-pink-50 border p-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Scavenger Hunt Badges</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Complete hunts to collect city and venue memories. Badge tiers reflect how many stops were solved without skips.
+              </p>
+              <button onClick={() => navigate('/hunts')} className="mt-3 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold tap-highlight">
+                Find a hunt
+              </button>
+            </div>
+
+            {badgesLoading ? (
+              <div className="py-12 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            ) : badges.length === 0 ? (
+              <div className="text-center py-12 space-y-3">
+                <span className="text-5xl">🎖️</span>
+                <p className="font-semibold">No badges yet</p>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  Start a scavenger hunt, finish the stops, and your first badge will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {badges.map(badge => (
+                  <button
+                    key={`${badge.huntId}-${badge.earnedAt}`}
+                    onClick={() => navigate(`/hunts/${badge.huntSlug}`)}
+                    className="w-full text-left rounded-2xl border bg-card p-4 flex items-center gap-3 tap-highlight active:scale-[0.99] transition-transform"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-amber-100 flex items-center justify-center text-3xl shrink-0">
+                      {badge.coverEmoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm truncate">{badge.huntTitle}</p>
+                        <span className={cn('text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase shrink-0', BADGE_TIER_STYLES[badge.tier])}>
+                          {badge.tier}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{badge.city} · {badge.stopsCompleted}/{badge.totalStops} stops</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Earned {new Date(badge.earnedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </>

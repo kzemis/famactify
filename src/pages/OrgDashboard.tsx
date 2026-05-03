@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import {
   Plus, Edit, Trash2, Eye, EyeOff,
-  Building2, Settings, Globe, ExternalLink,
+  Building2, Settings, Globe, ExternalLink, ChevronRight,
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import Footer from '@/components/Footer';
@@ -207,6 +207,21 @@ export default function OrgDashboard() {
               <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Hunts entry — quick link to the hunts dashboard */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/org/hunts')}
+            className="w-full text-left rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-50 via-purple-50 to-amber-50 p-4 flex items-center gap-3 tap-highlight active:scale-[0.99] transition-transform"
+          >
+            <span className="text-3xl shrink-0">🔍</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-pink-800">Scavenger Hunts</p>
+              <p className="text-xs text-pink-700/80 leading-snug">Build place-based mini-adventures for your venue or city — submit for review and reach families in the app.</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-pink-700" />
+          </button>
         </div>
 
         {/* Lists header */}

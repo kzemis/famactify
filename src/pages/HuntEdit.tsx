@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X, Bot, FileText, Sparkles, Workflow } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ import { authService } from '@/services';
 import { cn } from '@/lib/utils';
 
 type Mode = 'org' | 'admin';
+type HuntCreatorMode = 'human' | 'ai_assisted' | 'ai_generated';
 
 const PROMPT_KINDS: { value: HuntPromptKind; label: string; helper: string }[] = [
   { value: 'text',            label: '📝 Text',         helper: 'Player types an answer (case-insensitive contains-match against your list).' },
@@ -37,12 +38,31 @@ function emptyStop(order: number): HuntStop {
   };
 }
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72);
+}
+
+function splitLines(value: string): string[] {
+  return value.split('\n').map(line => line.trim()).filter(Boolean);
+}
+
+function splitSourceLinks(value: string): string[] {
+  return splitLines(value).flatMap(line => line.split(',')).map(link => link.trim()).filter(Boolean);
+}
+
 export default function HuntEdit() {
   const params = useParams<{ id?: string }>();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const mode: Mode = pathname.startsWith('/admin/') ? 'admin' : 'org';
   const isNew = !params.id || params.id === 'new';
+  const startsFromAi = new URLSearchParams(search).get('mode') === 'ai';
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -50,6 +70,9 @@ export default function HuntEdit() {
   const [reviewNotes, setReviewNotes] = useState<string | null>(null);
   const [hunt, setHunt] = useState<Partial<ScavengerHunt>>({
     slug: '',
+    artifactKind: 'scavenger_hunt',
+    artifactVersion: 1,
+    createdVia: startsFromAi ? 'ai_assisted' : 'human',
     title: '',
     blurb: '',
     coverEmoji: '🔍',
@@ -62,12 +85,20 @@ export default function HuntEdit() {
     durationMinutes: 120,
     difficulty: 'easy',
     credits: '',
+    sourceLinks: [],
+    aiPrompt: '',
+    generationNotes: '',
     stops: [],
     sponsors: [],
   });
   const [huntId, setHuntId] = useState<string | null>(isNew ? null : (params.id ?? null));
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingFor, setUploadingFor] = useState<number | null>(null); // sponsor index being uploaded for
+  const [assistantOpen, setAssistantOpen] = useState(isNew && startsFromAi);
+  const [aiPlace, setAiPlace] = useState('');
+  const [aiSourceLinks, setAiSourceLinks] = useState('');
+  const [aiSourceFacts, setAiSourceFacts] = useState('');
+  const [aiStopIdeas, setAiStopIdeas] = useState('');
 
   // Load existing hunt
   useEffect(() => {
@@ -138,7 +169,75 @@ export default function HuntEdit() {
         return `Stop ${i + 1}: multiple choice needs options and a correct answer`;
       }
     }
+    if ((hunt.createdVia === 'ai_assisted' || hunt.createdVia === 'ai_generated') && !(hunt.sourceLinks?.length) && !hunt.credits?.trim()) {
+      return 'AI-assisted hunts need source links or source notes in credits';
+    }
     return null;
+  };
+
+  const handleGenerateArtifactDraft = () => {
+    const place = aiPlace.trim() || hunt.hostName?.trim() || hunt.title?.trim();
+    const facts = splitLines(aiSourceFacts);
+    const links = splitSourceLinks(aiSourceLinks);
+    const stopIdeas = splitLines(aiStopIdeas);
+
+    if (!place) { toast.error('Add venue/place name first'); return; }
+    if (facts.length === 0 && links.length === 0) { toast.error('Paste at least one source fact or link'); return; }
+
+    const stopTitles = (stopIdeas.length ? stopIdeas : facts.slice(0, 5).map((fact, i) => {
+      const clean = fact.replace(/^[-*•]\s*/, '').split(/[.:—-]/)[0]?.trim();
+      return clean && clean.length <= 48 ? clean : `Source clue ${i + 1}`;
+    })).slice(0, 6);
+
+    const generatedStops: HuntStop[] = stopTitles.map((title, i) => {
+      const fact = facts[i] ?? facts[0] ?? 'Use one verified source fact for this stop before publishing.';
+      return {
+        id: crypto.randomUUID(),
+        order: i,
+        title,
+        lat: 0,
+        lon: 0,
+        address: '',
+        clueText: `Find “${title}” at ${place}. Use venue signs, maps, or staff-approved route notes to guide families safely.`,
+        parentHint: 'AI-assisted draft: verify the route, coordinates, safety, accessibility, and source-backed fact before submitting for review.',
+        prompt: {
+          kind: i === stopTitles.length - 1 ? 'photo' : 'observation',
+          question: i === stopTitles.length - 1
+            ? 'Take one privacy-safe memory photo of a detail — no faces.'
+            : `Notice one real detail connected with: ${title}.`,
+          photoSubject: i === stopTitles.length - 1 ? `${place} detail without faces` : undefined,
+        },
+        reveal: {
+          funFact: fact,
+        },
+      };
+    });
+
+    const sourceSummary = links.length ? ` Links: ${links.join('; ')}` : '';
+    setHunt(prev => ({
+      ...prev,
+      artifactKind: 'scavenger_hunt',
+      artifactVersion: 1,
+      createdVia: 'ai_assisted',
+      hostName: prev.hostName || place,
+      title: prev.title || `${place} Scavenger Hunt`,
+      slug: prev.slug || slugify(`${place}-scavenger-hunt`),
+      blurb: prev.blurb || `A place-based scavenger hunt for families visiting ${place}, drafted from source-backed venue facts.`,
+      coverEmoji: prev.coverEmoji || '🔍',
+      primaryTheme: prev.primaryTheme || 'community',
+      city: prev.city || '',
+      countryCode: prev.countryCode || 'US',
+      credits: prev.credits || `AI-assisted draft from venue-provided source facts.${sourceSummary}`,
+      sourceLinks: links,
+      aiPrompt: [
+        `Create a family scavenger hunt artifact for ${place}.`,
+        aiSourceFacts.trim(),
+        aiStopIdeas.trim() ? `Requested stops:\n${aiStopIdeas.trim()}` : '',
+      ].filter(Boolean).join('\n\n'),
+      generationNotes: 'AI-assisted artifact draft. Human venue author must verify every stop, coordinate, clue, source fact, safety note, and photo/privacy instruction before review.',
+      stops: generatedStops,
+    }));
+    toast.success('AI-assisted artifact draft created — now verify and edit it');
   };
 
   const handleSave = async () => {
@@ -155,6 +254,10 @@ export default function HuntEdit() {
           ageMin: hunt.ageMin, ageMax: hunt.ageMax,
           durationMinutes: hunt.durationMinutes, difficulty: hunt.difficulty as any,
           credits: hunt.credits,
+          createdVia: hunt.createdVia,
+          sourceLinks: hunt.sourceLinks,
+          aiPrompt: hunt.aiPrompt,
+          generationNotes: hunt.generationNotes,
         });
         setHuntId(id);
       } else {
@@ -165,6 +268,10 @@ export default function HuntEdit() {
           ageMin: hunt.ageMin, ageMax: hunt.ageMax,
           durationMinutes: hunt.durationMinutes, difficulty: hunt.difficulty,
           credits: hunt.credits,
+          createdVia: hunt.createdVia,
+          sourceLinks: hunt.sourceLinks,
+          aiPrompt: hunt.aiPrompt,
+          generationNotes: hunt.generationNotes,
         });
       }
       await huntsService.replaceStops(id, hunt.stops ?? []);
@@ -276,6 +383,121 @@ export default function HuntEdit() {
       )}
 
       <div className="px-4 py-4 space-y-6">
+        {/* Artifact workflow */}
+        <Section title="Artifact workflow">
+          <div className="rounded-3xl border bg-card p-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Workflow className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm">Scavenger hunt artifact</p>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  Draft → source-backed stops → submit for review → publish. A human can author it directly, or an AI/agent can draft the same artifact for human verification.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1.5 text-[10px] font-semibold">
+              {[
+                ['Draft', 'draft'],
+                ['Review', 'pending_review'],
+                ['Published', 'published'],
+                ['Rejected', 'rejected'],
+              ].map(([label, state]) => (
+                <div key={state} className={cn(
+                  'rounded-xl px-2 py-2 text-center border',
+                  huntStatus === state ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/30 text-muted-foreground',
+                )}>
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {isNew && (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => { updateField('createdVia', 'human'); setAssistantOpen(false); }}
+                  className={cn('rounded-2xl border-2 p-3 text-left tap-highlight', hunt.createdVia === 'human' ? 'border-primary bg-primary/8' : 'border-border')}
+                >
+                  <FileText className="w-4 h-4 mb-2 text-primary" />
+                  <p className="text-xs font-bold">Blank artifact</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">Venue team writes every field.</p>
+                </button>
+                <button
+                  onClick={() => { updateField('createdVia', 'ai_assisted'); setAssistantOpen(true); }}
+                  className={cn('rounded-2xl border-2 p-3 text-left tap-highlight', hunt.createdVia !== 'human' ? 'border-primary bg-primary/8' : 'border-border')}
+                >
+                  <Bot className="w-4 h-4 mb-2 text-primary" />
+                  <p className="text-xs font-bold">AI-assisted draft</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">Paste source facts; generate editable stops.</p>
+                </button>
+              </div>
+            )}
+
+            {assistantOpen && (
+              <div className="rounded-2xl bg-gradient-to-br from-pink-50 to-amber-50 border border-pink-100 p-3 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-pink-700 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-pink-900">AI draft helper</p>
+                    <p className="text-xs text-pink-800/80 leading-relaxed">
+                      This creates an editable artifact scaffold from venue-provided facts. It does not replace human fact-checking, route safety, or admin review.
+                    </p>
+                  </div>
+                </div>
+                <Field label="Venue / place name">
+                  <Input value={aiPlace} onChange={e => setAiPlace(e.target.value)} placeholder="Riga Zoo, museum, park, market…" />
+                </Field>
+                <Field label="Source links (one per line)">
+                  <Textarea value={aiSourceLinks} onChange={e => setAiSourceLinks(e.target.value)} rows={3} placeholder="https://official-site.example/page&#10;https://city.example/venue" />
+                </Field>
+                <Field label="Source facts / venue brief">
+                  <Textarea value={aiSourceFacts} onChange={e => setAiSourceFacts(e.target.value)} rows={5} placeholder="Paste only facts the venue can stand behind: opening year, exhibit names, route notes, safety notes, accessibility notes…" />
+                </Field>
+                <Field label="Desired stops (optional, one per line)">
+                  <Textarea value={aiStopIdeas} onChange={e => setAiStopIdeas(e.target.value)} rows={4} placeholder="Entrance sign&#10;Main exhibit&#10;Outdoor sculpture&#10;Memory photo spot" />
+                </Field>
+                <button onClick={handleGenerateArtifactDraft} className="w-full h-11 rounded-2xl bg-pink-600 text-white font-semibold tap-highlight flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4" /> Generate editable artifact draft
+                </button>
+              </div>
+            )}
+          </div>
+        </Section>
+
+        {/* Provenance */}
+        <Section title="Artifact provenance">
+          <div className="rounded-2xl border bg-card p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Creator mode">
+                <select className="h-11 w-full rounded-xl border bg-background px-3 text-sm" value={hunt.createdVia ?? 'human'} onChange={e => updateField('createdVia', e.target.value as HuntCreatorMode)}>
+                  <option value="human">Human-created</option>
+                  <option value="ai_assisted">AI-assisted</option>
+                  <option value="ai_generated">AI-generated</option>
+                </select>
+              </Field>
+              <Field label="Artifact version">
+                <Input type="number" min={1} value={hunt.artifactVersion ?? 1} onChange={e => updateField('artifactVersion', parseInt(e.target.value || '1'))} />
+              </Field>
+            </div>
+            <Field label="Source links (one per line)">
+              <Textarea
+                value={(hunt.sourceLinks ?? []).join('\n')}
+                onChange={e => updateField('sourceLinks', splitSourceLinks(e.target.value))}
+                rows={3}
+                placeholder="Official venue page, city page, exhibit page…"
+              />
+            </Field>
+            <Field label="AI / agent prompt or brief (optional)">
+              <Textarea value={hunt.aiPrompt ?? ''} onChange={e => updateField('aiPrompt', e.target.value)} rows={3} placeholder="Prompt/brief used by an AI agent to draft this hunt." />
+            </Field>
+            <Field label="Generation + verification notes">
+              <Textarea value={hunt.generationNotes ?? ''} onChange={e => updateField('generationNotes', e.target.value)} rows={3} placeholder="What was generated? What did a human verify? What still needs review?" />
+            </Field>
+          </div>
+        </Section>
+
         {/* Basics */}
         <Section title="Basics">
           <Field label="Title">

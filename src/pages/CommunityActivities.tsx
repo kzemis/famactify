@@ -378,6 +378,59 @@ interface KidProposalItem {
   activityImage: string | null;
 }
 
+interface FamilyPlaylistItem {
+  activityId: string;
+  activityName: string;
+  activityImage: string | null;
+  lat: number | null;
+  lon: number | null;
+  address: string | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  ageBuckets: string[] | null;
+  urlmoreinfo: string | null;
+  urlmoreinfo_status: string | null;
+}
+
+interface FamilyPlaylist {
+  id: string;
+  title: string;
+  assignedProfileId: string;
+  assignedProfileName: string;
+  createdAt: string;
+  createdByProfileId: string | null;
+  items: FamilyPlaylistItem[];
+}
+
+const FAMILY_PLAYLISTS_KEY = 'famactify-family-playlists';
+
+function loadFamilyPlaylists(): FamilyPlaylist[] {
+  try {
+    return JSON.parse(localStorage.getItem(FAMILY_PLAYLISTS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveFamilyPlaylists(playlists: FamilyPlaylist[]) {
+  localStorage.setItem(FAMILY_PLAYLISTS_KEY, JSON.stringify(playlists));
+  window.dispatchEvent(new Event('storage'));
+}
+
+function getNavigationUrls(place: { name?: string; location_lat?: number | null; location_lon?: number | null; location_address?: string | null }) {
+  const hasCoords = typeof place.location_lat === 'number' && typeof place.location_lon === 'number';
+  const query = hasCoords
+    ? `${place.location_lat},${place.location_lon}`
+    : (place.location_address || place.name || '');
+  const encoded = encodeURIComponent(query);
+  return {
+    google: `https://www.google.com/maps/search/?api=1&query=${encoded}`,
+    waze: hasCoords
+      ? `https://waze.com/ul?ll=${place.location_lat},${place.location_lon}&navigate=yes`
+      : `https://waze.com/ul?q=${encoded}&navigate=yes`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -386,7 +439,7 @@ export default function CommunityActivities() {
   const { countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
   const { search } = useLocation();
-  const { isKid, isLittleExplorer, mode, currentProfile } = useFamilyMode();
+  const { isKid, isLittleExplorer, mode, currentProfile, profiles } = useFamilyMode();
 
   // Current authenticated user (for edit permission check)
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -465,6 +518,16 @@ export default function CommunityActivities() {
   });
   const [selectedCuratedList, setSelectedCuratedList] = useState<CuratedList | null>(null);
   const [curatedActivityIds, setCuratedActivityIds] = useState<string[] | undefined>(undefined);
+
+  // Family playlists — parent-created, child-assigned, local-first private lists
+  const [familyPlaylists, setFamilyPlaylists] = useState<FamilyPlaylist[]>(() => loadFamilyPlaylists());
+  const [selectedFamilyPlaylistId, setSelectedFamilyPlaylistId] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('familyList') || '';
+  });
+  const [familyPlaylistOpen, setFamilyPlaylistOpen] = useState(false);
+  const [familyPlaylistTitle, setFamilyPlaylistTitle] = useState('');
+  const [familyPlaylistAssigneeId, setFamilyPlaylistAssigneeId] = useState('');
 
   // GPS / Nearby filter
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -642,6 +705,54 @@ export default function CommunityActivities() {
     navigate(query ? `/activities?${query}` : '/activities', { replace: true });
   };
 
+  const childProfiles = useMemo(() => profiles.filter(profile => profile.mode !== 'parent'), [profiles]);
+
+  const assignedFamilyPlaylists = useMemo(() => {
+    if (!currentProfile) return [];
+    return familyPlaylists.filter(playlist => playlist.assignedProfileId === currentProfile.id);
+  }, [familyPlaylists, currentProfile]);
+
+  const selectedFamilyPlaylist = useMemo(() => {
+    if (!selectedFamilyPlaylistId) return null;
+    return familyPlaylists.find(playlist => playlist.id === selectedFamilyPlaylistId) ?? null;
+  }, [familyPlaylists, selectedFamilyPlaylistId]);
+
+  useEffect(() => {
+    const sync = () => setFamilyPlaylists(loadFamilyPlaylists());
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedFamilyPlaylistId || !currentProfile || !isLittleExplorer) return;
+    const stillAssigned = familyPlaylists.some(
+      playlist => playlist.id === selectedFamilyPlaylistId && playlist.assignedProfileId === currentProfile.id,
+    );
+    if (!stillAssigned) {
+      setSelectedFamilyPlaylistId('');
+      const params = new URLSearchParams(window.location.search);
+      params.delete('familyList');
+      const query = params.toString();
+      navigate(query ? `/activities?${query}` : '/activities', { replace: true });
+    }
+  }, [selectedFamilyPlaylistId, familyPlaylists, currentProfile, isLittleExplorer, navigate]);
+
+  const selectFamilyPlaylist = (playlistId: string) => {
+    setSelectedFamilyPlaylistId(playlistId);
+    const params = new URLSearchParams(window.location.search);
+    if (playlistId) {
+      params.set('familyList', playlistId);
+      params.delete('list');
+      setSelectedCuratedListSlug('');
+      setSelectedCuratedList(null);
+      setCuratedActivityIds(undefined);
+    } else {
+      params.delete('familyList');
+    }
+    const query = params.toString();
+    navigate(query ? `/activities?${query}` : '/activities', { replace: true });
+  };
+
   // ---------------------------------------------------------------------------
   // Pending plan from ParentInbox (kid plan approval → pre-fill plan builder)
   // ---------------------------------------------------------------------------
@@ -757,6 +868,13 @@ export default function CommunityActivities() {
    * nearbyKm is applied client-side after fetch because PostGIS is not required.
    * When nearbyKm is active, the grid also fetches all (no range) so haversine can filter.
    */
+  const activeActivityIds = useMemo(
+    () => selectedFamilyPlaylist
+      ? selectedFamilyPlaylist.items.map(item => item.activityId)
+      : curatedActivityIds,
+    [selectedFamilyPlaylist, curatedActivityIds],
+  );
+
   const activityFilters = useMemo<ActivityFilters>(() => ({
     countryCode,
     searchQuery,
@@ -775,12 +893,12 @@ export default function CommunityActivities() {
     timingFilter,
     durationFilter,
     selectedCities,
-    curatedActivityIds,
+    curatedActivityIds: activeActivityIds,
   }), [
     countryCode, searchQuery, selectedCategories, selectedAges, selectedInvolvement,
     maxPrice, indoorOnly, rainSuitable, wheelchairAccessible, strollerFriendly,
     sensoryFriendly, transitAccessible, fencedArea, eventsOnly, timingFilter, durationFilter,
-    selectedCities, curatedActivityIds,
+    selectedCities, activeActivityIds,
   ]);
 
   useEffect(() => {
@@ -985,6 +1103,59 @@ export default function CommunityActivities() {
 
   const removeFromPlan = (activityId: string) => {
     setPlanItems(prev => recalcPlanTimes(prev.filter(p => p.activityId !== activityId), sessionStartTime));
+  };
+
+  const openFamilyPlaylistCreator = () => {
+    if (planItems.length === 0) {
+      toast.error('Add activities first');
+      return;
+    }
+    if (childProfiles.length === 0) {
+      toast.error('Add a kid or Little Explorer profile first');
+      navigate('/kids');
+      return;
+    }
+    setFamilyPlaylistTitle(planName && planName !== 'My Plan' ? planName : 'Picked for you');
+    setFamilyPlaylistAssigneeId(childProfiles[0].id);
+    setFamilyPlaylistOpen(true);
+  };
+
+  const createFamilyPlaylist = () => {
+    if (planItems.length === 0) {
+      toast.error('Add activities first');
+      return;
+    }
+    const assignee = childProfiles.find(profile => profile.id === familyPlaylistAssigneeId);
+    if (!assignee) {
+      toast.error('Choose a kid profile');
+      return;
+    }
+    const playlist: FamilyPlaylist = {
+      id: crypto.randomUUID(),
+      title: familyPlaylistTitle.trim() || 'Picked for you',
+      assignedProfileId: assignee.id,
+      assignedProfileName: assignee.name,
+      createdAt: new Date().toISOString(),
+      createdByProfileId: currentProfile?.id ?? null,
+      items: planItems.map(item => ({
+        activityId: item.activityId,
+        activityName: item.name,
+        activityImage: item.imageurlthumb,
+        lat: item.lat,
+        lon: item.lon,
+        address: item.address,
+        minPrice: item.minPrice,
+        maxPrice: item.maxPrice,
+        ageBuckets: null,
+        urlmoreinfo: null,
+        urlmoreinfo_status: null,
+      })),
+    };
+    const next = [playlist, ...familyPlaylists.filter(existing => existing.id !== playlist.id)];
+    saveFamilyPlaylists(next);
+    setFamilyPlaylists(next);
+    setFamilyPlaylistOpen(false);
+    toast.success(`Playlist sent to ${assignee.name} 🎁`);
   };
 
   /** Dismiss a wishlist item without adding it (marks declined) */
@@ -1462,8 +1633,49 @@ export default function CommunityActivities() {
         </div>
       )}
 
+      {/* ── Little Explorer assigned playlists ── */}
+      {!loading && isLittleExplorer && viewMode !== 'mood' && assignedFamilyPlaylists.length > 0 && (
+        <div className="px-4 pt-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-black text-orange-600">🎁 Picked for you</p>
+              <p className="text-xs text-orange-700/80">
+                {selectedFamilyPlaylist ? selectedFamilyPlaylist.title : `${assignedFamilyPlaylists.length} playlist${assignedFamilyPlaylists.length === 1 ? '' : 's'} from your grown-up`}
+              </p>
+            </div>
+            {selectedFamilyPlaylist && (
+              <button onClick={() => selectFamilyPlaylist('')} className="h-9 px-3 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700 tap-highlight">
+                All picks
+              </button>
+            )}
+          </div>
+
+          {!selectedFamilyPlaylist && (
+            <div className="grid grid-cols-1 gap-3">
+              {assignedFamilyPlaylists.map(playlist => (
+                <button
+                  key={playlist.id}
+                  onClick={() => selectFamilyPlaylist(playlist.id)}
+                  className="w-full rounded-3xl bg-gradient-to-br from-orange-100 via-pink-100 to-amber-100 border border-orange-200 p-4 text-left shadow-sm tap-highlight active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-14 h-14 rounded-2xl bg-white/80 flex items-center justify-center text-3xl shrink-0">🎁</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-lg font-black text-orange-900 truncate">{playlist.title}</p>
+                      <p className="text-sm font-semibold text-orange-700">{playlist.items.length} fun picks</p>
+                      <p className="text-xs text-orange-700/70 truncate">Tap to browse big cards</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-orange-600" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Little Explorer grid ── */}
-      {!loading && isLittleExplorer && viewMode !== 'mood' && activities.length > 0 && (
+      {!loading && isLittleExplorer && viewMode !== 'mood' && activities.length > 0 && (assignedFamilyPlaylists.length === 0 || !!selectedFamilyPlaylist) && (
         <div className="px-4 py-3 grid grid-cols-1 gap-4">
           {activities.map(activity => {
             const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
@@ -2008,13 +2220,61 @@ export default function CommunityActivities() {
                 {savingPlan ? 'Sending…' : '💌 Send to parent'}
               </button>
             ) : (
-              <button onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="w-full h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight disabled:opacity-50">
-                {savingPlan ? 'Saving…' : '💾 Save & Share'}
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={openFamilyPlaylistCreator} disabled={planItems.length === 0} className="h-11 rounded-2xl bg-orange-500 text-white text-sm font-semibold tap-highlight disabled:opacity-50">
+                  🎁 Kid playlist
+                </button>
+                <button onClick={savePlan} disabled={savingPlan || planItems.length === 0} className="h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight disabled:opacity-50">
+                  {savingPlan ? 'Saving…' : '💾 Save'}
+                </button>
+              </div>
             )}
           </div>
         </div>
       )}
+
+      {/* ── Create family playlist sheet ── */}
+      <Sheet open={familyPlaylistOpen} onOpenChange={setFamilyPlaylistOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-5">
+          <SheetHeader className="text-left pb-4">
+            <SheetTitle>🎁 Make a kid playlist</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              Send these {planItems.length} activities to a kid profile. They will see it as “Picked for you” in Little Explorer / Kid mode.
+            </p>
+          </SheetHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Playlist title</label>
+              <Input value={familyPlaylistTitle} onChange={e => setFamilyPlaylistTitle(e.target.value)} placeholder="Saturday picks for Tomsy" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Send to</label>
+              <select
+                value={familyPlaylistAssigneeId}
+                onChange={e => setFamilyPlaylistAssigneeId(e.target.value)}
+                className="h-11 w-full rounded-xl border bg-background px-3 text-sm"
+              >
+                {childProfiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.emoji} {profile.name} — {profile.mode === 'little-explorer' ? 'Little Explorer' : 'Kid'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="rounded-2xl bg-muted/50 p-3 space-y-2 max-h-40 overflow-y-auto">
+              {planItems.map((item, index) => (
+                <div key={item.activityId} className="flex items-center gap-2 text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">{index + 1}</span>
+                  <span className="truncate">{item.name}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={createFamilyPlaylist} className="w-full h-12 rounded-2xl bg-orange-500 text-white font-bold tap-highlight">
+              Send playlist
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Activity detail bottom sheet ── */}
       <Sheet open={!!detailActivity} onOpenChange={open => !open && setDetailActivity(null)}>
@@ -2029,6 +2289,7 @@ export default function CommunityActivities() {
             const inPlan = planItems.some(p => p.activityId === activity.id);
             const price = getPriceDisplay(activity);
             const isWishlisted = wishlisted.has(activity.id);
+            const navUrls = getNavigationUrls(activity);
             return (
               <>
                 {/* Hero image */}
@@ -2087,6 +2348,16 @@ export default function CommunityActivities() {
                       <div className="flex items-start gap-2 text-sm">
                         <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                         <span className="text-muted-foreground">{activity.location_address}</span>
+                      </div>
+                    )}
+                    {(activity.location_address || typeof activity.location_lat === 'number') && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <a href={navUrls.google} target="_blank" rel="noopener noreferrer" className="h-10 rounded-2xl border border-border flex items-center justify-center text-sm font-semibold tap-highlight">
+                          Google Maps
+                        </a>
+                        <a href={navUrls.waze} target="_blank" rel="noopener noreferrer" className="h-10 rounded-2xl border border-border flex items-center justify-center text-sm font-semibold tap-highlight">
+                          Waze
+                        </a>
                       </div>
                     )}
                     {/* Event date */}
@@ -2366,6 +2637,12 @@ export default function CommunityActivities() {
         <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
           {spotModalPlace && (() => {
             const inPlan = planItems.some(p => p.activityId === spotModalPlace.id);
+            const navUrls = getNavigationUrls({
+              name: spotModalPlace.name,
+              location_lat: spotModalPlace.lat,
+              location_lon: spotModalPlace.lon,
+              location_address: spotModalPlace.location_address ?? null,
+            });
             const otherPlaces = spotModalShowAll
               ? allActivitiesForMap.filter(a => a.id !== spotModalPlace.id && typeof a.location_lat === 'number' && typeof a.location_lon === 'number').map(a => ({
                   id: a.id, name: a.name, lat: a.location_lat!, lon: a.location_lon!,
@@ -2387,6 +2664,12 @@ export default function CommunityActivities() {
                     <Button size="sm" variant={spotModalShowAll ? 'secondary' : 'outline'} onClick={() => setSpotModalShowAll(v => !v)}>
                       <Layers className="w-3.5 h-3.5 mr-1" />{spotModalShowAll ? 'Hide others' : 'Show all'}
                     </Button>
+                    <a href={navUrls.google} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
+                      Google Maps
+                    </a>
+                    <a href={navUrls.waze} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
+                      Waze
+                    </a>
                     <Button size="sm" variant="ghost" onClick={() => { setSpotModalOpen(false); setSpotModalShowAll(false); }} className="ml-auto text-muted-foreground">
                       <X className="w-3.5 h-3.5 mr-1" /> Close
                     </Button>

@@ -218,7 +218,7 @@ export default function OrgDashboard() {
             <span className="text-3xl shrink-0">🔍</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-pink-800">Scavenger Hunts</p>
-              <p className="text-xs text-pink-700/80 leading-snug">Build place-based mini-adventures for your venue or city — submit for review and reach families in the app.</p>
+              <p className="text-xs text-pink-700/80 leading-snug">Create hunt artifacts for your venue or city — human-authored or AI-assisted, source-backed, reviewed, then published.</p>
             </div>
             <ChevronRight className="w-4 h-4 text-pink-700" />
           </button>

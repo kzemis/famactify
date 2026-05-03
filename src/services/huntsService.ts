@@ -75,6 +75,9 @@ function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): Scavenge
   return {
     id: row.id,
     slug: row.slug,
+    artifactKind: row.artifact_kind ?? 'scavenger_hunt',
+    artifactVersion: row.artifact_version ?? 1,
+    createdVia: row.created_via ?? 'human',
     title: row.title,
     blurb: row.blurb,
     coverEmoji: row.cover_emoji ?? '🔍',
@@ -91,6 +94,9 @@ function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): Scavenge
     estCostCents: row.est_cost_cents ?? 0,
     distanceMeters: row.distance_meters ?? 0,
     credits: row.credits ?? undefined,
+    sourceLinks: row.source_links ?? undefined,
+    aiPrompt: row.ai_prompt ?? undefined,
+    generationNotes: row.generation_notes ?? undefined,
     publishedAt: row.published_at ?? row.created_at,
     stops: stops
       .sort((a, b) => a.stop_order - b.stop_order)
@@ -228,6 +234,10 @@ export const huntsService = {
     durationMinutes?: number;
     difficulty?: 'easy' | 'medium' | 'hard';
     credits?: string;
+    createdVia?: 'human' | 'ai_assisted' | 'ai_generated';
+    sourceLinks?: string[];
+    aiPrompt?: string;
+    generationNotes?: string;
     orgId?: string | null;
   }): Promise<string> {
     const { data: user } = await supabase.auth.getUser();
@@ -248,6 +258,12 @@ export const huntsService = {
         duration_minutes: input.durationMinutes ?? 120,
         difficulty: input.difficulty ?? 'easy',
         credits: input.credits ?? null,
+        artifact_kind: 'scavenger_hunt',
+        artifact_version: 1,
+        created_via: input.createdVia ?? 'human',
+        source_links: input.sourceLinks ?? [],
+        ai_prompt: input.aiPrompt ?? null,
+        generation_notes: input.generationNotes ?? null,
         status: 'draft',
         created_by: user.user.id,
         org_id: input.orgId ?? null,
@@ -273,6 +289,12 @@ export const huntsService = {
       estCostCents: 'est_cost_cents',
       distanceMeters: 'distance_meters',
       credits: 'credits',
+      artifactKind: 'artifact_kind',
+      artifactVersion: 'artifact_version',
+      createdVia: 'created_via',
+      sourceLinks: 'source_links',
+      aiPrompt: 'ai_prompt',
+      generationNotes: 'generation_notes',
     };
     const dbPatch: Record<string, any> = {};
     for (const k of Object.keys(patch)) {

@@ -52,6 +52,9 @@ export interface HuntSponsor {
 export interface ScavengerHunt {
   id: string;
   slug: string;
+  artifactKind?: 'scavenger_hunt';
+  artifactVersion?: number;
+  createdVia?: 'human' | 'ai_assisted' | 'ai_generated';
   title: string;
   blurb: string;
   /** Cover illustration URL or emoji-fallback */
@@ -74,6 +77,12 @@ export interface ScavengerHunt {
   distanceMeters: number;
   stops: HuntStop[];
   sponsors?: HuntSponsor[];
+  /** Source/provenance URLs that support the hunt facts */
+  sourceLinks?: string[];
+  /** Prompt or brief used when an AI/agent creates or drafts the artifact */
+  aiPrompt?: string;
+  /** Notes about generation, fact-checking, or human review */
+  generationNotes?: string;
   /** Optional credits / "designed by" line shown on detail page */
   credits?: string;
   publishedAt: string; // ISO date

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useCountry } from '@/i18n/CountryContext';
+import { countUniqueActionableKidProposals, readKidProposals, writeKidProposals } from '@/lib/kidProposals';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,57 +142,62 @@ export default function KidView() {
   // Proposal helpers
   // ---------------------------------------------------------------------------
   const isAsked = useCallback((activityId: string): boolean => {
-    const proposals: KidProposal[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const proposals = readKidProposals();
     return proposals.some(p => p.activityId === activityId && p.status === 'pending');
   }, []);
 
   const submitSingle = useCallback((activity: ActivitySpot) => {
-    const proposals: KidProposal[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-    if (proposals.some(p => p.activityId === activity.id && p.status === 'pending')) {
+    const proposals = readKidProposals();
+    if (proposals.some(p => p.activityId === activity.id && (p.status === 'pending' || p.status === 'parent_suggestion'))) {
       toast.success('Already asked! Your parent will see it 😊');
       return;
     }
-    const newProposal: KidProposal = {
+    const newProposal = {
       id: Math.random().toString(36).slice(2),
       activityId: activity.id,
       activityName: activity.name,
       activityImage: activity.imageurlthumb,
       message: 'I want to go here!',
       createdAt: new Date().toISOString(),
-      status: 'pending',
-      source: 'little',
+      status: 'pending' as const,
+      source: 'little' as const,
       planId: null,
     };
-    proposals.push(newProposal);
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify(proposals));
-    window.dispatchEvent(new Event('storage'));
+    writeKidProposals([...proposals, newProposal]);
     toast.success('Asked! Mom/Dad will see it soon 🎉');
     setSelectedActivity(null);
   }, []);
 
   const submitPlan = useCallback(() => {
     if (wishlist.length === 0) return;
-    const proposals: KidProposal[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const proposals = readKidProposals();
+    const activeActivityIds = new Set(
+      proposals
+        .filter(proposal => proposal.status === 'pending' || proposal.status === 'parent_suggestion')
+        .map(proposal => proposal.activityId),
+    );
     const planId = newPlanId();
     const now = new Date().toISOString();
-    wishlist.forEach(activity => {
-      if (!proposals.some(p => p.activityId === activity.id && p.status === 'pending' && p.planId === planId)) {
-        proposals.push({
+    const newProposals = wishlist.flatMap(activity => {
+      if (activeActivityIds.has(activity.id)) return [];
+      return [{
           id: Math.random().toString(36).slice(2),
           activityId: activity.id,
           activityName: activity.name,
           activityImage: activity.imageurlthumb,
           message: 'Part of my plan!',
           createdAt: now,
-          status: 'pending',
-          source: 'planner',
+          status: 'pending' as const,
+          source: 'planner' as const,
           planId,
-        });
-      }
+        }];
     });
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify(proposals));
-    window.dispatchEvent(new Event('storage'));
-    toast.success(`Plan sent to parent! ${wishlist.length} activities 🎉`);
+    if (newProposals.length > 0) {
+      writeKidProposals([...proposals, ...newProposals]);
+      toast.success(`Plan sent to parent! ${newProposals.length} activities 🎉`);
+    } else {
+      toast.success('These picks are already waiting for parent 😊');
+    }
     setWishlist([]);
     setPlanSheetOpen(false);
     navigate('/kids'); // back to mode select to show success state
@@ -199,8 +205,7 @@ export default function KidView() {
   }, [wishlist, navigate]);
 
   const pendingAskCount = (() => {
-    const proposals: KidProposal[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-    return proposals.filter(p => p.status === 'pending').length;
+    return countUniqueActionableKidProposals('parent', readKidProposals());
   })();
 
   // ---------------------------------------------------------------------------

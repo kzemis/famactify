@@ -18,6 +18,7 @@ import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useFamilyMode } from "@/contexts/FamilyModeContext";
+import { countUniqueActionableKidProposals, readKidProposals } from "@/lib/kidProposals";
 
 interface AppHeaderProps {
   hidden?: boolean;
@@ -33,8 +34,7 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
 
   useEffect(() => {
     const refreshProposals = () => {
-      const proposals = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-      setProposalCount(proposals.filter((p: any) => p.status === 'pending').length);
+      setProposalCount(countUniqueActionableKidProposals('parent', readKidProposals()));
     };
     refreshProposals();
     window.addEventListener('storage', refreshProposals);

@@ -21,6 +21,8 @@ const PROMPT_KINDS: { value: HuntPromptKind; label: string; helper: string }[] =
   { value: 'text',            label: '📝 Text',         helper: 'Player types an answer (case-insensitive contains-match against your list).' },
   { value: 'multiple_choice', label: '🔘 Multiple choice', helper: 'Player picks one of the options. Mark which is correct.' },
   { value: 'photo',           label: '📷 Photo',        helper: 'Player takes a photo of the subject — always accepted.' },
+  { value: 'audio',           label: '🎙️ Sound',         helper: 'Player records a short sound clip (sea lions, parrots, fountain). Always accepted.' },
+  { value: 'drawing',         label: '✏️ Drawing',       helper: 'Player draws on an in-app canvas. Always accepted.' },
   { value: 'observation',     label: '👀 Observation',  helper: 'No answer required. Player just acknowledges they did the thing.' },
 ];
 
@@ -579,7 +581,19 @@ export default function HuntEdit() {
                   {PROMPT_KINDS.map(p => (
                     <button
                       key={p.value}
-                      onClick={() => updateStop(i, x => ({ ...x, prompt: { kind: p.value, question: x.prompt.question, options: p.value === 'multiple_choice' ? (x.prompt.options ?? []) : undefined, correctAnswers: p.value !== 'photo' && p.value !== 'observation' ? (x.prompt.correctAnswers ?? []) : undefined, photoSubject: p.value === 'photo' ? x.prompt.photoSubject : undefined } }))}
+                      onClick={() => updateStop(i, x => ({
+                        ...x,
+                        prompt: {
+                          kind: p.value,
+                          question: x.prompt.question,
+                          options: p.value === 'multiple_choice' ? (x.prompt.options ?? []) : undefined,
+                          correctAnswers: p.value === 'text' || p.value === 'multiple_choice' ? (x.prompt.correctAnswers ?? []) : undefined,
+                          photoSubject:    p.value === 'photo'   ? x.prompt.photoSubject   : undefined,
+                          audioSubject:    p.value === 'audio'   ? x.prompt.audioSubject   : undefined,
+                          audioMaxSeconds: p.value === 'audio'   ? (x.prompt.audioMaxSeconds ?? 5) : undefined,
+                          drawingSubject:  p.value === 'drawing' ? x.prompt.drawingSubject : undefined,
+                        },
+                      }))}
                       className={cn('rounded-xl border-2 p-2 text-left text-xs', s.prompt.kind === p.value ? 'border-primary bg-primary/8' : 'border-border bg-background')}
                     >
                       <p className="font-semibold">{p.label}</p>
@@ -622,6 +636,29 @@ export default function HuntEdit() {
                 {s.prompt.kind === 'photo' && (
                   <Field label="What should the photo show?">
                     <Input value={s.prompt.photoSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))} placeholder="A piglet at Little Farm" />
+                  </Field>
+                )}
+
+                {s.prompt.kind === 'audio' && (
+                  <>
+                    <Field label="What to listen for (informative)">
+                      <Input value={s.prompt.audioSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, audioSubject: e.target.value } }))} placeholder="Sea lions barking at Pier 39" />
+                    </Field>
+                    <Field label="Max recording length (seconds, 2–15)">
+                      <Input
+                        type="number"
+                        min={2}
+                        max={15}
+                        value={s.prompt.audioMaxSeconds ?? 5}
+                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, audioMaxSeconds: Math.max(2, Math.min(15, parseInt(e.target.value || '5'))) } }))}
+                      />
+                    </Field>
+                  </>
+                )}
+
+                {s.prompt.kind === 'drawing' && (
+                  <Field label="What to draw (informative)">
+                    <Input value={s.prompt.drawingSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, drawingSubject: e.target.value } }))} placeholder="The shape of the bridge tower" />
                   </Field>
                 )}
               </div>

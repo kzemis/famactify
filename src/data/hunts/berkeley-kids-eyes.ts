@@ -62,11 +62,11 @@ export const berkeleyKidsEyes: ScavengerHunt = {
       lat: 37.8665,
       lon: -122.3203,
       address: '11 Spinnaker Way, Berkeley, CA 94710',
-      clueText: 'Walk to the top of the grassy hill on the bay. Look up. The wind here is so steady that this is one of the most famous kite-flying spots in California. Count the kites you can see in the sky.',
+      clueText: 'Walk to the top of the grassy hill on the bay. Look up. The wind here is so steady that this is one of the most famous kite-flying spots in California. Whether you see one kite or twenty — pick the one you like best (or imagine your own).',
       prompt: {
-        kind: 'text',
-        question: 'How many kites are flying right now? (Type a number — zero is a fine answer.)',
-        correctAnswers: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '20', 'zero', 'one', 'two', 'three', 'four', 'five', 'lots', 'many', 'none'],
+        kind: 'drawing',
+        question: 'Draw a kite — yours, one you saw, or one you wish you could fly.',
+        drawingSubject: 'A kite riding the Berkeley wind',
       },
       reveal: {
         funFact: 'This park used to be the city dump! In the 1980s Berkeley turned it into a 90-acre park named after farmworker leader Cesar Chavez. The wind here comes through the Golden Gate every afternoon.',
@@ -79,10 +79,12 @@ export const berkeleyKidsEyes: ScavengerHunt = {
       lat: 37.8736,
       lon: -122.2541,
       address: '2001 Gayley Road, Berkeley, CA 94720',
-      clueText: 'The last stop is an open-air stone theatre built more than 120 years ago, copied from one in Ancient Greece. Walk to the very back row at the top and shout your name. Did it echo?',
+      clueText: 'The last stop is an open-air stone theatre built more than 120 years ago, copied from one in Ancient Greece. Walk down to the stage. The stone walls bounce sound back — record yourself saying your name (or a clap, or a song line) and listen.',
       prompt: {
-        kind: 'observation',
-        question: 'Stand on the stage. Clap your hands once. Did the sound bounce back?',
+        kind: 'audio',
+        question: 'Record 5 seconds of YOUR sound bouncing off the stone walls.',
+        audioSubject: 'Your voice, a clap, or a song — captured by the ancient theatre',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'Built in 1903, the Greek Theatre was a gift to UC Berkeley. Its stone walls bounce sound so well that you can be heard from the stage to the top row WITHOUT a microphone. Theodore Roosevelt, John F. Kennedy, and many bands have performed here.',

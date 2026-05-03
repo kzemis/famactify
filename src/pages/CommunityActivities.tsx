@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { cleanDisplayText } from '@/lib/text';
 import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
+import { readKidProposals, uniqueActionableKidProposals, writeKidProposals, type KidProposal } from '@/lib/kidProposals';
 import MapView from '@/components/MapView';
 import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -376,6 +377,15 @@ interface KidProposalItem {
   activityId: string;
   activityName: string;
   activityImage: string | null;
+  status: 'pending' | 'parent_suggestion';
+  lat: number | null;
+  lon: number | null;
+  address: string | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  ageBuckets: string[] | null;
+  urlmoreinfo: string | null;
+  urlmoreinfo_status: string | null;
 }
 
 interface FamilyPlaylistItem {
@@ -415,6 +425,32 @@ function loadFamilyPlaylists(): FamilyPlaylist[] {
 function saveFamilyPlaylists(playlists: FamilyPlaylist[]) {
   localStorage.setItem(FAMILY_PLAYLISTS_KEY, JSON.stringify(playlists));
   window.dispatchEvent(new Event('storage'));
+}
+
+function toKidProposalItem(proposal: KidProposal): KidProposalItem {
+  return {
+    id: proposal.id,
+    activityId: proposal.activityId,
+    activityName: proposal.activityName,
+    activityImage: proposal.activityImage ?? null,
+    status: proposal.status as 'pending' | 'parent_suggestion',
+    lat: proposal.lat ?? null,
+    lon: proposal.lon ?? null,
+    address: proposal.address ?? null,
+    minPrice: proposal.minPrice ?? null,
+    maxPrice: proposal.maxPrice ?? null,
+    ageBuckets: proposal.ageBuckets ?? null,
+    urlmoreinfo: proposal.urlmoreinfo ?? null,
+    urlmoreinfo_status: proposal.urlmoreinfo_status ?? null,
+  };
+}
+
+function loadPlanRelevantKidProposals(): KidProposalItem[] {
+  const proposals = readKidProposals();
+  return [
+    ...uniqueActionableKidProposals(proposals, 'pending'),
+    ...uniqueActionableKidProposals(proposals, 'parent_suggestion'),
+  ].map(toKidProposalItem);
 }
 
 function getNavigationUrls(place: { name?: string; location_lat?: number | null; location_lon?: number | null; location_address?: string | null }) {
@@ -591,25 +627,18 @@ export default function CommunityActivities() {
 
   // Kid mode — wishlisted activity IDs (synced from localStorage proposals)
   const [wishlisted, setWishlisted] = useState<Set<string>>(() => {
-    const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const proposals = readKidProposals();
     return new Set(proposals.filter(p => p.status === 'pending').map((p: any) => p.activityId as string));
   });
 
   // Parent plan view — pending kid proposals shown as wishlist section
-  const [kidsProposals, setKidsProposals] = useState<KidProposalItem[]>(() => {
-    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-    return all.filter(p => p.status === 'pending').map(p => ({
-      id: p.id, activityId: p.activityId, activityName: p.activityName, activityImage: p.activityImage ?? null,
-    }));
-  });
+  const [kidsProposals, setKidsProposals] = useState<KidProposalItem[]>(() => loadPlanRelevantKidProposals());
 
   // Keep kidsProposals in sync with storage events (from kid mode)
   useEffect(() => {
     const sync = () => {
-      const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-      setKidsProposals(all.filter(p => p.status === 'pending').map(p => ({
-        id: p.id, activityId: p.activityId, activityName: p.activityName, activityImage: p.activityImage ?? null,
-      })));
+      const all = readKidProposals();
+      setKidsProposals(loadPlanRelevantKidProposals());
       setWishlisted(new Set(all.filter(p => p.status === 'pending').map(p => p.activityId as string)));
     };
     window.addEventListener('storage', sync);
@@ -1160,10 +1189,9 @@ export default function CommunityActivities() {
 
   /** Dismiss a wishlist item without adding it (marks declined) */
   const dismissProposal = (proposalId: string) => {
-    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const all = readKidProposals();
     const updated = all.map(p => p.id === proposalId ? { ...p, status: 'declined' } : p);
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+    writeKidProposals(updated);
   };
 
   /** Add a kid's wishlist proposal to the plan, mark it approved */
@@ -1177,10 +1205,9 @@ export default function CommunityActivities() {
       if (activity) addToPlan(activity);
     }
     // Mark proposal approved so it leaves the wishlist
-    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const all = readKidProposals();
     const updated = all.map(p => p.id === proposal.id ? { ...p, status: 'approved' } : p);
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+    writeKidProposals(updated);
   };
 
   const movePlanItem = (index: number, direction: 'up' | 'down') => {
@@ -1214,6 +1241,32 @@ export default function CommunityActivities() {
     [planItems]
   );
 
+  const planActivityIds = useMemo(
+    () => new Set(planItems.map(item => item.activityId)),
+    [planItems],
+  );
+
+  const pendingWishlistProposals = useMemo(
+    () => kidsProposals.filter(proposal =>
+      proposal.status === 'pending' && !planActivityIds.has(proposal.activityId)
+    ),
+    [kidsProposals, planActivityIds],
+  );
+
+  const parentSuggestionProposals = useMemo(
+    () => mode === 'parent'
+      ? []
+      : kidsProposals.filter(proposal =>
+          proposal.status === 'parent_suggestion' && !planActivityIds.has(proposal.activityId)
+        ),
+    [kidsProposals, mode, planActivityIds],
+  );
+
+  const visiblePlanProposals = useMemo(
+    () => [...pendingWishlistProposals, ...parentSuggestionProposals],
+    [pendingWishlistProposals, parentSuggestionProposals],
+  );
+
   /** True if the current user may edit this activity */
   const canEdit = (activity: ActivitySpot): boolean => {
     if (!currentUser) return false;
@@ -1228,9 +1281,7 @@ export default function CommunityActivities() {
    * We resolve coordinates from the already-loaded slim dataset.
    */
   const wishlistMapPlaces = useMemo(() => {
-    const pendingIds = kidsProposals
-      .filter(p => p.status === 'pending' && !planItems.some(item => item.activityId === p.activityId))
-      .map(p => p.activityId);
+    const pendingIds = pendingWishlistProposals.map(p => p.activityId);
     return pendingIds.flatMap(id => {
       const spot = allActivitiesForMap.find(a => a.id === id);
       if (!spot || spot.location_lat == null || spot.location_lon == null) return [];
@@ -1245,7 +1296,7 @@ export default function CommunityActivities() {
         max_price: spot.max_price,
       }];
     });
-  }, [kidsProposals, planItems, allActivitiesForMap]);
+  }, [pendingWishlistProposals, allActivitiesForMap]);
 
   const savePlan = async () => {
     if (planItems.length === 0) { toast.error('Add at least one activity'); return; }
@@ -1333,20 +1384,38 @@ export default function CommunityActivities() {
   const submitKidPlan = () => {
     if (planItems.length === 0) { toast.error('Add at least one activity first'); return; }
     const planId = crypto.randomUUID();
-    const existing: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-    const proposals = planItems.map(item => ({
+    const existing = readKidProposals();
+    const activeActivityIds = new Set(
+      existing
+        .filter(proposal => proposal.status === 'pending' || proposal.status === 'parent_suggestion')
+        .map(proposal => proposal.activityId),
+    );
+    const proposals: KidProposal[] = planItems
+      .filter(item => !activeActivityIds.has(item.activityId))
+      .map(item => ({
       id: crypto.randomUUID(),
       activityId: item.activityId,
       activityName: item.name,
       activityImage: item.imageurlthumb,
+      lat: item.lat,
+      lon: item.lon,
+      address: item.address,
+      minPrice: item.minPrice,
+      maxPrice: item.maxPrice,
+      ageBuckets: null,
+      urlmoreinfo: null,
+      urlmoreinfo_status: null,
       message: `${currentProfile?.name ?? 'Kid'} wants to do this!`,
       createdAt: new Date().toISOString(),
       status: 'pending',
       source: 'planner',
       planId,
     }));
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify([...existing, ...proposals]));
-    window.dispatchEvent(new Event('storage'));
+    if (proposals.length > 0) {
+      writeKidProposals([...existing, ...proposals]);
+    } else {
+      toast.info('These picks are already waiting in Plan');
+    }
     // Show share sheet so kid can also send the plan link to parent (no email)
     const shareUrl = generateShareUrl(planItems);
     setPlanShareData({
@@ -1413,16 +1482,22 @@ export default function CommunityActivities() {
     min_price?: number | null; max_price?: number | null;
     age_buckets?: string[] | null; urlmoreinfo?: string | null; urlmoreinfo_status?: string | null;
   }) => {
-    const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const proposals = readKidProposals();
     if (wishlisted.has(activity.id)) {
       // Toggle off — no toast (visual heart change + Plan badge tells the story)
-      const filtered = proposals.filter((p: any) => p.activityId !== activity.id);
-      localStorage.setItem('famactify-kid-proposals', JSON.stringify(filtered));
-      window.dispatchEvent(new Event('storage'));
+      const filtered = proposals.filter(proposal => !(proposal.activityId === activity.id && proposal.status === 'pending'));
+      writeKidProposals(filtered);
       setWishlisted(prev => { const s = new Set(prev); s.delete(activity.id); return s; });
       return;
     }
-    const newProposal = {
+    const existing = proposals.find(proposal =>
+      proposal.activityId === activity.id && (proposal.status === 'pending' || proposal.status === 'parent_suggestion')
+    );
+    if (existing) {
+      setWishlisted(prev => new Set([...prev, activity.id]));
+      return;
+    }
+    const newProposal: KidProposal = {
       id: crypto.randomUUID(),
       activityId: activity.id,
       activityName: activity.name,
@@ -1442,15 +1517,14 @@ export default function CommunityActivities() {
       source: isLittleExplorer ? 'little' : 'planner',
       planId: null,
     };
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
-    window.dispatchEvent(new Event('storage'));
+    writeKidProposals([...proposals, newProposal]);
     setWishlisted(prev => new Set([...prev, activity.id]));
     // No toast — heart turns red + Plan tab badge updates immediately, both are visible feedback
   }, [wishlisted, currentProfile, mode]);
 
   /** Parent suggests an activity for the kids — kid sees it as a "Pick for you" item to accept or dismiss */
   const suggestForKid = useCallback((activity: ActivitySpot) => {
-    const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const proposals = readKidProposals();
     // Skip if already suggested or already accepted
     const existing = proposals.find((p: any) =>
       p.activityId === activity.id && (p.status === 'parent_suggestion' || p.status === 'pending')
@@ -1459,7 +1533,7 @@ export default function CommunityActivities() {
       toast.info('Already on the kids list 🎁');
       return;
     }
-    const newProposal = {
+    const newProposal: KidProposal = {
       id: crypto.randomUUID(),
       activityId: activity.id,
       activityName: activity.name,
@@ -1478,25 +1552,29 @@ export default function CommunityActivities() {
       source: 'parent',
       planId: null,
     };
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
-    window.dispatchEvent(new Event('storage'));
+    writeKidProposals([...proposals, newProposal]);
     toast.success('🎁 Suggested for the kids');
   }, []);
 
   /** Kid accepts a parent suggestion — moves it to regular pending wishlist */
   const acceptParentSuggestion = useCallback((proposalId: string) => {
-    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-    const updated = all.map((p: any) => p.id === proposalId ? { ...p, status: 'pending' } : p);
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+    const all = readKidProposals();
+    const accepted = all.find(proposal => proposal.id === proposalId);
+    const alreadyPending = accepted
+      ? all.some(proposal => proposal.id !== proposalId && proposal.activityId === accepted.activityId && proposal.status === 'pending')
+      : false;
+    const updated = all.map(proposal => {
+      if (proposal.id !== proposalId) return proposal;
+      return { ...proposal, status: alreadyPending ? 'approved' : 'pending' };
+    });
+    writeKidProposals(updated);
   }, []);
 
   /** Kid dismisses a parent suggestion */
   const declineParentSuggestion = useCallback((proposalId: string) => {
-    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const all = readKidProposals();
     const updated = all.map((p: any) => p.id === proposalId ? { ...p, status: 'declined' } : p);
-    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
-    window.dispatchEvent(new Event('storage'));
+    writeKidProposals(updated);
   }, []);
 
   // Mobile UI state
@@ -1869,11 +1947,9 @@ export default function CommunityActivities() {
 
       {/* ── Map full-screen overlay (sits above content, leaves bottom tab bar visible) ── */}
       {viewMode === 'map' && (() => {
-        // Build the places list — full set, or plan items + pending wishlist + parent suggestions if entered from plan
+        // Build the places list — full set, or plan items + visible Plan proposals if entered from plan
         const planIds = new Set(planItems.map(p => p.activityId));
-        const pendingProposals = kidsProposals.filter(p =>
-          (p.status === 'pending' || p.status === 'parent_suggestion') && !planIds.has(p.activityId)
-        );
+        const pendingProposals = visiblePlanProposals.filter(p => !planIds.has(p.activityId));
         const pendingWishlistIds = new Set(pendingProposals.map(p => p.activityId));
         const showIds = new Set([...planIds, ...pendingWishlistIds]);
 
@@ -2063,14 +2139,8 @@ export default function CommunityActivities() {
           </div>
           {/* Kids wishlist */}
           {(() => {
-            // Kid wishlist (kid-initiated, awaiting parent action) — exclude declined and parent suggestions
-            const pendingWishlist = kidsProposals.filter(p =>
-              p.status !== 'declined' &&
-              p.status !== 'parent_suggestion' &&
-              !planItems.some(item => item.activityId === p.activityId)
-            );
-            // Parent suggestions (awaiting kid action) — only meaningful for kid modes
-            const parentSuggestions = kidsProposals.filter(p => p.status === 'parent_suggestion');
+            const pendingWishlist = pendingWishlistProposals;
+            const parentSuggestions = parentSuggestionProposals;
             if (pendingWishlist.length === 0 && (parentSuggestions.length === 0 || mode === 'parent')) return null;
             return (
               <>
@@ -2127,8 +2197,8 @@ export default function CommunityActivities() {
               </>
             );
           })()}
-          {/* Quick actions row — visible whenever there's plan, kid wishlist OR parent suggestions */}
-          {(planItems.length > 0 || kidsProposals.some(p => p.status !== 'declined' && !planItems.some(it => it.activityId === p.activityId))) && (
+          {/* Quick actions row — visible whenever there's plan or currently visible Plan proposals */}
+          {(planItems.length > 0 || visiblePlanProposals.length > 0) && (
             <div className="flex gap-2 px-4 pt-3 pb-1 shrink-0">
               <button
                 onClick={() => { setMapPlanOnly(true); setViewMode('map'); }}
@@ -2150,7 +2220,7 @@ export default function CommunityActivities() {
               <span className="text-5xl">🗓️</span>
               <p className="text-base font-semibold">No activities in plan yet</p>
               <p className="text-sm text-muted-foreground">
-                {kidsProposals.some(p => !planItems.some(it => it.activityId === p.activityId))
+                {visiblePlanProposals.length > 0
                   ? 'Tap “+ Add” on a wishlist item above, or browse to add more.'
                   : 'Browse and tap "+ Plan" to build your day'}
               </p>

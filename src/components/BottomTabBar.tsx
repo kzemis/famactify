@@ -2,22 +2,23 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Compass, BookMarked, Sparkles, User, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { useFamilyMode } from '@/contexts/FamilyModeContext';
+import { countUniqueActionableKidProposals } from '@/lib/kidProposals';
 
 export default function BottomTabBar() {
   const navigate  = useNavigate();
   const { pathname, search } = useLocation();
+  const { mode } = useFamilyMode();
   const [kidBadge, setKidBadge] = useState(0);
 
   useEffect(() => {
     const read = () => {
-      const proposals = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-      // Count both "pending" (kid wishlist for parent) and "parent_suggestion" (parent picks for kid)
-      setKidBadge(proposals.filter((p: any) => p.status === 'pending' || p.status === 'parent_suggestion').length);
+      setKidBadge(countUniqueActionableKidProposals(mode));
     };
     read();
     window.addEventListener('storage', read);
     return () => window.removeEventListener('storage', read);
-  }, []);
+  }, [mode]);
 
   const isActive = (id: string) => {
     if (id === 'discover') return pathname === '/activities' && !search.includes('view=plan');

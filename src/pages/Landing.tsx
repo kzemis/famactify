@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-family.jpg";
 import Footer from "@/components/Footer";
 import { useEffect, useRef, useState } from "react";
+import { countUniqueActionableKidProposals, readKidProposals } from "@/lib/kidProposals";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -372,8 +373,7 @@ const Landing = () => {
 
   useEffect(() => {
     const refresh = () => {
-      const proposals = JSON.parse(localStorage.getItem("famactify-kid-proposals") || "[]");
-      setKidProposalCount(proposals.filter((p: any) => p.status === "pending").length);
+      setKidProposalCount(countUniqueActionableKidProposals("parent", readKidProposals()));
     };
     refresh();
     window.addEventListener("storage", refresh);

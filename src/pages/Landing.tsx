@@ -489,9 +489,9 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* ── Slide 4: Mode + Get started ── */}
-          <div className="snap-center snap-always shrink-0 w-full flex flex-col justify-center px-6 gap-5 overflow-y-auto"
-               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 24px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
+          {/* ── Slide 4: Mode ── */}
+          <div className="snap-center snap-always shrink-0 w-full flex flex-col px-6 gap-4 overflow-y-auto"
+               style={{ paddingTop: 'calc(env(safe-area-inset-top) + 56px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 100px)' }}>
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary" /></div>
               <div>
@@ -499,19 +499,13 @@ const Landing = () => {
                 <h2 className="text-2xl font-black leading-tight">Mode</h2>
               </div>
             </div>
-            <p className="text-base text-muted-foreground leading-relaxed">
-              Switch between adult, kid, and little-explorer views. Each gets a UI tuned for them — kids' picks flow into your plan automatically.
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Switch between adult, kid, and little-explorer views. Each gets a UI tuned for them — kids' picks flow into the parent plan automatically.
             </p>
             <LittleExplorerVisual />
-            <div className="pt-2 space-y-3">
-              <Button size="lg" onClick={() => navigate("/auth")}
-                className="w-full rounded-2xl py-5 text-base font-semibold shadow-lg">
-                Create account
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                No account needed to browse — just tap any tab below to start.
-              </p>
-            </div>
+            <p className="text-center text-xs text-muted-foreground pt-1">
+              Tap any tab below to start — no account needed to browse.
+            </p>
           </div>
         </div>
 

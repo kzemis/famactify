@@ -11,7 +11,8 @@ export default function BottomTabBar() {
   useEffect(() => {
     const read = () => {
       const proposals = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
-      setKidBadge(proposals.filter((p: any) => p.status === 'pending').length);
+      // Count both "pending" (kid wishlist for parent) and "parent_suggestion" (parent picks for kid)
+      setKidBadge(proposals.filter((p: any) => p.status === 'pending' || p.status === 'parent_suggestion').length);
     };
     read();
     window.addEventListener('storage', read);

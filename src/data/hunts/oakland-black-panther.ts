@@ -1,0 +1,98 @@
+import type { ScavengerHunt } from '@/types/hunt';
+
+export const oaklandBlackPanther: ScavengerHunt = {
+  id: 'oakland-black-panther',
+  slug: 'oakland-black-panther-heritage',
+  title: 'Oakland Black Panther Heritage Walk',
+  blurb: 'A respectful family walk through the West Oakland sites where the Black Panther Party was born in 1966 — community breakfasts, free clinics, and youth programs that started right here.',
+  coverEmoji: '🐆',
+  hostName: 'FamActify Original',
+  city: 'Oakland',
+  countryCode: 'US',
+  primaryTheme: 'history',
+  ageMin: 9,
+  ageMax: 16,
+  durationMinutes: 150,
+  difficulty: 'medium',
+  estCostCents: 0,
+  distanceMeters: 4500,
+  publishedAt: '2026-05-02',
+  credits: 'Inspired by David Sclar (Berkeley PM) — same spirit as his 1982 Brockton CityGames: history is everyday people, their homes, jobs, and lives. Please walk respectfully — these are real neighbourhoods.',
+  stops: [
+    {
+      id: 'merritt-college-historical-marker',
+      order: 0,
+      title: 'Merritt College (original campus) — historical marker',
+      lat: 37.8030,
+      lon: -122.2755,
+      address: '5714 Martin Luther King Jr Way, Oakland, CA',
+      clueText: "In 1966, two students at this campus — Huey P. Newton and Bobby Seale — wrote a 10-point program for change. They named their group after an animal that 'doesn't strike first, but defends itself when cornered'. What was the animal?",
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'Which animal did Huey and Bobby choose for the party name?',
+        options: ['Black panther', 'Black eagle', 'Black bear', 'Black wolf'],
+        correctAnswers: ['Black panther'],
+      },
+      reveal: {
+        funFact: 'The Black Panther Party for Self-Defense was founded in October 1966. The panther symbolised dignity and self-defence — never first to attack, but never backing down. Newton was 24, Seale was 30.',
+      },
+    },
+    {
+      id: 'bobby-hutton-park',
+      order: 1,
+      title: 'Bobby Hutton Memorial Park (DeFremery Park)',
+      lat: 37.8092,
+      lon: -122.2895,
+      address: '1651 Adeline Street, Oakland, CA 94607',
+      clueText: 'This community park is renamed after Bobby Hutton — a 16-year-old who joined the Black Panthers as their very first member. He was killed by police at age 17. Find the memorial marker. Read his birth and death dates.',
+      prompt: {
+        kind: 'text',
+        question: 'How old was Bobby Hutton when he died? (Just type the number.)',
+        correctAnswers: ['17', 'seventeen'],
+      },
+      reveal: {
+        funFact: 'Bobby Hutton was the BPP\'s first recruit and treasurer. The park has been a hub for Black community gatherings, jazz, and youth programs since the 1960s.',
+      },
+    },
+    {
+      id: 'st-augustines-free-breakfast',
+      order: 2,
+      title: "St. Augustine's Episcopal Church — Free Breakfast birthplace",
+      lat: 37.8155,
+      lon: -122.2737,
+      address: '525 29th Street, Oakland, CA 94609',
+      clueText: 'In 1969, the Black Panthers started a program here that fed thousands of kids every morning before school — free, hot, every weekday. The US government later copied the idea into the National School Breakfast Program. What did they call this Panther program?',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'What was this program called?',
+        options: [
+          'Free Breakfast for Children',
+          'Morning Meals Movement',
+          'Eat to Learn',
+          'Kids First',
+        ],
+        correctAnswers: ['Free Breakfast for Children'],
+      },
+      reveal: {
+        funFact: 'At its peak the Panthers fed over 20,000 kids a day across the country. The federal government expanded the National School Breakfast Program in 1975 — partly because the Panthers had proved it worked.',
+      },
+    },
+    {
+      id: 'lake-merritt-walk',
+      order: 3,
+      title: 'Lake Merritt — community wrap-up',
+      lat: 37.8044,
+      lon: -122.2595,
+      address: '666 Bellevue Avenue, Oakland, CA 94610',
+      clueText: 'Walk to Lake Merritt and find a bench. Talk together: which Panther program would you start in your city today?',
+      prompt: {
+        kind: 'photo',
+        question: 'Take one photo together at the lake to remember the walk.',
+        photoSubject: 'family at Lake Merritt',
+      },
+      reveal: {
+        funFact: 'Lake Merritt is a tidal lagoon connected to San Francisco Bay — and the first official wildlife refuge in the United States, declared in 1870. It was a meeting place for community organisers long before the Panthers, and still is today.',
+      },
+    },
+  ],
+};

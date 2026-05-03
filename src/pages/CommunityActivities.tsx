@@ -940,7 +940,8 @@ export default function CommunityActivities() {
         setUserLocation({ lat: latitude, lon: longitude });
         setCenter({ lat: latitude, lon: longitude });
         setLocatingGPS(false);
-        toast.success('Location found — pick a distance to filter nearby activities');
+        // No toast — GPS button label changes to "Located ✓" and distance chips appear,
+        // both serve as feedback without blocking the controls
       },
       (err) => {
         toast.error(err.message || 'Failed to get location');
@@ -1235,15 +1236,19 @@ export default function CommunityActivities() {
   // ---------------------------------------------------------------------------
   // Kid mode — wishlist / propose to parent
   // ---------------------------------------------------------------------------
-  const wishlistActivity = useCallback((activity: { id: string; name: string; imageurlthumb: string | null }) => {
+  const wishlistActivity = useCallback((activity: {
+    id: string; name: string; imageurlthumb: string | null;
+    location_lat?: number | null; location_lon?: number | null; location_address?: string | null;
+    min_price?: number | null; max_price?: number | null;
+    age_buckets?: string[] | null; urlmoreinfo?: string | null; urlmoreinfo_status?: string | null;
+  }) => {
     const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
     if (wishlisted.has(activity.id)) {
-      // Toggle off
+      // Toggle off — no toast (visual heart change + Plan badge tells the story)
       const filtered = proposals.filter((p: any) => p.activityId !== activity.id);
       localStorage.setItem('famactify-kid-proposals', JSON.stringify(filtered));
       window.dispatchEvent(new Event('storage'));
       setWishlisted(prev => { const s = new Set(prev); s.delete(activity.id); return s; });
-      toast('Removed from wishlist 💔');
       return;
     }
     const newProposal = {
@@ -1251,6 +1256,15 @@ export default function CommunityActivities() {
       activityId: activity.id,
       activityName: activity.name,
       activityImage: activity.imageurlthumb,
+      // Geo + details so the wishlist works on the map even when filters change
+      lat: activity.location_lat ?? null,
+      lon: activity.location_lon ?? null,
+      address: activity.location_address ?? null,
+      minPrice: activity.min_price ?? null,
+      maxPrice: activity.max_price ?? null,
+      ageBuckets: activity.age_buckets ?? null,
+      urlmoreinfo: activity.urlmoreinfo ?? null,
+      urlmoreinfo_status: activity.urlmoreinfo_status ?? null,
       message: `${currentProfile?.name ?? 'Kid'} wants to go!`,
       createdAt: new Date().toISOString(),
       status: 'pending',
@@ -1260,8 +1274,59 @@ export default function CommunityActivities() {
     localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
     window.dispatchEvent(new Event('storage'));
     setWishlisted(prev => new Set([...prev, activity.id]));
-    toast.success(`Added to wishlist! 🌟 Parent will see your pick.`);
+    // No toast — heart turns red + Plan tab badge updates immediately, both are visible feedback
   }, [wishlisted, currentProfile, mode]);
+
+  /** Parent suggests an activity for the kids — kid sees it as a "Pick for you" item to accept or dismiss */
+  const suggestForKid = useCallback((activity: ActivitySpot) => {
+    const proposals: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    // Skip if already suggested or already accepted
+    const existing = proposals.find((p: any) =>
+      p.activityId === activity.id && (p.status === 'parent_suggestion' || p.status === 'pending')
+    );
+    if (existing) {
+      toast.info('Already on the kids list 🎁');
+      return;
+    }
+    const newProposal = {
+      id: crypto.randomUUID(),
+      activityId: activity.id,
+      activityName: activity.name,
+      activityImage: activity.imageurlthumb,
+      lat: activity.location_lat ?? null,
+      lon: activity.location_lon ?? null,
+      address: activity.location_address ?? null,
+      minPrice: activity.min_price ?? null,
+      maxPrice: activity.max_price ?? null,
+      ageBuckets: activity.age_buckets ?? null,
+      urlmoreinfo: activity.urlmoreinfo ?? null,
+      urlmoreinfo_status: activity.urlmoreinfo_status ?? null,
+      message: 'Pick for you',
+      createdAt: new Date().toISOString(),
+      status: 'parent_suggestion',
+      source: 'parent',
+      planId: null,
+    };
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify([...proposals, newProposal]));
+    window.dispatchEvent(new Event('storage'));
+    toast.success('🎁 Suggested for the kids');
+  }, []);
+
+  /** Kid accepts a parent suggestion — moves it to regular pending wishlist */
+  const acceptParentSuggestion = useCallback((proposalId: string) => {
+    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const updated = all.map((p: any) => p.id === proposalId ? { ...p, status: 'pending' } : p);
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+  }, []);
+
+  /** Kid dismisses a parent suggestion */
+  const declineParentSuggestion = useCallback((proposalId: string) => {
+    const all: any[] = JSON.parse(localStorage.getItem('famactify-kid-proposals') || '[]');
+    const updated = all.map((p: any) => p.id === proposalId ? { ...p, status: 'declined' } : p);
+    localStorage.setItem('famactify-kid-proposals', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+  }, []);
 
   // Mobile UI state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -1302,11 +1367,19 @@ export default function CommunityActivities() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search activities…"
-                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-11 w-full rounded-full bg-muted/80 border-0 pl-10 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
+              {searchQuery ? (
+                <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground tap-highlight">
                   <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={enterMoodMode}
+                  aria-label="Smart suggestions"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-9 px-2.5 rounded-full bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border border-pink-200 flex items-center gap-1 text-xs font-semibold tap-highlight active:scale-95 transition-transform"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Smart
                 </button>
               )}
             </div>
@@ -1570,18 +1643,53 @@ export default function CommunityActivities() {
 
       {/* ── Map full-screen overlay (sits above content, leaves bottom tab bar visible) ── */}
       {viewMode === 'map' && (() => {
-        // Build the places list — full set, or just plan items if entered from plan
+        // Build the places list — full set, or plan items + pending wishlist + parent suggestions if entered from plan
         const planIds = new Set(planItems.map(p => p.activityId));
+        const pendingProposals = kidsProposals.filter(p =>
+          (p.status === 'pending' || p.status === 'parent_suggestion') && !planIds.has(p.activityId)
+        );
+        const pendingWishlistIds = new Set(pendingProposals.map(p => p.activityId));
+        const showIds = new Set([...planIds, ...pendingWishlistIds]);
+
+        // Synthetic places from plan items + wishlist proposals — uses self-contained coords,
+        // so the map works even when current filters exclude these activities.
+        const planPlaces = planItems
+          .filter(p => p.lat != null && p.lon != null)
+          .map(p => ({
+            id: p.activityId, name: p.name, lat: p.lat as number, lon: p.lon as number,
+            imageurlthumb: p.imageurlthumb, location_address: p.address,
+            min_price: p.minPrice, max_price: p.maxPrice,
+            age_buckets: null, urlmoreinfo: null, urlmoreinfo_status: null,
+          }));
+        const wishPlaces = pendingProposals
+          .filter((p: any) => p.lat != null && p.lon != null)
+          .map((p: any) => ({
+            id: p.activityId, name: p.activityName, lat: p.lat, lon: p.lon,
+            imageurlthumb: p.activityImage, location_address: p.address ?? null,
+            min_price: p.minPrice ?? null, max_price: p.maxPrice ?? null,
+            age_buckets: p.ageBuckets ?? null,
+            urlmoreinfo: p.urlmoreinfo ?? null, urlmoreinfo_status: p.urlmoreinfo_status ?? null,
+          }));
+
         const mapPlaces = mapPlanOnly
-          ? places.filter(p => planIds.has(p.id))
+          ? // Merge plan + wishlist (unique by id), prefer the version from `places` if present
+            (() => {
+              const byId = new Map<string, any>();
+              planPlaces.forEach(p => byId.set(p.id, p));
+              wishPlaces.forEach(p => { if (!byId.has(p.id)) byId.set(p.id, p); });
+              // Override with full data from current places if available (richer details)
+              places.forEach(p => { if (byId.has(p.id)) byId.set(p.id, p); });
+              return Array.from(byId.values());
+            })()
           : places;
-        // Auto-center on plan items when in plan-only mode
-        const planCenter = mapPlanOnly && planItems.length > 0
+
+        // Auto-center on plan + wishlist items when in plan-only mode
+        const planCenter = mapPlanOnly
           ? (() => {
-              const valid = planItems.filter(p => p.lat != null && p.lon != null);
-              if (valid.length === 0) return center;
-              const lat = valid.reduce((s, p) => s + (p.lat as number), 0) / valid.length;
-              const lon = valid.reduce((s, p) => s + (p.lon as number), 0) / valid.length;
+              const coords = mapPlaces.map(p => ({ lat: p.lat, lon: p.lon }));
+              if (coords.length === 0) return center;
+              const lat = coords.reduce((s, c) => s + c.lat, 0) / coords.length;
+              const lon = coords.reduce((s, c) => s + c.lon, 0) / coords.length;
               return { lat, lon };
             })()
           : center;
@@ -1612,14 +1720,16 @@ export default function CommunityActivities() {
               {locatingGPS ? 'Locating…' : userLocation ? 'Located ✓' : 'GPS'}
             </button>
             {/* Plan-only ↔ All toggle */}
-            {planItems.length > 0 && (
+            {(planItems.length > 0 || (mapPlanOnly && pendingWishlistIds.size > 0)) && (
               <button
                 onClick={() => setMapPlanOnly(prev => !prev)}
                 className={cn('h-10 px-4 rounded-full shadow-md flex items-center gap-2 text-sm font-medium tap-highlight',
                   mapPlanOnly ? 'bg-background border border-border' : 'bg-primary text-primary-foreground'
                 )}
               >
-                {mapPlanOnly ? `Show all activities` : `Show only plan (${planItems.length})`}
+                {mapPlanOnly
+                  ? `Show all activities`
+                  : `Show only plan${pendingWishlistIds.size > 0 ? ` + ${pendingWishlistIds.size} wishlist` : ''}`}
               </button>
             )}
             {!mapPlanOnly && userLocation && distanceOptions.map(opt => (
@@ -1640,10 +1750,55 @@ export default function CommunityActivities() {
             userLocation={userLocation}
             nearbyKm={mapPlanOnly ? null : nearbyKm}
             onSelect={id => setSelectedId(id)}
-            onAddToPlan={id => { const a = allActivitiesForMap.find(x => x.id === id); if (a) addToPlan(a); }}
+            onAddToPlan={id => {
+              const a = allActivitiesForMap.find(x => x.id === id);
+              if (a) { addToPlan(a); return; }
+              // Fall back to wishlist proposal (wishlist may not be in current filtered feed)
+              const wp = pendingProposals.find((p: any) => p.activityId === id);
+              if (wp) {
+                addToPlan({
+                  id: wp.activityId,
+                  name: wp.activityName,
+                  duration_minutes: 60,
+                  min_price: wp.minPrice ?? null,
+                  max_price: wp.maxPrice ?? null,
+                  location_address: wp.address ?? null,
+                  location_lat: wp.lat ?? null,
+                  location_lon: wp.lon ?? null,
+                  imageurlthumb: wp.activityImage ?? null,
+                } as any);
+              }
+            }}
             planItemIds={planItems.map(p => p.activityId)}
+            wishlistItemIds={Array.from(pendingWishlistIds)}
             className="h-full"
           />
+          {/* Color legend (when colored markers are meaningful — plan and/or wishlist present) */}
+          {(planItems.length > 0 || pendingWishlistIds.size > 0) && (
+            <div
+              className="absolute left-3 z-10 flex flex-col gap-1 px-2.5 py-1.5 rounded-xl bg-background/95 backdrop-blur shadow-md border border-border text-[11px]"
+              style={{ bottom: 12 }}
+            >
+              {planItems.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+                  <span>In plan</span>
+                </div>
+              )}
+              {pendingWishlistIds.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-full bg-orange-500 border-2 border-white shadow-sm" />
+                  <span>Kid wishlist</span>
+                </div>
+              )}
+              {!mapPlanOnly && (
+                <div className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
+                  <span>All activities</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         );
       })()}
@@ -1682,58 +1837,101 @@ export default function CommunityActivities() {
           </div>
           {/* Kids wishlist */}
           {(() => {
-            const pendingWishlist = kidsProposals.filter(p => !planItems.some(item => item.activityId === p.activityId));
-            if (pendingWishlist.length === 0) return null;
+            // Kid wishlist (kid-initiated, awaiting parent action) — exclude declined and parent suggestions
+            const pendingWishlist = kidsProposals.filter(p =>
+              p.status !== 'declined' &&
+              p.status !== 'parent_suggestion' &&
+              !planItems.some(item => item.activityId === p.activityId)
+            );
+            // Parent suggestions (awaiting kid action) — only meaningful for kid modes
+            const parentSuggestions = kidsProposals.filter(p => p.status === 'parent_suggestion');
+            if (pendingWishlist.length === 0 && (parentSuggestions.length === 0 || mode === 'parent')) return null;
             return (
-              <div className="border-b bg-orange-50 shrink-0">
-                <div className="px-4 py-2 flex items-center gap-2">
-                  <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
-                  <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">{pendingWishlist.length}</span>
-                </div>
-                <div className="divide-y divide-orange-100 max-h-36 overflow-y-auto">
-                  {pendingWishlist.map(p => (
-                    <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
-                      {p.activityImage ? (
-                        <img src={p.activityImage} alt={p.activityName} className="w-10 h-10 rounded-xl object-cover shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-xl bg-orange-200 flex items-center justify-center text-lg shrink-0">🎪</div>
-                      )}
-                      <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
-                      <button onClick={() => addProposalToPlan(p)} className="shrink-0 h-8 px-3 rounded-full bg-orange-500 text-white text-xs font-semibold tap-highlight">+ Add</button>
-                      <button onClick={() => dismissProposal(p.id)} className="shrink-0 w-8 h-8 rounded-full hover:bg-orange-200 flex items-center justify-center tap-highlight">
-                        <X className="w-3.5 h-3.5 text-orange-400" />
-                      </button>
+              <>
+                {/* Parent suggestions — visible to kids */}
+                {parentSuggestions.length > 0 && mode !== 'parent' && (
+                  <div className="border-b bg-purple-50 shrink-0">
+                    <div className="px-4 py-2 flex items-center gap-2">
+                      <span className="text-sm font-semibold text-purple-700">🎁 Picked for you</span>
+                      <span className="w-5 h-5 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center font-bold">{parentSuggestions.length}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="divide-y divide-purple-100 max-h-36 overflow-y-auto">
+                      {parentSuggestions.map(p => (
+                        <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
+                          {p.activityImage ? (
+                            <img src={p.activityImage} alt={p.activityName} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-purple-200 flex items-center justify-center text-lg shrink-0">🎁</div>
+                          )}
+                          <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
+                          <button onClick={() => acceptParentSuggestion(p.id)} aria-label="Looks fun!" className="shrink-0 h-8 px-3 rounded-full bg-purple-500 text-white text-xs font-semibold tap-highlight">❤️ Yes!</button>
+                          <button onClick={() => declineParentSuggestion(p.id)} aria-label="No thanks" className="shrink-0 w-8 h-8 rounded-full hover:bg-purple-200 flex items-center justify-center tap-highlight">
+                            <X className="w-3.5 h-3.5 text-purple-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Kid wishlist (also visible to parent so they can act on it) */}
+                {pendingWishlist.length > 0 && (
+                  <div className="border-b bg-orange-50 shrink-0">
+                    <div className="px-4 py-2 flex items-center gap-2">
+                      <span className="text-sm font-semibold text-orange-700">💌 Kids' Wishlist</span>
+                      <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-bold">{pendingWishlist.length}</span>
+                    </div>
+                    <div className="divide-y divide-orange-100 max-h-36 overflow-y-auto">
+                      {pendingWishlist.map(p => (
+                        <div key={p.id} className="flex items-center gap-2 px-4 py-2.5">
+                          {p.activityImage ? (
+                            <img src={p.activityImage} alt={p.activityName} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-orange-200 flex items-center justify-center text-lg shrink-0">🎪</div>
+                          )}
+                          <p className="flex-1 text-sm font-medium truncate">{p.activityName}</p>
+                          <button onClick={() => addProposalToPlan(p)} className="shrink-0 h-8 px-3 rounded-full bg-orange-500 text-white text-xs font-semibold tap-highlight">+ Add</button>
+                          <button onClick={() => dismissProposal(p.id)} className="shrink-0 w-8 h-8 rounded-full hover:bg-orange-200 flex items-center justify-center tap-highlight">
+                            <X className="w-3.5 h-3.5 text-orange-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             );
           })()}
+          {/* Quick actions row — visible whenever there's plan, kid wishlist OR parent suggestions */}
+          {(planItems.length > 0 || kidsProposals.some(p => p.status !== 'declined' && !planItems.some(it => it.activityId === p.activityId))) && (
+            <div className="flex gap-2 px-4 pt-3 pb-1 shrink-0">
+              <button
+                onClick={() => { setMapPlanOnly(true); setViewMode('map'); }}
+                className="flex-1 h-10 rounded-full bg-muted text-foreground text-sm font-medium tap-highlight active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
+              >
+                <MapIcon className="w-4 h-4" /> Show on map
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className="flex-1 h-10 rounded-full bg-muted text-foreground text-sm font-medium tap-highlight active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Add more
+              </button>
+            </div>
+          )}
           {/* Plan items */}
           {planItems.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 px-8 text-center">
               <span className="text-5xl">🗓️</span>
-              <p className="text-base font-semibold">No activities yet</p>
-              <p className="text-sm text-muted-foreground">Browse and tap "+ Plan" to build your day</p>
+              <p className="text-base font-semibold">No activities in plan yet</p>
+              <p className="text-sm text-muted-foreground">
+                {kidsProposals.some(p => !planItems.some(it => it.activityId === p.activityId))
+                  ? 'Tap “+ Add” on a wishlist item above, or browse to add more.'
+                  : 'Browse and tap "+ Plan" to build your day'}
+              </p>
               <button onClick={() => setViewMode('grid')} className="h-11 px-6 rounded-full bg-primary text-primary-foreground font-medium text-sm tap-highlight mt-2">Browse activities</button>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
-              {/* Quick actions row */}
-              <div className="flex gap-2 px-4 pt-3 pb-1">
-                <button
-                  onClick={() => { setMapPlanOnly(true); setViewMode('map'); }}
-                  className="flex-1 h-10 rounded-full bg-muted text-foreground text-sm font-medium tap-highlight active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
-                >
-                  <MapIcon className="w-4 h-4" /> Show on map
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className="flex-1 h-10 rounded-full bg-muted text-foreground text-sm font-medium tap-highlight active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" /> Add more
-                </button>
-              </div>
               {/* Items list */}
               <div className="divide-y">
                 {planItems.map((item, idx) => {
@@ -1946,12 +2144,21 @@ export default function CommunityActivities() {
                       {isWishlisted ? '❤️ Wishlisted' : '🤍 Add to Wishlist'}
                     </button>
                   ) : (
-                    <button
-                      onClick={() => { inPlan ? removeFromPlan(activity.id) : addToPlan(activity); setDetailActivity(null); }}
-                      className={cn('flex-1 h-12 rounded-2xl text-sm font-semibold tap-highlight', inPlan ? 'bg-muted text-foreground border border-border' : 'bg-primary text-primary-foreground')}
-                    >
-                      {inPlan ? '✓ In plan — remove' : '+ Add to Plan'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => { suggestForKid(activity); setDetailActivity(null); }}
+                        aria-label="Suggest to kid"
+                        className="h-12 px-4 rounded-2xl border border-border text-sm font-medium tap-highlight shrink-0"
+                      >
+                        🎁 Suggest
+                      </button>
+                      <button
+                        onClick={() => { inPlan ? removeFromPlan(activity.id) : addToPlan(activity); setDetailActivity(null); }}
+                        className={cn('flex-1 h-12 rounded-2xl text-sm font-semibold tap-highlight', inPlan ? 'bg-muted text-foreground border border-border' : 'bg-primary text-primary-foreground')}
+                      >
+                        {inPlan ? '✓ In plan — remove' : '+ Add to Plan'}
+                      </button>
+                    </>
                   )}
                 </div>
               </>

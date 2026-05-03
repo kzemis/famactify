@@ -46,6 +46,29 @@ function saveLocalAttempts(list: HuntAttempt[]) {
   window.dispatchEvent(new Event('storage'));
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function findLocalAttemptIndex(attemptId: string): { list: HuntAttempt[]; index: number } {
+  const list = loadLocalAttempts();
+  return { list, index: list.findIndex(a => a.id === attemptId) };
+}
+
+function latestLocalAttempt(huntId: string, profileId: string): HuntAttempt | null {
+  const matches = loadLocalAttempts().filter(a => a.huntId === huntId && a.profileId === profileId);
+  return matches.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null;
+}
+
+function updateLocalAttempt(attemptId: string, updater: (attempt: HuntAttempt) => HuntAttempt): HuntAttempt | null {
+  const { list, index } = findLocalAttemptIndex(attemptId);
+  if (index === -1) return null;
+  const updated = updater(list[index]);
+  list[index] = updated;
+  saveLocalAttempts(list);
+  return updated;
+}
+
 // ── Mappers (DB row ↔ ScavengerHunt) ─────────────────────────────────────────
 
 function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): ScavengerHunt {
@@ -363,10 +386,12 @@ export const huntsService = {
   /** Find latest attempt for a hunt + profile (active or completed). */
   async findLatestAttempt(huntId: string, profileId: string): Promise<HuntAttempt | null> {
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      const local = loadLocalAttempts().filter(a => a.huntId === huntId && a.profileId === profileId);
-      return local.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null;
-    }
+    const local = latestLocalAttempt(huntId, profileId);
+
+    // Static seed hunts use string ids/slugs, while Supabase hunt_attempts.hunt_id
+    // is UUID. Keep those attempts fully local even for signed-in users.
+    if (!user.user || !isUuid(huntId)) return local;
+
     const { data, error } = await supabase
       .from('hunt_attempts')
       .select('*')
@@ -376,8 +401,8 @@ export const huntsService = {
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (error) { console.warn('[findLatestAttempt]', error); return null; }
-    if (!data) return null;
+    if (error) { console.warn('[findLatestAttempt]', error); return local; }
+    if (!data) return local;
     return {
       id: data.id,
       huntId: data.hunt_id,
@@ -408,7 +433,7 @@ export const huntsService = {
       currentStopOrder: 0,
       results: [],
     };
-    if (!user.user) {
+    if (!user.user || !isUuid(huntId)) {
       saveLocalAttempts([...loadLocalAttempts(), fresh]);
       return fresh;
     }
@@ -433,30 +458,36 @@ export const huntsService = {
 
   async recordStop(attemptId: string, stopResult: HuntStopResult, advance = true): Promise<HuntAttempt | null> {
     const { data: user } = await supabase.auth.getUser();
+    const isAdvanceOnly = stopResult.answer === '__advance__';
+
+    const localMatch = findLocalAttemptIndex(attemptId);
+    if (localMatch.index !== -1) {
+      const a = localMatch.list[localMatch.index];
+      const updated: HuntAttempt = {
+        ...a,
+        results: isAdvanceOnly
+          ? a.results
+          : [...a.results.filter(r => r.stopId !== stopResult.stopId), stopResult],
+        currentStopOrder: advance ? a.currentStopOrder + 1 : a.currentStopOrder,
+      };
+      localMatch.list[localMatch.index] = updated;
+      saveLocalAttempts(localMatch.list);
+      return updated;
+    }
 
     // Local path (no auth)
     if (!user.user) {
-      const list = loadLocalAttempts();
-      const idx = list.findIndex(a => a.id === attemptId);
-      if (idx === -1) return null;
-      const a = list[idx];
-      const others = a.results.filter(r => r.stopId !== stopResult.stopId);
-      const updated: HuntAttempt = {
-        ...a,
-        results: [...others, stopResult],
-        currentStopOrder: advance ? a.currentStopOrder + 1 : a.currentStopOrder,
-      };
-      list[idx] = updated;
-      saveLocalAttempts(list);
-      return updated;
+      return null;
     }
 
     // DB path — fetch, mutate, update
     const { data: existing, error: getErr } = await supabase
       .from('hunt_attempts').select('*').eq('id', attemptId).maybeSingle();
     if (getErr || !existing) return null;
-    const others = (existing.results ?? []).filter((r: any) => r.stopId !== stopResult.stopId);
-    const newResults = [...others, stopResult];
+    const existingResults = (existing.results ?? []) as HuntStopResult[];
+    const newResults = isAdvanceOnly
+      ? existingResults
+      : [...existingResults.filter(r => r.stopId !== stopResult.stopId), stopResult];
     const newOrder = advance ? existing.current_stop_order + 1 : existing.current_stop_order;
     const { data: updated, error: updErr } = await supabase
       .from('hunt_attempts')
@@ -473,15 +504,11 @@ export const huntsService = {
   },
 
   async completeAttempt(attemptId: string, tripId?: string): Promise<HuntAttempt | null> {
+    const local = updateLocalAttempt(attemptId, attempt => ({ ...attempt, completedAt: new Date().toISOString(), tripId }));
+    if (local) return local;
+
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      const list = loadLocalAttempts();
-      const idx = list.findIndex(a => a.id === attemptId);
-      if (idx === -1) return null;
-      list[idx] = { ...list[idx], completedAt: new Date().toISOString(), tripId };
-      saveLocalAttempts(list);
-      return list[idx];
-    }
+    if (!user.user) return null;
     const { data, error } = await supabase
       .from('hunt_attempts')
       .update({ completed_at: new Date().toISOString(), trip_id: tripId ?? null })
@@ -496,19 +523,22 @@ export const huntsService = {
   },
 
   async abandonAttempt(attemptId: string): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      saveLocalAttempts(loadLocalAttempts().filter(a => a.id !== attemptId));
-      return;
+    const { list, index } = findLocalAttemptIndex(attemptId);
+    if (index !== -1) {
+      saveLocalAttempts(list.filter(a => a.id !== attemptId));
     }
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return;
     await supabase.from('hunt_attempts').delete().eq('id', attemptId);
   },
 
   /** All attempts for a given profile (DB for logged-in users; localStorage for guests). */
   async listAttemptsForProfile(profileId: string): Promise<HuntAttempt[]> {
     const { data: user } = await supabase.auth.getUser();
+    const localAttempts = loadLocalAttempts().filter(a => a.profileId === profileId);
     if (!user.user) {
-      return loadLocalAttempts().filter(a => a.profileId === profileId);
+      return localAttempts;
     }
     const { data, error } = await supabase
       .from('hunt_attempts')
@@ -516,8 +546,8 @@ export const huntsService = {
       .eq('user_id', user.user.id)
       .eq('profile_id', profileId)
       .order('started_at', { ascending: false });
-    if (error || !data) return [];
-    return data.map((r: any) => ({
+    if (error || !data) return localAttempts;
+    const dbAttempts = data.map((r: any) => ({
       id: r.id,
       huntId: r.hunt_id,
       profileId: r.profile_id,
@@ -527,6 +557,7 @@ export const huntsService = {
       results: r.results ?? [],
       tripId: r.trip_id ?? undefined,
     }));
+    return [...dbAttempts, ...localAttempts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   },
 
   /** Admin — list photo answers needing manual verification. */

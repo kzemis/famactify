@@ -38,6 +38,7 @@ import EventsCalendar from "./pages/EventsCalendar";
 import CatComparison from "./pages/CatComparison";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import EditActivity from "./pages/EditActivity";
 import KidModePage from "./pages/KidModePage";
 import CuratedLists from "./pages/CuratedLists";
@@ -53,6 +54,10 @@ import KasparsPage from "./pages/KasparsPage";
 import Hunts from "./pages/Hunts";
 import HuntDetail from "./pages/HuntDetail";
 import HuntPlay from "./pages/HuntPlay";
+import OrgHunts from "./pages/OrgHunts";
+import AdminHunts from "./pages/AdminHunts";
+import HuntEdit from "./pages/HuntEdit";
+import AdminPhotoReviews from "./pages/AdminPhotoReviews";
 
 const queryClient = new QueryClient();
 
@@ -107,9 +112,9 @@ const App = () => (
           <Route path="/kids" element={<KidModePage />} />
           <Route path="/lists" element={<CuratedLists />} />
           <Route path="/lists/:slug" element={<CuratedListDetail />} />
-          <Route path="/admin/lists" element={<ProtectedRoute><AdminLists /></ProtectedRoute>} />
-          <Route path="/admin/lists/new" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
-          <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminListEdit /></ProtectedRoute>} />
+          <Route path="/admin/lists" element={<ProtectedRoute><AdminRoute><AdminLists /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/lists/new" element={<ProtectedRoute><AdminRoute><AdminListEdit /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminRoute><AdminListEdit /></AdminRoute></ProtectedRoute>} />
           <Route path="/plan/horizon" element={<ProtectedRoute><LongHorizonPlanner /></ProtectedRoute>} />
           <Route path="/balance" element={<ProtectedRoute><BalanceTracker /></ProtectedRoute>} />
           <Route path="/proposals" element={<Navigate to="/activities?view=plan" replace />} />
@@ -121,6 +126,15 @@ const App = () => (
           <Route path="/hunts" element={<Hunts />} />
           <Route path="/hunts/:slug" element={<HuntDetail />} />
           <Route path="/hunts/:slug/play" element={<HuntPlay />} />
+          {/* Org-side hunt management */}
+          <Route path="/org/hunts" element={<ProtectedRoute><OrgHunts /></ProtectedRoute>} />
+          <Route path="/org/hunts/new" element={<ProtectedRoute><HuntEdit /></ProtectedRoute>} />
+          <Route path="/org/hunts/:id" element={<ProtectedRoute><HuntEdit /></ProtectedRoute>} />
+          {/* Admin-side hunt approval */}
+          <Route path="/admin/hunts" element={<ProtectedRoute><AdminRoute><AdminHunts /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/hunts/photo-review" element={<ProtectedRoute><AdminRoute><AdminPhotoReviews /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/hunts/new" element={<ProtectedRoute><AdminRoute><HuntEdit /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/hunts/:id" element={<ProtectedRoute><AdminRoute><HuntEdit /></AdminRoute></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

@@ -7,4 +7,5 @@ export * from './profileService';
 export * from './recommendationsService';
 export * from './tripsService';
 export * from './curatedListsService';
+export * from './badgesService';
 export * from './core';

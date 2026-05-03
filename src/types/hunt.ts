@@ -31,8 +31,10 @@ export interface HuntStop {
   /** Clue copy shown to player BEFORE they arrive */
   clueText: string;
   clueImage?: string;
-  /** Optional voice-over URL (Phase 3) */
+  /** Optional voice-over URL (Phase 3) — when present, plays an audio file; otherwise falls back to TTS */
   clueAudio?: string;
+  /** Optional parent-only hint shown when kid taps "Ask a grown-up" (co-pilot mode) */
+  parentHint?: string;
   prompt: HuntPrompt;
   /** Shown AFTER answering — fun fact / reveal */
   reveal: {
@@ -86,6 +88,33 @@ export interface HuntStopResult {
   photoDataUrl?: string;
   isCorrect?: boolean;
   skipped?: boolean;
+  /** Photo verification (ML or manual). undefined = not photo / not verified yet */
+  photoVerified?: boolean;
+  photoVerifyConfidence?: number; // 0..1
+  photoNeedsReview?: boolean;
+  photoReviewStatus?: 'pending' | 'approved' | 'rejected';
+  photoReviewNotes?: string;
+  photoReviewedAt?: string;
+  photoReviewedBy?: string;
+}
+
+// ── Badges ────────────────────────────────────────────────────────────────────
+
+export type BadgeTier = 'bronze' | 'silver' | 'gold';
+
+export interface EarnedBadge {
+  huntId: string;
+  huntSlug: string;
+  huntTitle: string;
+  coverEmoji: string;
+  city: string;
+  tier: BadgeTier;
+  /** % stops solved correctly (excluding skips) */
+  scorePct: number;
+  /** Total stops solved (regardless of correctness) */
+  stopsCompleted: number;
+  totalStops: number;
+  earnedAt: string; // ISO date
 }
 
 export interface HuntAttempt {

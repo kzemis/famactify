@@ -27,6 +27,7 @@ export const berkeleyKidsEyes: ScavengerHunt = {
       lon: -122.2473,
       address: '600 Canon Drive, Berkeley, CA 94708',
       clueText: 'Bring a head of lettuce or some celery. The animals are waiting. Listen carefully — what is making that snorting sound?',
+      parentHint: 'Walk together to the pen on the left side of the farm path. The pigs are usually rooting around in the dirt and making noise. If kids point to the goats, gently redirect them — goats bleat, pigs snort.',
       prompt: {
         kind: 'multiple_choice',
         question: 'What animal makes the loudest snort at Little Farm?',

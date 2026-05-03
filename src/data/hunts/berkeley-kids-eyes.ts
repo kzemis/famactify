@@ -1,0 +1,91 @@
+import type { ScavengerHunt } from '@/types/hunt';
+
+export const berkeleyKidsEyes: ScavengerHunt = {
+  id: 'berkeley-kids-eyes',
+  slug: 'berkeley-kids-eyes',
+  title: "Berkeley Through Kids' Eyes",
+  blurb: 'A four-stop walk for the youngest explorers — meet a piglet, smell a hundred roses, find a kite catching the bay wind, and stand inside an ancient open-air theatre.',
+  coverEmoji: '🐷',
+  hostName: 'FamActify Original',
+  city: 'Berkeley',
+  countryCode: 'US',
+  primaryTheme: 'nature',
+  ageMin: 3,
+  ageMax: 9,
+  durationMinutes: 180,
+  difficulty: 'easy',
+  estCostCents: 0,
+  distanceMeters: 18000,
+  publishedAt: '2026-05-02',
+  credits: 'Designed for first-time FamActify hunters. Inspired by the Brockton CityGames book (1982).',
+  stops: [
+    {
+      id: 'tilden-little-farm',
+      order: 0,
+      title: 'Tilden Little Farm',
+      lat: 37.8997,
+      lon: -122.2473,
+      address: '600 Canon Drive, Berkeley, CA 94708',
+      clueText: 'Bring a head of lettuce or some celery. The animals are waiting. Listen carefully — what is making that snorting sound?',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'What animal makes the loudest snort at Little Farm?',
+        options: ['Goat', 'Pig', 'Sheep', 'Cow'],
+        correctAnswers: ['Pig'],
+      },
+      reveal: {
+        funFact: 'Pigs snort by pushing air out of their flat noses to smell better. Their sense of smell is 2,000× stronger than ours — they can find a buried apple from across the field!',
+      },
+    },
+    {
+      id: 'berkeley-rose-garden',
+      order: 1,
+      title: 'Berkeley Municipal Rose Garden',
+      lat: 37.8845,
+      lon: -122.2625,
+      address: '1200 Euclid Avenue, Berkeley, CA 94708',
+      clueText: 'Find the giant terraced amphitheatre of roses. Eight tiers, hundreds of varieties. Sniff your favourite — close your eyes and pick the one whose smell is YOUR smell.',
+      prompt: {
+        kind: 'photo',
+        question: 'Take a photo of the rose you picked as your favourite. (Just the flower — leave it on the bush!)',
+        photoSubject: 'a rose',
+      },
+      reveal: {
+        funFact: 'This rose garden was built in 1937 by people without jobs during the Great Depression — they were paid by a US program called the WPA. Over 250 different rose types live here.',
+      },
+    },
+    {
+      id: 'cesar-chavez-park',
+      order: 2,
+      title: 'Cesar Chavez Park — Kite Hill',
+      lat: 37.8665,
+      lon: -122.3203,
+      address: '11 Spinnaker Way, Berkeley, CA 94710',
+      clueText: 'Walk to the top of the grassy hill on the bay. Look up. The wind here is so steady that this is one of the most famous kite-flying spots in California. Count the kites you can see in the sky.',
+      prompt: {
+        kind: 'text',
+        question: 'How many kites are flying right now? (Type a number — zero is a fine answer.)',
+        correctAnswers: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '20', 'zero', 'one', 'two', 'three', 'four', 'five', 'lots', 'many', 'none'],
+      },
+      reveal: {
+        funFact: 'This park used to be the city dump! In the 1980s Berkeley turned it into a 90-acre park named after farmworker leader Cesar Chavez. The wind here comes through the Golden Gate every afternoon.',
+      },
+    },
+    {
+      id: 'hearst-greek-theatre',
+      order: 3,
+      title: 'Hearst Greek Theatre',
+      lat: 37.8736,
+      lon: -122.2541,
+      address: '2001 Gayley Road, Berkeley, CA 94720',
+      clueText: 'The last stop is an open-air stone theatre built more than 120 years ago, copied from one in Ancient Greece. Walk to the very back row at the top and shout your name. Did it echo?',
+      prompt: {
+        kind: 'observation',
+        question: 'Stand on the stage. Clap your hands once. Did the sound bounce back?',
+      },
+      reveal: {
+        funFact: 'Built in 1903, the Greek Theatre was a gift to UC Berkeley. Its stone walls bounce sound so well that you can be heard from the stage to the top row WITHOUT a microphone. Theodore Roosevelt, John F. Kennedy, and many bands have performed here.',
+      },
+    },
+  ],
+};

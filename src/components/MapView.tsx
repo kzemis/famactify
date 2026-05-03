@@ -152,9 +152,26 @@ const MapView: React.FC<MapViewProps> = ({
     const markerBounds: L.LatLngExpression[] = [];
 
     validPlaces.forEach((place) => {
-      const isWishlist = wishlistItemIdsRef.current?.includes(place.id) ?? false;
+      const isInPlan  = planItemIdsRef.current?.includes(place.id) ?? false;
+      const isWishlist = !isInPlan && (wishlistItemIdsRef.current?.includes(place.id) ?? false);
       let icon: L.Icon | L.DivIcon | undefined;
-      if (isWishlist) {
+      if (isInPlan) {
+        // GREEN — already in plan
+        icon = L.divIcon({
+          html: `<div style="
+            background:#10b981;color:white;border-radius:50%;
+            width:30px;height:30px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:15px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.35);
+            border:2px solid white;cursor:pointer;
+          ">✓</div>`,
+          className: '',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          popupAnchor: [0, -18],
+        });
+      } else if (isWishlist) {
+        // ORANGE — kid wishlist, not yet in plan
         icon = L.divIcon({
           html: `<div style="
             background:#f97316;color:white;border-radius:50%;
@@ -170,6 +187,20 @@ const MapView: React.FC<MapViewProps> = ({
         });
       } else if (getMarkerIconRef.current) {
         icon = getMarkerIconRef.current(place);
+      } else {
+        // BLUE — default (browse / discover)
+        icon = L.divIcon({
+          html: `<div style="
+            background:#3b82f6;border-radius:50%;
+            width:18px;height:18px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.3);
+            border:3px solid white;cursor:pointer;
+          "></div>`,
+          className: '',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+          popupAnchor: [0, -10],
+        });
       }
       const marker = L.marker([place.lat, place.lon], icon ? { icon } : undefined);
 
@@ -271,7 +302,7 @@ const MapView: React.FC<MapViewProps> = ({
       leafletRef.current.fitBounds(markerBounds);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [places, path]); // onSelect/getMarkerIcon intentionally omitted — using refs above
+  }, [places, path, planItemIds?.join(','), wishlistItemIds?.join(',')]); // onSelect/getMarkerIcon intentionally omitted — using refs above
 
   // Update path
   useEffect(() => {

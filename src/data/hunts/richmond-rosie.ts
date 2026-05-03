@@ -1,0 +1,98 @@
+import type { ScavengerHunt } from '@/types/hunt';
+
+export const richmondRosie: ScavengerHunt = {
+  id: 'richmond-rosie',
+  slug: 'richmond-rosie-the-riveter',
+  title: 'Rosie the Riveter — Richmond Home Front Hunt',
+  blurb: 'During WWII, more than 90,000 people came to Richmond to build Liberty ships. Most of them were women. Walk where they walked, see one of their ships, and meet Rosie.',
+  coverEmoji: '💪',
+  hostName: 'FamActify Original',
+  city: 'Richmond',
+  countryCode: 'US',
+  primaryTheme: 'history',
+  ageMin: 8,
+  ageMax: 14,
+  durationMinutes: 180,
+  difficulty: 'medium',
+  estCostCents: 0,
+  distanceMeters: 2500,
+  publishedAt: '2026-05-02',
+  credits: 'Anchored on Rosie the Riveter / WWII Home Front National Historical Park (NPS). Inspired by David\'s 1982 Brockton CityGames philosophy: history is everyday people, their jobs, and lives.',
+  stops: [
+    {
+      id: 'rosie-visitor-center',
+      order: 0,
+      title: 'Rosie the Riveter / WWII Home Front National Historical Park — Visitor Education Center',
+      lat: 37.9032,
+      lon: -122.3659,
+      address: '1414 Harbour Way South #3000, Richmond, CA 94804',
+      clueText: 'Inside this old Ford assembly building, find the giant "We Can Do It!" poster. Look at the woman in the red bandana. Most people thought for 70 years that we knew her name. In 2016 a researcher proved otherwise. The real woman worked here in the Bay Area, at Naval Air Station Alameda. What was her name?',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'Who is now believed to be the real-life Rosie behind the "We Can Do It!" poster?',
+        options: [
+          'Naomi Parker Fraley',
+          'Geraldine Hoff Doyle',
+          'Rose Will Monroe',
+          'Mary Keefe',
+        ],
+        correctAnswers: ['Naomi Parker Fraley'],
+      },
+      reveal: {
+        funFact: '"Rosie the Riveter" was never one person — she was a symbol for the millions of women who took factory and shipyard jobs during WWII. Naomi Parker Fraley worked at Naval Air Station Alameda. She was identified as the inspiration for J. Howard Miller\'s 1943 "We Can Do It!" poster by Prof. James Kimble in 2016. She passed away in 2018, age 96.',
+      },
+    },
+    {
+      id: 'red-oak-victory',
+      order: 1,
+      title: 'SS Red Oak Victory ship',
+      lat: 37.9170,
+      lon: -122.3603,
+      address: '1337 Canal Boulevard, Richmond, CA 94804',
+      clueText: 'Find the Red Oak Victory — a real cargo ship built right here in 1944. The Kaiser Shipyards built ONE Liberty ship every WEEK using new fast-welding techniques invented in Richmond. How many ships did they build during the war?',
+      prompt: {
+        kind: 'multiple_choice',
+        question: 'About how many ships did Richmond\'s Kaiser shipyards build during WWII?',
+        options: ['Around 50', 'Around 200', 'Around 500', 'Around 750'],
+        correctAnswers: ['Around 750'],
+      },
+      reveal: {
+        funFact: 'The four Kaiser Shipyards in Richmond built 747 ships during WWII — more than any other shipyard complex in the world. Workers were so fast that one Liberty ship was built and launched in only 4 days, 15 hours, and 26 minutes — a record that still stands.',
+      },
+    },
+    {
+      id: 'rosie-memorial',
+      order: 2,
+      title: 'Rosie the Riveter Memorial',
+      lat: 37.9072,
+      lon: -122.3611,
+      address: 'Marina Bay Park, 1900 Esplanade Drive, Richmond, CA 94804',
+      clueText: 'Walk along the bay to the Rosie the Riveter Memorial — a long sculpture shaped like a Liberty ship under construction. Read the timeline panels along it. Find the year a single Liberty ship was built and launched in less than 5 days.',
+      prompt: {
+        kind: 'text',
+        question: 'In what year was the record-breaking Liberty ship "SS Robert E. Peary" built in under 5 days?',
+        correctAnswers: ['1942'],
+      },
+      reveal: {
+        funFact: 'The SS Robert E. Peary was launched in 1942 as a publicity stunt to prove the Kaiser shipyards\' speed. The keel was laid on November 8 at 12:01 AM; the ship slid into the water on November 12 at 3:27 PM — 4 days, 15 hours, 26 minutes. Most of the welders were women.',
+      },
+    },
+    {
+      id: 'rosie-photo',
+      order: 3,
+      title: "Strike a Rosie pose",
+      lat: 37.9072,
+      lon: -122.3611,
+      address: 'Rosie the Riveter Memorial, Marina Bay Park',
+      clueText: "End the hunt with a photo. Roll up your sleeve, make a fist, give your best 'We Can Do It!' face. (Yes, grown-ups too.)",
+      prompt: {
+        kind: 'photo',
+        question: 'Take a Rosie-pose photo together to remember the hunt.',
+        photoSubject: 'Rosie the Riveter pose',
+      },
+      reveal: {
+        funFact: 'The phrase "We Can Do It!" was barely seen during WWII — the poster was internal Westinghouse motivation only, displayed for 2 weeks in 1943. It was rediscovered in the 1980s and became the icon of women\'s empowerment we know today, decades after Rosie\'s real generation had retired.',
+      },
+    },
+  ],
+};

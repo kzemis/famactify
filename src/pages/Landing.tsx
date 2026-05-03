@@ -442,6 +442,7 @@ const Landing = () => {
                 { Icon: Search, head: "Smart filters", body: "Age, budget, weather, accessibility, timing." },
                 { Icon: MapPin, head: "Map view + GPS", body: "See activities near you. Locate me with one tap." },
                 { Icon: Sparkles, head: "Mood suggestions", body: "Not sure? Answer 4 questions, get matched." },
+                { Icon: Star, head: "NEW: Scavenger Games", body: "Follow clues, visit stops, answer challenges." },
               ] as const).map(({ Icon, head, body }) => (
                 <div key={head} className="flex gap-3 items-start">
                   <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
@@ -579,6 +580,21 @@ const Landing = () => {
                   )}
                 </div>
               </div>
+
+              <button
+                onClick={() => navigate("/hunts")}
+                className="w-full max-w-xl text-left rounded-3xl overflow-hidden border border-pink-200 bg-gradient-to-r from-pink-100 via-purple-100 to-amber-100 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-all"
+              >
+                <span className="text-3xl shrink-0">🔍</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest bg-primary text-primary-foreground rounded-full px-2 py-0.5">New</span>
+                    <p className="text-sm font-bold text-pink-800">Scavenger Games</p>
+                  </div>
+                  <p className="text-xs text-pink-700/80 leading-snug">Follow clues, visit real places, answer playful challenges.</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-pink-700" />
+              </button>
             </div>
 
             {/* Right — always visible (stacks below on mobile) */}
@@ -737,7 +753,7 @@ const Landing = () => {
                   <Mail className="w-3 h-3" /> Send by email
                 </div>
                 <div className="flex gap-2">
-                  <div className="flex-1 h-8 rounded-md border bg-background text-[11px] px-2 flex items-center text-muted-foreground">grandma@example.com</div>
+                  <div className="flex-1 h-8 rounded-md border bg-background text-[11px] px-2 flex items-center text-muted-foreground">family@example.com</div>
                   <div className="px-3 h-8 rounded-md bg-primary text-primary-foreground text-xs flex items-center font-medium cursor-default">Send</div>
                 </div>
               </div>

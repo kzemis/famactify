@@ -51,8 +51,10 @@ export const rigaBaronaPlayground: ScavengerHunt = {
       clueText: 'Find three colours and two shapes around the playground. They can be on equipment, signs, ground markings, clothes, or shadows.',
       parentHint: 'For toddlers, point and name colours together. For older kids, ask them to find unusual shapes.',
       prompt: {
-        kind: 'observation',
-        question: 'Find three colours and two shapes.',
+        kind: 'audio',
+        question: 'Record 5 seconds of playground sound: shoes, swing, laughter nearby, wind, or your own “ready, set, go!”',
+        audioSubject: 'A safe playground sound or the player saying ready, set, go',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'Colour and shape hunting turns a familiar playground into a tiny observation lab.',
@@ -81,9 +83,9 @@ export const rigaBaronaPlayground: ScavengerHunt = {
       clueText: 'Take a privacy-safe close-up photo of one texture: rubber ground, metal, wood, rope, sand, leaf, or shadow — no faces.',
       parentHint: 'Close-up textures make good memory photos and avoid photographing strangers.',
       prompt: {
-        kind: 'photo',
-        question: 'Take one privacy-safe playground texture photo.',
-        photoSubject: 'Playground texture without faces',
+        kind: 'drawing',
+        question: 'Draw one playground texture or movement path: slide, climb, rope, shadow, sand, or hop line.',
+        drawingSubject: 'A playground texture or movement path without faces',
       },
       reveal: {
         funFact: 'A small texture photo can become a memory trigger: “that was the day we found the bumpy blue ground.”',

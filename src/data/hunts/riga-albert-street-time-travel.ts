@@ -65,10 +65,8 @@ export const rigaAlbertStreetTimeTravel: ScavengerHunt = {
       clueText: 'Look for the street name “Alberta iela.” The street name itself is your clue: who is Albert?',
       parentHint: 'The source-backed answer is Bishop Albert. Wikipedia says he founded Riga in 1201.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'Albert Street is named after which historical figure?',
-        options: ['Bishop Albert', 'Albert Einstein', 'Queen Alberta', 'A ship called Albert'],
-        correctAnswers: ['Bishop Albert'],
+        kind: 'observation',
+        question: 'Find one sign, word, or number on Alberta iela that proves you are really standing on this street.',
       },
       reveal: {
         funFact: 'Wikipedia identifies the street’s namesake as Bishop Albert, connected with Riga’s founding in 1201.',
@@ -121,10 +119,10 @@ export const rigaAlbertStreetTimeTravel: ScavengerHunt = {
       clueText: 'Walk to No. 12. Find the museum connection and notice how the entrance, tower, or windows feel different from a plain apartment block.',
       parentHint: 'Wikipedia says Pēkšēns’ former residence at No. 12 has housed the Riga Art Nouveau Museum since April 2009.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'What museum is located at Alberta iela 12?',
-        options: ['Riga Art Nouveau Museum', 'Riga Zoo', 'Latvian War Museum', 'House of the Blackheads Museum'],
-        correctAnswers: ['Riga Art Nouveau Museum'],
+        kind: 'audio',
+        question: 'Record 5 seconds of quiet Alberta iela ambience or your own voice saying “Art Nouveau”.',
+        audioSubject: 'Quiet Alberta iela ambience or the words Art Nouveau',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'Wikipedia says No. 12 was designed by Konstantīns Pēkšēns and Eižens Laube, and that Pēkšēns’ former residence there has housed the Riga Art Nouveau Museum since April 2009.',

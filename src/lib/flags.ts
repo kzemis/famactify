@@ -22,6 +22,9 @@ export const flags = {
   // Memory
   memory_loop:         import.meta.env.VITE_FF_MEMORY_LOOP         === 'true',
 
+  // Scavenger Hunts
+  scv_ml_photo_verification: import.meta.env.VITE_FF_SCV_ML_PHOTO_VERIFICATION === 'true',
+
   // Marketplace
   print_on_demand:     import.meta.env.VITE_FF_PRINT_ON_DEMAND     === 'true',
 } as const;

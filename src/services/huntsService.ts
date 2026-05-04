@@ -70,6 +70,46 @@ function updateLocalAttempt(attemptId: string, updater: (attempt: HuntAttempt) =
   return updated;
 }
 
+const OPTIONAL_HUNT_STOP_COLUMNS = [
+  'clue_text_lv',
+  'reveal_fun_fact_lv',
+  'prompt_metadata',
+] as const;
+
+function missingSchemaColumnName(error: any): string | null {
+  const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`;
+  const quotedMatch = text.match(/'([^']+)' column/i);
+  const doubleQuotedMatch = text.match(/column "([^"]+)"/i);
+  return quotedMatch?.[1] ?? doubleQuotedMatch?.[1] ?? null;
+}
+
+function withoutColumns(rows: Record<string, any>[], columns: Set<string>): Record<string, any>[] {
+  if (columns.size === 0) return rows;
+  return rows.map(row => {
+    const next = { ...row };
+    for (const columnName of columns) delete next[columnName];
+    return next;
+  });
+}
+
+async function unavailableOptionalStopColumns(): Promise<Set<string>> {
+  const unavailable = new Set<string>();
+
+  for (const columnName of OPTIONAL_HUNT_STOP_COLUMNS) {
+    const { error } = await supabase.from('hunt_stops').select(columnName).limit(1);
+    if (!error) continue;
+
+    if (missingSchemaColumnName(error) === columnName) {
+      unavailable.add(columnName);
+      continue;
+    }
+
+    throw error;
+  }
+
+  return unavailable;
+}
+
 // ── Mappers (DB row ↔ ScavengerHunt) ─────────────────────────────────────────
 
 function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): ScavengerHunt {
@@ -327,34 +367,53 @@ export const huntsService = {
 
   /** Replace all stops for a hunt with the given list (delete + insert). */
   async replaceStops(huntId: string, stops: HuntStop[]): Promise<void> {
+    const unavailableColumns = await unavailableOptionalStopColumns();
+
     // Delete existing
     const { error: delErr } = await supabase.from('hunt_stops').delete().eq('hunt_id', huntId);
     if (delErr) throw delErr;
     if (stops.length === 0) return;
-    const rows = stops.map((s, i) => ({
+    const rows = stops.map((stop, index) => ({
       hunt_id: huntId,
-      stop_order: i,
-      title: s.title,
-      lat: s.lat,
-      lon: s.lon,
-      address: s.address ?? null,
-      clue_text: s.clueText,
-      clue_text_lv: s.clueTextLv ?? null,
-      clue_image: s.clueImage ?? null,
-      clue_audio: s.clueAudio ?? null,
-      parent_hint: s.parentHint ?? null,
-      prompt_kind: s.prompt.kind,
-      prompt_question: s.prompt.question,
-      prompt_options: s.prompt.options ?? null,
-      prompt_correct: s.prompt.correctAnswers ?? null,
-      prompt_photo_subject: s.prompt.photoSubject ?? null,
-      prompt_metadata: promptMetadata(s.prompt),
-      reveal_fun_fact: s.reveal.funFact,
-      reveal_fun_fact_lv: s.reveal.funFactLv ?? null,
-      reveal_image: s.reveal.image ?? null,
+      stop_order: index,
+      title: stop.title,
+      lat: stop.lat,
+      lon: stop.lon,
+      address: stop.address ?? null,
+      clue_text: stop.clueText,
+      clue_text_lv: stop.clueTextLv ?? null,
+      clue_image: stop.clueImage ?? null,
+      clue_audio: stop.clueAudio ?? null,
+      parent_hint: stop.parentHint ?? null,
+      prompt_kind: stop.prompt.kind,
+      prompt_question: stop.prompt.question,
+      prompt_options: stop.prompt.options ?? null,
+      prompt_correct: stop.prompt.correctAnswers ?? null,
+      prompt_photo_subject: stop.prompt.photoSubject ?? null,
+      prompt_metadata: promptMetadata(stop.prompt),
+      reveal_fun_fact: stop.reveal.funFact,
+      reveal_fun_fact_lv: stop.reveal.funFactLv ?? null,
+      reveal_image: stop.reveal.image ?? null,
     }));
-    const { error: insErr } = await supabase.from('hunt_stops').insert(rows);
-    if (insErr) throw insErr;
+
+    let rowsToInsert = withoutColumns(rows, unavailableColumns);
+    for (let attempt = 0; attempt <= OPTIONAL_HUNT_STOP_COLUMNS.length; attempt += 1) {
+      const { error: insertError } = await supabase.from('hunt_stops').insert(rowsToInsert);
+      if (!insertError) return;
+
+      const missingColumn = missingSchemaColumnName(insertError);
+      if (
+        missingColumn
+        && OPTIONAL_HUNT_STOP_COLUMNS.includes(missingColumn as typeof OPTIONAL_HUNT_STOP_COLUMNS[number])
+        && !unavailableColumns.has(missingColumn)
+      ) {
+        unavailableColumns.add(missingColumn);
+        rowsToInsert = withoutColumns(rows, unavailableColumns);
+        continue;
+      }
+
+      throw insertError;
+    }
   },
 
   /** Replace all sponsors. */

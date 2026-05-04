@@ -23,6 +23,7 @@ const PROMPT_KINDS: { value: HuntPromptKind; label: string; helper: string }[] =
   { value: 'photo',           label: '📷 Photo',        helper: 'Player takes a photo of the subject — always accepted.' },
   { value: 'audio',           label: '🎙️ Sound',         helper: 'Player records a short sound clip (sea lions, parrots, fountain). Always accepted.' },
   { value: 'drawing',         label: '✏️ Drawing',       helper: 'Player draws on an in-app canvas. Always accepted.' },
+  { value: 'time_travel_photo', label: '🕰️ Time-travel', helper: 'Player lines up a source image over the live camera, then captures today + then.' },
   { value: 'observation',     label: '👀 Observation',  helper: 'No answer required. Player just acknowledges they did the thing.' },
 ];
 
@@ -65,8 +66,10 @@ export default function HuntEdit() {
   const mode: Mode = pathname.startsWith('/admin/') ? 'admin' : 'org';
   const isNew = !params.id || params.id === 'new';
   const startsFromAi = new URLSearchParams(search).get('mode') === 'ai';
+  const draftStorageKey = isNew ? `famactify-hunt-builder-draft:${mode}:${startsFromAi ? 'ai' : 'blank'}` : null;
 
   const [loading, setLoading] = useState(!isNew);
+  const [draftHydrated, setDraftHydrated] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [huntStatus, setHuntStatus] = useState<string>('draft');
   const [reviewNotes, setReviewNotes] = useState<string | null>(null);
@@ -115,6 +118,48 @@ export default function HuntEdit() {
       setLoading(false);
     })();
   }, [params.id, isNew, mode, navigate]);
+
+  // New hunt drafts are long forms. Keep a tab-session draft so auth/admin
+  // background refreshes, accidental browser refreshes, or tab switches do not
+  // silently erase everything before the first explicit Save.
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    try {
+      const raw = sessionStorage.getItem(draftStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.hunt) setHunt(parsed.hunt);
+        if (typeof parsed?.assistantOpen === 'boolean') setAssistantOpen(parsed.assistantOpen);
+        if (typeof parsed?.aiPlace === 'string') setAiPlace(parsed.aiPlace);
+        if (typeof parsed?.aiSourceLinks === 'string') setAiSourceLinks(parsed.aiSourceLinks);
+        if (typeof parsed?.aiSourceFacts === 'string') setAiSourceFacts(parsed.aiSourceFacts);
+        if (typeof parsed?.aiStopIdeas === 'string') setAiStopIdeas(parsed.aiStopIdeas);
+      }
+    } catch (error) {
+      console.warn('[HuntEdit] Could not restore new hunt draft', error);
+    } finally {
+      setDraftHydrated(true);
+    }
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (!draftStorageKey || !draftHydrated) return;
+    const handle = window.setTimeout(() => {
+      try {
+        sessionStorage.setItem(draftStorageKey, JSON.stringify({
+          hunt,
+          assistantOpen,
+          aiPlace,
+          aiSourceLinks,
+          aiSourceFacts,
+          aiStopIdeas,
+        }));
+      } catch (error) {
+        console.warn('[HuntEdit] Could not persist new hunt draft', error);
+      }
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [draftStorageKey, draftHydrated, hunt, assistantOpen, aiPlace, aiSourceLinks, aiSourceFacts, aiStopIdeas]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -169,6 +214,9 @@ export default function HuntEdit() {
       if (!s.reveal.funFact.trim()) return `Stop ${i + 1}: reveal / fun fact required`;
       if (s.prompt.kind === 'multiple_choice' && (!s.prompt.options?.length || !s.prompt.correctAnswers?.length)) {
         return `Stop ${i + 1}: multiple choice needs options and a correct answer`;
+      }
+      if (s.prompt.kind === 'time_travel_photo' && !s.prompt.timeTravelImageUrl?.trim()) {
+        return `Stop ${i + 1}: time-travel photo needs a historical/source image URL`;
       }
     }
     if ((hunt.createdVia === 'ai_assisted' || hunt.createdVia === 'ai_generated') && !(hunt.sourceLinks?.length) && !hunt.credits?.trim()) {
@@ -278,6 +326,7 @@ export default function HuntEdit() {
       }
       await huntsService.replaceStops(id, hunt.stops ?? []);
       await huntsService.replaceSponsors(id, hunt.sponsors ?? []);
+      if (draftStorageKey) sessionStorage.removeItem(draftStorageKey);
       toast.success('Saved');
       // Update URL if we just created
       if (isNew) {
@@ -592,6 +641,9 @@ export default function HuntEdit() {
                           audioSubject:    p.value === 'audio'   ? x.prompt.audioSubject   : undefined,
                           audioMaxSeconds: p.value === 'audio'   ? (x.prompt.audioMaxSeconds ?? 5) : undefined,
                           drawingSubject:  p.value === 'drawing' ? x.prompt.drawingSubject : undefined,
+                          timeTravelImageUrl: p.value === 'time_travel_photo' ? x.prompt.timeTravelImageUrl : undefined,
+                          timeTravelCaption:  p.value === 'time_travel_photo' ? x.prompt.timeTravelCaption  : undefined,
+                          timeTravelOpacity:  p.value === 'time_travel_photo' ? (x.prompt.timeTravelOpacity ?? 0.5) : undefined,
                         },
                       }))}
                       className={cn('rounded-xl border-2 p-2 text-left text-xs', s.prompt.kind === p.value ? 'border-primary bg-primary/8' : 'border-border bg-background')}
@@ -660,6 +712,36 @@ export default function HuntEdit() {
                   <Field label="What to draw (informative)">
                     <Input value={s.prompt.drawingSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, drawingSubject: e.target.value } }))} placeholder="The shape of the bridge tower" />
                   </Field>
+                )}
+
+                {s.prompt.kind === 'time_travel_photo' && (
+                  <>
+                    <Field label="Historical/source image URL">
+                      <Input
+                        value={s.prompt.timeTravelImageUrl ?? ''}
+                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelImageUrl: e.target.value } }))}
+                        placeholder="https://archive.org/.../historic-photo.jpg"
+                      />
+                    </Field>
+                    <Field label="Overlay caption / source note">
+                      <Textarea
+                        rows={2}
+                        value={s.prompt.timeTravelCaption ?? ''}
+                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelCaption: e.target.value } }))}
+                        placeholder="Source: venue archive / public collection. Used to line up the old view with today."
+                      />
+                    </Field>
+                    <Field label="Overlay opacity (0.1–0.85, default 0.5)">
+                      <Input
+                        type="number"
+                        min={0.1}
+                        max={0.85}
+                        step={0.05}
+                        value={s.prompt.timeTravelOpacity ?? 0.5}
+                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelOpacity: Math.max(0.1, Math.min(0.85, parseFloat(e.target.value || '0.5'))) } }))}
+                      />
+                    </Field>
+                  </>
                 )}
               </div>
 

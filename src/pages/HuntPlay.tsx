@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import DrawingPad from '@/components/DrawingPad';
+import TimeTravelCamera from '@/components/TimeTravelCamera';
 import { renderHuntPostcard } from '@/lib/huntPostcard';
 import { huntsService, type ScavengerHunt, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
@@ -25,6 +26,7 @@ export default function HuntPlay() {
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
   const [audioDurationMs, setAudioDurationMs] = useState<number>(0);
   const [drawingDataUrl, setDrawingDataUrl] = useState<string | null>(null);
+  const [timeTravelPhotoDataUrl, setTimeTravelPhotoDataUrl] = useState<string | null>(null);
   const [postcardUrl, setPostcardUrl] = useState<string | null>(null);
   const [postcardBlob, setPostcardBlob] = useState<Blob | null>(null);
   const [postcardLoading, setPostcardLoading] = useState(false);
@@ -198,6 +200,11 @@ export default function HuntPlay() {
       result.answer = '(drawing)';
       result.drawingDataUrl = drawingDataUrl;
       result.isCorrect = true; // drawings are always accepted as a completion
+    } else if (currentStop.prompt.kind === 'time_travel_photo') {
+      if (!timeTravelPhotoDataUrl) { toast.error('Line up and capture the time-travel photo first'); return; }
+      result.answer = '(time-travel-photo)';
+      result.photoDataUrl = timeTravelPhotoDataUrl;
+      result.isCorrect = true; // time-travel photos are memory captures, not quizzes
     } else {
       // observation — just acknowledge
       result.answer = '✓';
@@ -242,6 +249,7 @@ export default function HuntPlay() {
     setAudioDataUrl(null);
     setAudioDurationMs(0);
     setDrawingDataUrl(null);
+    setTimeTravelPhotoDataUrl(null);
     setShowParentHint(false);
     try { window.speechSynthesis?.cancel(); } catch {}
     if (cleaned.currentStopOrder >= hunt.stops.length) {
@@ -614,6 +622,17 @@ export default function HuntPlay() {
               />
             )}
 
+            {/* Time-travel photo — historical image over live camera */}
+            {currentStop.prompt.kind === 'time_travel_photo' && (
+              <TimeTravelCamera
+                overlayImageUrl={currentStop.prompt.timeTravelImageUrl}
+                caption={currentStop.prompt.timeTravelCaption}
+                opacity={currentStop.prompt.timeTravelOpacity ?? 0.5}
+                initialDataUrl={timeTravelPhotoDataUrl ?? undefined}
+                onCapture={setTimeTravelPhotoDataUrl}
+              />
+            )}
+
             {/* Observation — no input */}
             {currentStop.prompt.kind === 'observation' && (
               <div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
@@ -649,7 +668,7 @@ export default function HuntPlay() {
                     {wasSkipped ? 'Skipped' : wasCorrect ? 'Correct!' : 'Not quite — but here\'s the answer'}
                   </p>
                   {!wasSkipped && lastResult?.answer
-                    && !['✓', '(photo)', '(audio)', '(drawing)'].includes(lastResult.answer) && (
+                    && !['✓', '(photo)', '(audio)', '(drawing)', '(time-travel-photo)'].includes(lastResult.answer) && (
                     <p className="text-xs mt-0.5">Your answer: {lastResult.answer}</p>
                   )}
                 </div>
@@ -676,6 +695,13 @@ export default function HuntPlay() {
                 )}
                 {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'approved' && (
                   <p className="text-[11px] text-emerald-700 mt-2">📸 Photo saved!</p>
+                )}
+                {lastResult?.answer === '(time-travel-photo)' && lastResult.photoDataUrl && (
+                  <div className="mt-3 flex items-center gap-3 px-3 py-2 rounded-xl bg-background/80 border">
+                    <History className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="text-[11px] text-muted-foreground flex-1">Time-travel photo saved</span>
+                    <img src={lastResult.photoDataUrl} alt="Your time-travel match" className="w-14 h-14 rounded-lg object-cover border" />
+                  </div>
                 )}
                 {/* Audio capture preview */}
                 {lastResult?.audioDataUrl && (

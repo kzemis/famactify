@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import ARClueOverlay from '@/components/ARClueOverlay';
 import DrawingPad from '@/components/DrawingPad';
@@ -662,6 +662,20 @@ export default function HuntPlay() {
                 </button>
               </div>
               <p className="text-base leading-relaxed">{displayedClueText}</p>
+              {currentStop.clueAudio && (
+                <div className="rounded-2xl bg-background/85 border border-border/70 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Headphones className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold leading-tight">Venue audio guide</p>
+                      <p className="text-[11px] text-muted-foreground">Listen like a mini museum tour.</p>
+                    </div>
+                  </div>
+                  <audio src={currentStop.clueAudio} controls className="w-full h-9" preload="metadata" />
+                </div>
+              )}
               {currentStop.address && (
                 <div className="flex items-start gap-2 text-sm pt-2 border-t border-border/40">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />

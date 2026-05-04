@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones } from 'lucide-react';
+import MapView from '@/components/MapView';
 import { huntsService, type ScavengerHunt, type HuntAttempt } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,15 @@ export default function HuntDetail() {
   const isInProgress = !!latestAttempt && !latestAttempt.completedAt;
   const isCompleted = !!latestAttempt?.completedAt;
   const ctaLabel = isInProgress ? 'Continue hunt' : isCompleted ? 'Play again' : 'Start hunt';
+  const huntPath = [...hunt.stops]
+    .sort((a, b) => a.order - b.order)
+    .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lon) && !(Math.abs(s.lat) < 0.0001 && Math.abs(s.lon) < 0.0001))
+    .map((s, i) => ({
+      id: s.id,
+      lat: s.lat,
+      lon: s.lon,
+      name: `${i + 1}. ${s.title}`,
+    }));
 
   return (
     <div className="min-h-[100dvh] bg-background pb-tab-bar">
@@ -96,6 +106,23 @@ export default function HuntDetail() {
         </div>
       </div>
 
+      {/* Route map */}
+      {huntPath.length > 0 && (
+        <div className="px-5 mt-5 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Route map</p>
+            <p className="text-[11px] text-muted-foreground">Tap pins for full names</p>
+          </div>
+          <div className="h-72 rounded-3xl overflow-hidden border bg-muted shadow-sm">
+            <MapView
+              places={[]}
+              path={huntPath}
+              className="rounded-3xl border-0"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Stops preview */}
       <div className="px-5 mt-5 space-y-2">
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">What you'll do</p>
@@ -105,7 +132,14 @@ export default function HuntDetail() {
               <div className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{s.title}</p>
-                {s.address && <p className="text-[11px] text-muted-foreground truncate">📍 {s.address}</p>}
+                <div className="flex items-center gap-2 min-w-0">
+                  {s.address && <p className="text-[11px] text-muted-foreground truncate">📍 {s.address}</p>}
+                  {s.clueAudio && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary shrink-0">
+                      <Headphones className="w-3 h-3" /> audio guide
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

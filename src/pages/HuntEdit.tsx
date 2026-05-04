@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X, Bot, FileText, Sparkles, Workflow } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X, Bot, FileText, Sparkles, Workflow, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,6 +99,7 @@ export default function HuntEdit() {
   const [huntId, setHuntId] = useState<string | null>(isNew ? null : (params.id ?? null));
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingFor, setUploadingFor] = useState<number | null>(null); // sponsor index being uploaded for
+  const [uploadingStepAudioFor, setUploadingStepAudioFor] = useState<number | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(isNew && startsFromAi);
   const [aiPlace, setAiPlace] = useState('');
   const [aiSourceLinks, setAiSourceLinks] = useState('');
@@ -387,6 +388,19 @@ export default function HuntEdit() {
     }
   };
 
+  const handleStepAudioUpload = async (idx: number, file: File) => {
+    setUploadingStepAudioFor(idx);
+    try {
+      const url = await huntsService.uploadAsset(file, 'step-audio');
+      updateStop(idx, stop => ({ ...stop, clueAudio: url }));
+      toast.success('Audio guide uploaded');
+    } catch (e: any) {
+      toast.error(e.message || 'Audio upload failed');
+    } finally {
+      setUploadingStepAudioFor(null);
+    }
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -626,6 +640,54 @@ export default function HuntEdit() {
                   onChange={e => updateStop(i, x => ({ ...x, clueTextLv: e.target.value }))}
                   placeholder="Latviešu versija šim pavedienam."
                 />
+              </Field>
+              <Field label="Audio guide / soundtrack (optional)">
+                <div className="space-y-2">
+                  <Input
+                    value={s.clueAudio ?? ''}
+                    onChange={e => updateStop(i, x => ({ ...x, clueAudio: e.target.value }))}
+                    placeholder="https://.../stop-01-audio-guide.mp3"
+                  />
+                  {s.clueAudio && (
+                    <div className="rounded-xl border bg-muted/40 p-2 space-y-1">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+                        <Headphones className="w-3.5 h-3.5" /> Preview audio guide
+                      </div>
+                      <audio src={s.clueAudio} controls className="w-full h-9" preload="metadata" />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <label className={cn(
+                      'h-10 px-3 rounded-xl border bg-background text-sm font-medium tap-highlight flex items-center justify-center gap-2 cursor-pointer',
+                      uploadingStepAudioFor === i && 'opacity-60 pointer-events-none',
+                    )}>
+                      <Upload className="w-4 h-4" />
+                      {uploadingStepAudioFor === i ? 'Uploading…' : 'Upload audio'}
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleStepAudioUpload(i, file);
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                    {s.clueAudio && (
+                      <button
+                        type="button"
+                        onClick={() => updateStop(i, x => ({ ...x, clueAudio: '' }))}
+                        className="h-10 px-3 rounded-xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
+                      >
+                        <X className="w-4 h-4" /> Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Use this for a venue voice-over, ambient soundtrack, or simple audio guide. Player sees it on the clue screen before answering.
+                  </p>
+                </div>
               </Field>
               <Field label="Parent hint (optional — shown when kid taps 'Ask a grown-up')">
                 <Textarea value={s.parentHint ?? ''} rows={2} onChange={e => updateStop(i, x => ({ ...x, parentHint: e.target.value }))} placeholder="A nudge a grown-up can read aloud or paraphrase, without giving the answer outright." />

@@ -414,9 +414,9 @@ export const huntsService = {
     if (error) throw error;
   },
 
-  // ── Sponsor logo upload (storage bucket: 'hunt-assets') ────────────────────
+  // ── Hunt asset upload (storage bucket: 'hunt-assets') ─────────────────────
 
-  /** Upload an image (sponsor logo / cover) to the hunt-assets bucket. Returns public URL. */
+  /** Upload a public hunt asset (sponsor logo, cover, step audio guide). Returns public URL. */
   async uploadAsset(file: File, pathPrefix = 'sponsors'): Promise<string> {
     const ext = file.name.split('.').pop() || 'png';
     const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;

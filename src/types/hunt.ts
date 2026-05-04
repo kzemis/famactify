@@ -48,7 +48,7 @@ export interface HuntStop {
   /** Optional Latvian clue copy */
   clueTextLv?: string;
   clueImage?: string;
-  /** Optional voice-over URL (Phase 3) — when present, plays an audio file; otherwise falls back to TTS */
+  /** Optional venue-authored audio guide / soundtrack URL for this stop */
   clueAudio?: string;
   /** Optional parent-only hint shown when kid taps "Ask a grown-up" (co-pilot mode) */
   parentHint?: string;

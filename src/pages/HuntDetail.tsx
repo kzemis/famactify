@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones } from 'lucide-react';
+import HuntRouteCanvas from '@/components/HuntRouteCanvas';
 import { huntsService, type ScavengerHunt, type HuntAttempt } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
@@ -96,6 +97,11 @@ export default function HuntDetail() {
         </div>
       </div>
 
+      {/* Generated story map */}
+      <div className="px-5 mt-5">
+        <HuntRouteCanvas hunt={hunt} />
+      </div>
+
       {/* Stops preview */}
       <div className="px-5 mt-5 space-y-2">
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">What you'll do</p>
@@ -105,7 +111,14 @@ export default function HuntDetail() {
               <div className="shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{s.title}</p>
-                {s.address && <p className="text-[11px] text-muted-foreground truncate">📍 {s.address}</p>}
+                <div className="flex items-center gap-2 min-w-0">
+                  {s.address && <p className="text-[11px] text-muted-foreground truncate">📍 {s.address}</p>}
+                  {s.clueAudio && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary shrink-0">
+                      <Headphones className="w-3 h-3" /> audio guide
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

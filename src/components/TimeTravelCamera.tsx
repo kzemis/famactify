@@ -73,8 +73,8 @@ function drawHistoricalInset(
   targetHeight: number,
   alpha: number,
 ) {
-  const insetWidth = Math.round(targetWidth * 0.28);
-  const insetHeight = Math.round(targetHeight * 0.22);
+  const insetWidth = Math.round(targetWidth * 0.36);
+  const insetHeight = Math.round(targetHeight * 0.28);
   const x = targetWidth - insetWidth - Math.round(targetWidth * 0.04);
   const y = Math.round(targetHeight * 0.055);
 
@@ -133,6 +133,7 @@ export default function TimeTravelCamera({
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
   const strokeChangedRef = useRef(false);
+  const cameraSessionRef = useRef(0);
 
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(initialDataUrl ?? null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -183,6 +184,12 @@ export default function TimeTravelCamera({
   };
 
   const stopCamera = useCallback(() => {
+    cameraSessionRef.current += 1;
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.srcObject = null;
+    }
     streamRef.current?.getTracks().forEach(track => track.stop());
     streamRef.current = null;
   }, []);
@@ -266,25 +273,42 @@ export default function TimeTravelCamera({
       return;
     }
 
+    const sessionId = cameraSessionRef.current + 1;
+    cameraSessionRef.current = sessionId;
     setStarting(true);
     setCameraError(null);
     try {
+      stopCamera();
+      cameraSessionRef.current = sessionId;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: requestedFacing } },
         audio: false,
       });
+      if (cameraSessionRef.current !== sessionId) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (playError: any) {
+          if (cameraSessionRef.current !== sessionId || playError?.name === 'AbortError') return;
+          throw playError;
+        }
       }
       syncAnnotationCanvas();
     } catch (error: any) {
-      setCameraError(error?.message || 'Could not start camera');
+      if (cameraSessionRef.current === sessionId) {
+        setCameraError(error?.message || 'Could not start camera');
+      }
     } finally {
-      setStarting(false);
+      if (cameraSessionRef.current === sessionId) {
+        setStarting(false);
+      }
     }
-  }, [capturedDataUrl, facingMode, syncAnnotationCanvas]);
+  }, [capturedDataUrl, facingMode, stopCamera, syncAnnotationCanvas]);
 
   useEffect(() => {
     startCamera();
@@ -308,7 +332,7 @@ export default function TimeTravelCamera({
     ctx.drawImage(canvas, 0, 0, width, height);
   };
 
-  const renderVideoFrame = async (includeOverlay: boolean) => {
+  const renderVideoFrame = async (includeOverlay: boolean, includeSelfieInset = facingMode === 'user') => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) {
       throw new Error('Camera is not ready yet');
@@ -331,11 +355,11 @@ export default function TimeTravelCamera({
       drawCover(ctx, video, canvas.width, canvas.height);
     }
 
-    if ((includeOverlay || facingMode === 'user') && overlayImageUrl) {
+    if ((includeOverlay || includeSelfieInset) && overlayImageUrl) {
       const overlay = await loadImage(overlayImageUrl);
       ctx.save();
       ctx.globalAlpha = previewOpacity;
-      if (facingMode === 'user') {
+      if (includeSelfieInset) {
         ctx.globalAlpha = 1;
         drawHistoricalInset(ctx, overlay, canvas.width, canvas.height, previewOpacity);
       } else {
@@ -369,8 +393,8 @@ export default function TimeTravelCamera({
         dataUrl = await renderVideoFrame(includeOverlayInCapture);
       } catch (error) {
         if (!overlayImageUrl) throw error;
-        dataUrl = await renderVideoFrame(false);
-        toast.warning('Saved camera photo without overlay — historical image could not be embedded');
+        dataUrl = await renderVideoFrame(false, false);
+        toast.warning('Saved photo without historical reference — source image could not be embedded');
       }
       setCapturedDataUrl(dataUrl);
       onCapture(dataUrl);
@@ -515,7 +539,7 @@ export default function TimeTravelCamera({
             />
           )}
           {overlayImageUrl && !cameraError && facingMode === 'user' && (
-            <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+86px)] w-24 h-32 rounded-2xl border-2 border-white/85 bg-white/15 shadow-2xl overflow-hidden pointer-events-none">
+            <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+86px)] w-32 h-44 rounded-3xl border-2 border-white/85 bg-white/15 shadow-2xl overflow-hidden pointer-events-none">
               <img
                 src={overlayImageUrl}
                 alt=""

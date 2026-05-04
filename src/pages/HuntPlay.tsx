@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
+import ARClueOverlay from '@/components/ARClueOverlay';
 import DrawingPad from '@/components/DrawingPad';
 import TimeTravelCamera from '@/components/TimeTravelCamera';
 import { renderHuntPostcard } from '@/lib/huntPostcard';
@@ -31,6 +32,7 @@ export default function HuntPlay() {
   const [postcardBlob, setPostcardBlob] = useState<Blob | null>(null);
   const [postcardLoading, setPostcardLoading] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [showARGuide, setShowARGuide] = useState(false);
   const [showParentHint, setShowParentHint] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [verifyingPhoto, setVerifyingPhoto] = useState(false);
@@ -176,7 +178,6 @@ export default function HuntPlay() {
       result.answer = '(photo)';
       result.photoDataUrl = photoDataUrl;
       result.isCorrect = true; // photos are always accepted as a completion
-      // Verify the photo (currently a stub; CLIP/server model can slot in later)
       setVerifyingPhoto(true);
       try {
         const v = await huntsService.verifyPhotoML(photoDataUrl, currentStop.prompt.photoSubject);
@@ -184,8 +185,12 @@ export default function HuntPlay() {
         result.photoVerifyConfidence = v.confidence;
         result.photoNeedsReview = !!v.needsReview;
         result.photoReviewStatus = v.needsReview ? 'pending' : v.verified ? 'approved' : 'rejected';
+        result.photoReviewNotes = v.reason ? `${v.reason}${v.model ? ` (${v.model})` : ''}` : undefined;
       } catch {
         result.photoVerified = undefined;
+        result.photoNeedsReview = true;
+        result.photoReviewStatus = 'pending';
+        result.photoReviewNotes = 'Photo verification unavailable; queued for manual review.';
       } finally {
         setVerifyingPhoto(false);
       }
@@ -250,6 +255,7 @@ export default function HuntPlay() {
     setAudioDurationMs(0);
     setDrawingDataUrl(null);
     setTimeTravelPhotoDataUrl(null);
+    setShowARGuide(false);
     setShowParentHint(false);
     try { window.speechSynthesis?.cancel(); } catch {}
     if (cleaned.currentStopOrder >= hunt.stops.length) {
@@ -481,6 +487,12 @@ export default function HuntPlay() {
                   <span className="text-muted-foreground">{currentStop.address}</span>
                 </div>
               )}
+              <button
+                onClick={() => setShowARGuide(true)}
+                className="w-full h-11 rounded-2xl bg-black text-white text-sm font-semibold tap-highlight flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Navigation className="w-4 h-4" /> Open AR arrow guide
+              </button>
               {/* Parent hint — co-pilot mode */}
               {currentStop.parentHint && (
                 showParentHint ? (
@@ -696,6 +708,9 @@ export default function HuntPlay() {
                 {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'approved' && (
                   <p className="text-[11px] text-emerald-700 mt-2">📸 Photo saved!</p>
                 )}
+                {lastResult?.photoDataUrl && lastResult.photoReviewNotes && (
+                  <p className="text-[11px] text-muted-foreground mt-1">{lastResult.photoReviewNotes}</p>
+                )}
                 {lastResult?.answer === '(time-travel-photo)' && lastResult.photoDataUrl && (
                   <div className="mt-3 flex items-center gap-3 px-3 py-2 rounded-xl bg-background/80 border">
                     <History className="w-3.5 h-3.5 text-amber-600 shrink-0" />
@@ -730,6 +745,18 @@ export default function HuntPlay() {
           );
         })()}
       </div>
+
+      {showARGuide && currentStop && (
+        <ARClueOverlay
+          target={{
+            title: currentStop.title,
+            lat: currentStop.lat,
+            lon: currentStop.lon,
+            address: currentStop.address,
+          }}
+          onClose={() => setShowARGuide(false)}
+        />
+      )}
     </div>
   );
 }

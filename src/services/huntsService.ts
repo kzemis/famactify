@@ -687,19 +687,36 @@ export const huntsService = {
     if (updErr) throw updErr;
   },
 
-  /**
-   * Photo verification stub.
-   *
-   * This is intentionally not a fake ML classifier. It creates a stable seam for
-   * a future model and marks photos as needing manual review today.
-   *
-   * Future swaps (no API change required for callers):
-   *   - CLIP/text-image similarity (browser via transformers.js, or server route)
-   *   - Edge Function that calls a hosted vision model
-   *   - Manual admin review queue (returns false, needsReview:true)
-   */
-  async verifyPhotoML(_photoDataUrl: string, _subject: string | undefined): Promise<{ verified: boolean; confidence: number; needsReview?: boolean }> {
-    return { verified: false, confidence: 0, needsReview: true };
+  async verifyPhotoML(photoDataUrl: string, subject: string | undefined): Promise<{ verified: boolean; confidence: number; needsReview?: boolean; reason?: string; model?: string }> {
+    if (!subject?.trim()) {
+      return { verified: false, confidence: 0, needsReview: true, reason: 'No photo subject was configured for this stop.' };
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-hunt-photo', {
+        body: {
+          imageDataUrl: photoDataUrl,
+          photoSubject: subject,
+          threshold: 0.72,
+        },
+      });
+      if (error) throw error;
+      return {
+        verified: !!data?.verified,
+        confidence: typeof data?.confidence === 'number' ? data.confidence : 0,
+        needsReview: data?.needsReview ?? !data?.verified,
+        reason: data?.reason,
+        model: data?.model,
+      };
+    } catch (error: any) {
+      console.warn('[huntsService.verifyPhotoML] Falling back to manual review:', error?.message || error);
+      return {
+        verified: false,
+        confidence: 0,
+        needsReview: true,
+        reason: error?.message || 'ML verification unavailable; queued for manual review.',
+      };
+    }
   },
 
   /** Haversine distance in metres. */

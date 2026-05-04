@@ -75,3 +75,5 @@ Optional environment variable:
 ## Notes
 - Supabase Edge Functions run on Deno; IDE TypeScript may flag imports like `https://deno.land/...` or `Deno.env`. These are correct for runtime.
 - The JSON-only contract is enforced; errors from providers are returned with appropriate HTTP status codes.
+
+## ...

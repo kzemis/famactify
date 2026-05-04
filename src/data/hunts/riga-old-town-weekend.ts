@@ -54,9 +54,8 @@ export const rigaOldTownWeekend: ScavengerHunt = {
       clueText: 'Find the stone arch that leads through the old city wall. Walk through it and notice how narrow the passage feels.',
       parentHint: 'Head toward Torņa iela. This stop is the Swedish Gate, also called Zviedru vārti.',
       prompt: {
-        kind: 'photo',
-        question: 'Take a privacy-safe photo of the gate or stone arch — no people’s faces.',
-        photoSubject: 'Swedish Gate stone arch without faces',
+        kind: 'observation',
+        question: 'Walk through the gate and notice one old-wall detail: stone, arch, shadow, narrowness, or sound.',
       },
       reveal: {
         funFact: 'LiveRiga says the Swedish Gate is the only gate still standing from the former eight gates of Riga’s fortification walls.',
@@ -91,10 +90,10 @@ export const rigaOldTownWeekend: ScavengerHunt = {
       clueText: 'Walk to the big cathedral on Dome Square. Find a safe spot where you can see the tower and old brick walls.',
       parentHint: 'This is Riga Cathedral, also called the Dome Cathedral. The date clue is 1211.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'According to Latvia Travel, when was the cornerstone of Riga Cathedral laid?',
-        options: ['1211', '1334', '1646', '1935'],
-        correctAnswers: ['1211'],
+        kind: 'audio',
+        question: 'Record 5 seconds of a safe Dome Square sound: bells if you hear them, footsteps, wind, or your own quiet “Doma baznīca”.',
+        audioSubject: 'Dome Square ambience, bells if present, footsteps, wind, or player voice',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'Latvia Travel says the cornerstone of Riga Cathedral was laid in 1211, making it one of the oldest sacred buildings of the Middle Ages in Latvia and the Baltics.',
@@ -110,9 +109,9 @@ export const rigaOldTownWeekend: ScavengerHunt = {
       clueText: 'Finish at the ornate building on Town Hall Square. Look for decorations, figures, and the big historic façade.',
       parentHint: 'The source-backed date answer is 1334. Invite kids to find the most dramatic decoration on the façade too.',
       prompt: {
-        kind: 'text',
-        question: 'What year was the House of the Blackheads built?',
-        correctAnswers: ['1334'],
+        kind: 'drawing',
+        question: 'Draw one dramatic façade detail: clock, statue, curve, window, or decoration.',
+        drawingSubject: 'A House of the Blackheads façade detail',
       },
       reveal: {
         funFact: 'LiveRiga says the House of the Blackheads was built in 1334 as a meeting and celebration venue, and that the Brotherhood of Black Heads used it for nearly 400 years.',

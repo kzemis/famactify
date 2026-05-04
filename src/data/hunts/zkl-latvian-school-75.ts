@@ -77,15 +77,10 @@ export const zklLatvianSchool75: ScavengerHunt = {
       clueTextLv: 'Atrodi skolas latvisko nosaukumu. Pamēģini to pateikt lēnām: Zie-meļ-ka-li-for-ni-jas Lat-vie-šu sko-la.',
       parentHint: 'Point to the words “Ziemeļkalifornijas Latviešu skola.” Kids can answer by choosing the full school name.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'Which phrase means “Northern California Latvian School”?',
-        options: [
-          'Ziemeļkalifornijas Latviešu skola',
-          'Sanfrancisko Jaunais teātris',
-          'Tautas deju kopa Ritenītis',
-          'Ziemeļkalifornijas Latviešu koris',
-        ],
-        correctAnswers: ['Ziemeļkalifornijas Latviešu skola'],
+        kind: 'audio',
+        question: 'Record 5 seconds of yourself saying “Ziemeļkalifornijas Latviešu skola” — or just “skola” if that is easier.',
+        audioSubject: 'The player saying Ziemeļkalifornijas Latviešu skola or skola',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: '“Skola” means “school” in Latvian. ZKLB’s website lists the school as one of the organizations under the Northern California Latvian Association.',
@@ -137,9 +132,9 @@ export const zklLatvianSchool75: ScavengerHunt = {
       clueTextLv: 'Atrodi latviešu rakstu, zaļi baltu afišas detaļu, programmas detaļu vai rotājumu. Uzņem privātumam drošu foto — bez bērnu sejām, lūdzu.',
       parentHint: 'Good photo subjects: the poster border pattern, a printed program, a sign, a decoration, or a close-up of fabric/pattern. Avoid photographing children or private moments.',
       prompt: {
-        kind: 'photo',
-        question: 'Take one privacy-safe photo of a Latvian pattern, sign, or event detail.',
-        photoSubject: 'Latvian pattern, sign, or event detail without faces',
+        kind: 'drawing',
+        question: 'Draw one Latvian pattern, green-white detail, or decoration you noticed.',
+        drawingSubject: 'A Latvian pattern or event decoration detail',
       },
       reveal: {
         funFact: 'Latvian visual culture often uses geometric folk patterns. In a community event, those patterns become a small bridge between language, music, memory, and belonging.',

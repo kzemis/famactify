@@ -49,8 +49,10 @@ export const rigaAgenskalnsGreenLoop: ScavengerHunt = {
       clueText: 'Find one sign of market life: bread, fruit, flowers, coffee, crafts, a menu, or people meeting.',
       parentHint: 'The history page describes the market as very modern 100 years ago, with central heating, sewerage, electric lighting, ventilation, storage cellars, a cafe, and a two-floor restaurant.',
       prompt: {
-        kind: 'observation',
-        question: 'Notice one thing that makes the market feel alive today.',
+        kind: 'audio',
+        question: 'Record 5 seconds of market life: voices, footsteps, coffee sounds, bags, or your own “tirgus” word.',
+        audioSubject: 'Market ambience or the word tirgus spoken by the player',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'Āgenskalns Market’s history page says that about 100 years ago it was considered one of Latvia’s most modern markets.',
@@ -83,10 +85,9 @@ export const rigaAgenskalnsGreenLoop: ScavengerHunt = {
       clueText: 'Enter Arkādijas parks and find a bridge, path curve, water feature, or waterfall sound.',
       parentHint: 'LiveRiga says Mārupīte was redirected through Arkādijas park, creating cascades, waterfalls, small bridges, and pathways.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'Which small river runs through Arkādijas Garden Park?',
-        options: ['Mārupīte', 'Daugava', 'Gauja', 'Lielupe'],
-        correctAnswers: ['Mārupīte'],
+        kind: 'drawing',
+        question: 'Draw a bridge, path curve, water feature, or waterfall-sound shape you noticed.',
+        drawingSubject: 'An Arkādijas bridge, path curve, water feature, or waterfall-sound shape',
       },
       reveal: {
         funFact: 'LiveRiga says the Mārupīte River was redirected through Arkādijas Garden Park, with cascades, waterfalls, small bridges, and pathways created.',

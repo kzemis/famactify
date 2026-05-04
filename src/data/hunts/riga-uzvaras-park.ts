@@ -51,8 +51,10 @@ export const rigaUzvarasPark: ScavengerHunt = {
       clueText: 'Find the water play area or another place where water, sand, or movement is visible. Watch how something flows, rolls, spins, or changes direction.',
       parentHint: 'Riga City says the renewed park includes water equipment where children can experiment with water: pumping it, guiding flows, operating mills, and watching movement.',
       prompt: {
-        kind: 'observation',
-        question: 'Notice one thing that moves: water, wheels, sand, a ball, a scooter, or leaves.',
+        kind: 'audio',
+        question: 'Record 5 seconds of movement sound: water, wheels, sand, leaves, footsteps, or your own “flow” sound.',
+        audioSubject: 'Water, wheels, sand, leaves, footsteps, or a pretend flow sound',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'Riga City describes special water play equipment that lets children pump water by hand, direct flows, operate mills, and observe water movement.',
@@ -66,9 +68,9 @@ export const rigaUzvarasPark: ScavengerHunt = {
       clueText: 'Find three natural textures in the park: wood, bark, stone, grass, sand, leaves, or soil.',
       parentHint: 'The Riga City article says play, sport, and rest elements were placed under existing trees and use natural materials.',
       prompt: {
-        kind: 'text',
-        question: 'Write one natural material you found.',
-        correctAnswers: ['wood', 'bark', 'stone', 'grass', 'sand', 'leaf', 'leaves', 'soil', 'tree'],
+        kind: 'drawing',
+        question: 'Draw one natural texture you found: bark, stone, grass, sand, leaf, or wood.',
+        drawingSubject: 'A natural texture from Uzvaras Park',
       },
       reveal: {
         funFact: 'The renewed active zone was designed so play, sport, and rest elements fit into the landscape under existing trees.',

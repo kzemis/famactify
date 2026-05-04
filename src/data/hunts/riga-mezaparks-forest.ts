@@ -66,10 +66,10 @@ export const rigaMezaparksForest: ScavengerHunt = {
       clueText: 'If your walk passes the Grand Bandstand, stop and imagine thousands of voices singing together. If not, answer from the clue.',
       parentHint: 'The official bandstand page describes it as a cultural and historical structure in the green area of Riga known as Mežaparks.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'What kind of landmark is Mežaparks Grand Bandstand?',
-        options: ['Cultural and historical structure', 'Zoo ticket office', 'Shopping centre', 'Airport tower'],
-        correctAnswers: ['Cultural and historical structure'],
+        kind: 'audio',
+        question: 'Record 5 seconds of a quiet “choir” sound: hum, clap, footsteps, wind, or your own note.',
+        audioSubject: 'A hum, clap, wind, footsteps, or one sung note near/imagining the bandstand',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'The Grand Bandstand official page describes it as a cultural and historical structure in Riga’s green Mežaparks area.',
@@ -85,8 +85,9 @@ export const rigaMezaparksForest: ScavengerHunt = {
       clueText: 'Pick a safe movement for 30 seconds: slow walk, fast walk, balance, stretch, cycle, scooter, or quiet listening.',
       parentHint: 'Quiet listening counts. This keeps the hunt good for different ages and energy levels.',
       prompt: {
-        kind: 'observation',
-        question: 'Do one safe forest movement or quiet-listening challenge.',
+        kind: 'drawing',
+        question: 'Draw your forest movement or one path shape you followed.',
+        drawingSubject: 'A forest path, movement trail, leaf, cone, or quiet-listening shape',
       },
       reveal: {
         funFact: 'A good park can support both high-energy movement and quiet noticing. Mežaparks is useful for both.',

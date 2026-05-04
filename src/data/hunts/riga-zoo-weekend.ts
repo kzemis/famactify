@@ -88,10 +88,9 @@ export const rigaZooWeekend: ScavengerHunt = {
       clueText: 'Find one indoor animal home: Farmstead, Terrarium, Tropical House, Aquarium, or another indoor exhibit. What changes inside compared with outside?',
       parentHint: 'The Riga City source names several indoor areas: Farmstead, Terrarium, Tropical House, Aquarium, and the Latvian reptile and amphibian hall.',
       prompt: {
-        kind: 'multiple_choice',
-        question: 'Which of these is named by Riga City as a Riga Zoo area?',
-        options: ['Tropical House', 'Moon Rocket Room', 'Dinosaur Airport', 'Chocolate Castle'],
-        correctAnswers: ['Tropical House'],
+        kind: 'drawing',
+        question: 'Draw one indoor animal home shape: tank, terrarium, branch, rock, water, or warm lamp.',
+        drawingSubject: 'An indoor animal home shape from the zoo',
       },
       reveal: {
         funFact: 'Riga City says visitors can look into indoor animal homes including the Farmstead, Terrarium, Tropical House, and Aquarium.',
@@ -105,9 +104,10 @@ export const rigaZooWeekend: ScavengerHunt = {
       clueText: 'Pick one animal you can watch respectfully for one quiet minute. How does it move: crawl, swim, jump, climb, fly, waddle, or rest?',
       parentHint: 'Let the child choose any visible animal. If animals are resting or hidden, resting also counts as behaviour.',
       prompt: {
-        kind: 'text',
-        question: 'Write one movement word you noticed.',
-        correctAnswers: ['crawl', 'swim', 'jump', 'climb', 'fly', 'waddle', 'walk', 'run', 'rest', 'sleep', 'hide', 'eat'],
+        kind: 'audio',
+        question: 'Record 5 seconds of one animal-area sound or your own quiet imitation of the movement you saw.',
+        audioSubject: 'Animal-area ambience or the child imitating an animal movement sound',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'A zoo visit is not only about seeing animals up close. Careful watching helps kids notice habitats, behaviour, and how different animals use their bodies.',

@@ -37,6 +37,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       title: 'Find Latvian Hall',
       ...LATVIAN_HALL,
       clueText: 'Start outside or near the entrance. Find the place name for today: Latviešu nams — Latvian Hall. This is where Northern California Latvian community events gather.',
+      clueTextLv: 'Sāc ārā vai pie ieejas. Atrodi šodienas vietas nosaukumu: Latviešu nams — Latvian Hall. Te pulcējas Ziemeļkalifornijas latviešu kopiena.',
       parentHint: 'Use the address from the poster and ZKLB website: 425 Hoffman Ave, San Francisco. If you are already inside, point out the entrance, program table, or hall sign.',
       prompt: {
         kind: 'multiple_choice',
@@ -46,6 +47,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       },
       reveal: {
         funFact: 'ZKLB lists 425 Hoffman Ave, San Francisco as its contact address. The same address appears on the anniversary concert poster as “Latviešu namā / Latvian Hall.”',
+        funFactLv: 'ZKLB savā mājaslapā norāda adresi 425 Hoffman Ave, San Francisco. Tā pati adrese redzama jubilejas koncerta afišā kā “Latviešu namā / Latvian Hall”.',
       },
     },
     {
@@ -54,6 +56,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       title: 'The Big Number',
       ...LATVIAN_HALL,
       clueText: 'Look for the anniversary number on the poster, program, stage, or announcements. It is the number everyone is celebrating today.',
+      clueTextLv: 'Meklē jubilejas skaitli uz afišas, programmā, uz skatuves vai apsveikumos. Tas ir skaitlis, ko šodien visi svin.',
       parentHint: 'The poster says “Ziemeļkalifornijas Latviešu skolai - 75” and “Northern California Latvian School 75th Anniversary Celebration.”',
       prompt: {
         kind: 'text',
@@ -62,6 +65,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       },
       reveal: {
         funFact: 'A 75th anniversary means the school has carried Latvian language and culture across many generations of Bay Area families.',
+        funFactLv: '75 gadu jubileja nozīmē, ka skola jau daudzās Piejūras līča ģimeņu paaudzēs ir nesusi latviešu valodu un kultūru.',
       },
     },
     {
@@ -70,6 +74,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       title: 'Say the School Name',
       ...LATVIAN_HALL,
       clueText: 'Find the Latvian name of the school. Try saying it slowly: Zie-meļ-ka-li-for-ni-jas Lat-vie-šu sko-la.',
+      clueTextLv: 'Atrodi skolas latvisko nosaukumu. Pamēģini to pateikt lēnām: Zie-meļ-ka-li-for-ni-jas Lat-vie-šu sko-la.',
       parentHint: 'Point to the words “Ziemeļkalifornijas Latviešu skola.” Kids can answer by choosing the full school name.',
       prompt: {
         kind: 'multiple_choice',
@@ -84,6 +89,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       },
       reveal: {
         funFact: '“Skola” means “school” in Latvian. ZKLB’s website lists the school as one of the organizations under the Northern California Latvian Association.',
+        funFactLv: '“Skola” latviski nozīmē “school”. ZKLB mājaslapā skola ir minēta kā viena no Ziemeļkalifornijas Latviešu biedrības organizācijām.',
       },
     },
     {
@@ -92,6 +98,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       title: 'Performance Detective',
       ...LATVIAN_HALL,
       clueText: 'During the program, listen for schoolchildren performing. Notice one thing: a song, a poem, a costume detail, a word you understand, or a moment that makes people smile.',
+      clueTextLv: 'Programmas laikā ieklausies skolas bērnu priekšnesumos. Ievēro vienu lietu: dziesmu, dzejoli, tērpa detaļu, saprotamu vārdu vai brīdi, kas cilvēkiem liek smaidīt.',
       parentHint: 'The event poster says the program includes performances by schoolchildren. Ask your kid to choose one memory, not to interrupt the program.',
       prompt: {
         kind: 'observation',
@@ -99,6 +106,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       },
       reveal: {
         funFact: 'The poster says the celebration program includes “skolas bērnu priekšnesumi” — performances by schoolchildren. That makes the kids, not just adults, the center of the celebration.',
+        funFactLv: 'Afišā rakstīts, ka svētku programmā ir “skolas bērnu priekšnesumi”. Tas nozīmē, ka svētku centrā ir arī bērni, ne tikai pieaugušie.',
       },
     },
     {
@@ -107,6 +115,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       title: 'Special Guest Clue',
       ...LATVIAN_HALL,
       clueText: 'The poster names a special guest singer. Find the name on the poster or listen for it during the greetings.',
+      clueTextLv: 'Afišā ir minēts īpašais viesis — dziedātājs. Atrodi viņa vārdu uz afišas vai ieklausies apsveikumos.',
       parentHint: 'The special guest listed on the poster is singer Lauris Reiniks.',
       prompt: {
         kind: 'multiple_choice',
@@ -116,6 +125,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       },
       reveal: {
         funFact: 'The event poster says the program includes greetings, a raffle, and special guest singer Lauris Reiniks.',
+        funFactLv: 'Pasākuma afišā rakstīts, ka programmā būs apsveikumi, loterija un īpašais viesis — dziedātājs Lauris Reiniks.',
       },
     },
     {
@@ -124,6 +134,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       title: 'Pattern Memory',
       ...LATVIAN_HALL,
       clueText: 'Find a Latvian pattern, green-white poster detail, program detail, or decoration. Take a privacy-safe photo — no kids’ faces, please.',
+      clueTextLv: 'Atrodi latviešu rakstu, zaļi baltu afišas detaļu, programmas detaļu vai rotājumu. Uzņem privātumam drošu foto — bez bērnu sejām, lūdzu.',
       parentHint: 'Good photo subjects: the poster border pattern, a printed program, a sign, a decoration, or a close-up of fabric/pattern. Avoid photographing children or private moments.',
       prompt: {
         kind: 'photo',
@@ -132,6 +143,7 @@ export const zklLatvianSchool75: ScavengerHunt = {
       },
       reveal: {
         funFact: 'Latvian visual culture often uses geometric folk patterns. In a community event, those patterns become a small bridge between language, music, memory, and belonging.',
+        funFactLv: 'Latviešu vizuālajā kultūrā bieži izmanto ģeometriskus tautas rakstus. Kopienas pasākumā tie kļūst par mazu tiltu starp valodu, mūziku, atmiņām un piederību.',
       },
     },
   ],

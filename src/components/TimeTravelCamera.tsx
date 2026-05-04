@@ -7,6 +7,7 @@ type TimeTravelCameraProps = {
   overlayImageUrl?: string;
   caption?: string;
   opacity?: number;
+  immersive?: boolean;
   initialDataUrl?: string;
   onCapture: (dataUrl: string | null) => void;
 };
@@ -62,6 +63,7 @@ export default function TimeTravelCamera({
   overlayImageUrl,
   caption,
   opacity = 0.5,
+  immersive = false,
   initialDataUrl,
   onCapture,
 }: TimeTravelCameraProps) {
@@ -72,6 +74,8 @@ export default function TimeTravelCamera({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [previewOpacity, setPreviewOpacity] = useState(() => Math.max(0.1, Math.min(0.85, opacity)));
+  const [includeOverlayInCapture, setIncludeOverlayInCapture] = useState(false);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach(track => track.stop());
@@ -126,7 +130,7 @@ export default function TimeTravelCamera({
     if (includeOverlay && overlayImageUrl) {
       const overlay = await loadImage(overlayImageUrl);
       ctx.save();
-      ctx.globalAlpha = Math.max(0.1, Math.min(0.85, opacity));
+      ctx.globalAlpha = previewOpacity;
       drawCover(ctx, overlay, canvas.width, canvas.height);
       ctx.restore();
     }
@@ -139,7 +143,7 @@ export default function TimeTravelCamera({
     try {
       let dataUrl: string;
       try {
-        dataUrl = await renderVideoFrame(true);
+        dataUrl = await renderVideoFrame(includeOverlayInCapture);
       } catch (error) {
         if (!overlayImageUrl) throw error;
         dataUrl = await renderVideoFrame(false);
@@ -174,64 +178,76 @@ export default function TimeTravelCamera({
     }
   };
 
-  return (
-    <div className="space-y-3">
-      <div className="rounded-2xl border bg-card overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-            <History className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold">Time-travel view</p>
-            <p className="text-xs text-muted-foreground leading-snug">
-              Line up the old image over today’s view, then capture the match.
-            </p>
-          </div>
-        </div>
-
-        <div className="relative bg-black">
-          {capturedDataUrl ? (
-            <img src={capturedDataUrl} alt="Captured time-travel match" className="w-full aspect-[4/3] object-cover" />
-          ) : (
-            <>
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className={cn('w-full aspect-[4/3] object-cover', cameraError && 'hidden')}
-              />
-              {overlayImageUrl && !cameraError && (
-                <img
-                  src={overlayImageUrl}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                  style={{ opacity: Math.max(0.1, Math.min(0.85, opacity)) }}
-                />
-              )}
-              {(starting || cameraError) && (
-                <div className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-3 text-center px-5 text-white">
-                  {starting ? (
-                    <>
-                      <div className="w-8 h-8 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
-                      <p className="text-sm font-medium">Starting camera…</p>
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="w-9 h-9 text-white/70" />
-                      <p className="text-sm font-semibold">Camera unavailable</p>
-                      <p className="text-xs text-white/70">{cameraError}</p>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
+  const cameraFrame = (
+    <div className={cn('relative bg-black overflow-hidden', immersive ? 'flex-1 min-h-0' : '')}>
+      {capturedDataUrl ? (
+        <img
+          src={capturedDataUrl}
+          alt="Captured time-travel match"
+          className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]')}
+        />
+      ) : (
+        <>
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]', cameraError && 'hidden')}
+          />
+          {overlayImageUrl && !cameraError && (
+            <img
+              src={overlayImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              style={{ opacity: previewOpacity }}
+            />
           )}
-        </div>
+          {(starting || cameraError) && (
+            <div className={cn('w-full flex flex-col items-center justify-center gap-3 text-center px-5 text-white', immersive ? 'h-full' : 'aspect-[4/3]')}>
+              {starting ? (
+                <>
+                  <div className="w-8 h-8 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
+                  <p className="text-sm font-medium">Starting camera…</p>
+                </>
+              ) : (
+                <>
+                  <Camera className="w-9 h-9 text-white/70" />
+                  <p className="text-sm font-semibold">Camera unavailable</p>
+                  <p className="text-xs text-white/70">{cameraError}</p>
+                </>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 
-        {caption && (
-          <p className="px-4 py-3 text-[11px] leading-snug text-muted-foreground border-t">{caption}</p>
-        )}
-      </div>
+  const controls = (
+    <div className={cn('space-y-3', immersive ? 'bg-black/80 backdrop-blur p-4 text-white' : '')}>
+      {overlayImageUrl && !capturedDataUrl && (
+        <div className={cn('rounded-2xl border p-3 space-y-2', immersive ? 'border-white/15 bg-white/10' : 'border-border bg-card')}>
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-xs font-bold uppercase tracking-widest">Old image opacity</label>
+            <span className={cn('text-xs font-semibold tabular-nums', immersive ? 'text-white/75' : 'text-muted-foreground')}>{Math.round(previewOpacity * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min={10}
+            max={85}
+            step={5}
+            value={Math.round(previewOpacity * 100)}
+            onChange={e => setPreviewOpacity(Number(e.target.value) / 100)}
+            className="w-full accent-primary"
+          />
+          <button
+            onClick={() => setIncludeOverlayInCapture(v => !v)}
+            className={cn('w-full h-9 rounded-xl text-xs font-semibold tap-highlight', includeOverlayInCapture ? 'bg-primary text-primary-foreground' : immersive ? 'bg-white/10 text-white' : 'bg-muted text-foreground')}
+          >
+            {includeOverlayInCapture ? 'Saved photo will include old image' : 'Saved photo will be clean modern view'}
+          </button>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
@@ -246,7 +262,7 @@ export default function TimeTravelCamera({
         {capturedDataUrl ? (
           <button
             onClick={retake}
-            className="col-span-2 h-11 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
+            className={cn('col-span-2 h-11 rounded-2xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2', immersive ? 'border-white/20 bg-white/10 text-white' : 'border-border')}
           >
             <RotateCcw className="w-4 h-4" /> Retake alignment
           </button>
@@ -261,7 +277,7 @@ export default function TimeTravelCamera({
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="h-11 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
+              className={cn('h-11 rounded-2xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2', immersive ? 'border-white/20 bg-white/10 text-white' : 'border-border')}
             >
               <ImagePlus className="w-4 h-4" /> Upload
             </button>
@@ -269,15 +285,39 @@ export default function TimeTravelCamera({
         )}
       </div>
 
-      {overlayImageUrl ? (
-        <p className="text-[11px] text-muted-foreground px-1">
-          Tip: slide your body until doorways, windows, trees, or skyline edges line up with the transparent image.
-        </p>
-      ) : (
-        <p className="text-[11px] text-amber-700 px-1">
-          Add a source-backed historical image URL in the hunt builder for the live overlay.
-        </p>
-      )}
+      <p className={cn('text-[11px] px-1 leading-snug', immersive ? 'text-white/70' : overlayImageUrl ? 'text-muted-foreground' : 'text-amber-700')}>
+        {overlayImageUrl
+          ? includeOverlayInCapture
+            ? 'Tip: this will save the old and new views together. Turn this off to save only today’s clean photo.'
+            : 'Tip: use the old image only as a guide. The saved photo is today’s clean view unless you include the overlay.'
+          : 'Add a source-backed historical image URL in the hunt builder for the live overlay.'}
+      </p>
+    </div>
+  );
+
+  return (
+    <div className={cn(immersive ? 'h-full flex flex-col' : 'space-y-3')}>
+      <div className={cn('rounded-2xl border bg-card overflow-hidden', immersive && 'flex-1 min-h-0 flex flex-col rounded-none border-0 bg-black')}>
+        <div className={cn('px-4 py-3 border-b flex items-start gap-3', immersive && 'hidden')}>
+          <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <History className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold">Time-travel view</p>
+            <p className="text-xs text-muted-foreground leading-snug">
+              Line up the old image over today’s view, then capture the match.
+            </p>
+          </div>
+        </div>
+
+        {cameraFrame}
+
+        {caption && !immersive && (
+          <p className="px-4 py-3 text-[11px] leading-snug text-muted-foreground border-t">{caption}</p>
+        )}
+      </div>
+
+      {controls}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import TimeTravelCamera from '@/components/TimeTravelCamera';
 import { renderHuntPostcard } from '@/lib/huntPostcard';
 import { huntsService, type ScavengerHunt, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -17,6 +18,7 @@ export default function HuntPlay() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { currentProfile } = useFamilyMode();
+  const { language } = useLanguage();
   const profileId = currentProfile?.id ?? 'parent-default';
 
   const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
@@ -34,6 +36,7 @@ export default function HuntPlay() {
   const [sharing, setSharing] = useState(false);
   const [showARGuide, setShowARGuide] = useState(false);
   const [showParentHint, setShowParentHint] = useState(false);
+  const [stopLanguage, setStopLanguage] = useState<'en' | 'lv'>(language === 'lv' ? 'lv' : 'en');
   const [speaking, setSpeaking] = useState(false);
   const [verifyingPhoto, setVerifyingPhoto] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -104,9 +107,21 @@ export default function HuntPlay() {
   const currentStop = isFinished ? null : hunt.stops[attempt.currentStopOrder];
   const totalStops = hunt.stops.length;
   const progress = isFinished ? 1 : attempt.currentStopOrder / totalStops;
+  const hasLatvianCopy = !!(currentStop?.clueTextLv || currentStop?.reveal.funFactLv);
+  const activeStopLanguage = stopLanguage === 'lv' && hasLatvianCopy ? 'lv' : 'en';
+  const displayedClueText = currentStop
+    ? activeStopLanguage === 'lv'
+      ? currentStop.clueTextLv || currentStop.clueText
+      : currentStop.clueText
+    : '';
+  const displayedFunFact = currentStop
+    ? activeStopLanguage === 'lv'
+      ? currentStop.reveal.funFactLv || currentStop.reveal.funFact
+      : currentStop.reveal.funFact
+    : '';
 
   // ── Voice-over (Web Speech API) ──
-  const speak = (text: string) => {
+  const speak = (text: string, lang: 'en' | 'lv' = activeStopLanguage) => {
     if (!('speechSynthesis' in window)) {
       toast.error('Voice-over not supported in this browser');
       return;
@@ -117,6 +132,7 @@ export default function HuntPlay() {
       return;
     }
     const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === 'lv' ? 'lv-LV' : 'en-US';
     utterance.rate = 0.95;
     utterance.pitch = 1.05;
     utterance.onend = () => setSpeaking(false);
@@ -319,6 +335,101 @@ export default function HuntPlay() {
     toast.success('Postcard saved — share it from your photos!');
   };
 
+  const isImmersivePrompt = phase === 'prompt' && currentStop && (
+    currentStop.prompt.kind === 'time_travel_photo'
+    || currentStop.prompt.kind === 'drawing'
+    || currentStop.prompt.kind === 'audio'
+  );
+
+  if (isImmersivePrompt && currentStop) {
+    const submitLabel = currentStop.prompt.kind === 'time_travel_photo'
+      ? 'Use photo'
+      : currentStop.prompt.kind === 'drawing'
+        ? 'Save drawing'
+        : 'Save sound';
+
+    return (
+      <div className="fixed inset-0 z-[90] bg-black text-white flex flex-col overflow-hidden">
+        <div
+          className="shrink-0 px-4 pb-3 bg-black/70 backdrop-blur border-b border-white/10"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 10px)' }}
+        >
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPhase('clue')}
+              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center tap-highlight"
+              aria-label="Back to clue"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Stop {attempt.currentStopOrder + 1} of {totalStops}</p>
+              <p className="text-sm font-bold truncate">{currentStop.title}</p>
+            </div>
+          </div>
+          <p className="mt-2 text-sm font-semibold leading-snug line-clamp-2">{currentStop.prompt.question}</p>
+        </div>
+
+        <div className="flex-1 min-h-0">
+          {currentStop.prompt.kind === 'time_travel_photo' && (
+            <TimeTravelCamera
+              key={currentStop.id}
+              immersive
+              overlayImageUrl={currentStop.prompt.timeTravelImageUrl}
+              caption={currentStop.prompt.timeTravelCaption}
+              opacity={currentStop.prompt.timeTravelOpacity ?? 0.5}
+              initialDataUrl={timeTravelPhotoDataUrl ?? undefined}
+              onCapture={setTimeTravelPhotoDataUrl}
+            />
+          )}
+          {currentStop.prompt.kind === 'drawing' && (
+            <div className="h-full p-4">
+              <DrawingPad
+                key={currentStop.id}
+                immersive
+                subject={currentStop.prompt.drawingSubject}
+                initialDataUrl={drawingDataUrl ?? undefined}
+                onChange={(url) => setDrawingDataUrl(url)}
+              />
+            </div>
+          )}
+          {currentStop.prompt.kind === 'audio' && (
+            <div className="h-full flex items-center justify-center p-5 bg-gradient-to-br from-black via-slate-950 to-pink-950">
+              <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/10 backdrop-blur p-4">
+                <AudioRecorder
+                  key={currentStop.id}
+                  maxSeconds={currentStop.prompt.audioMaxSeconds ?? 5}
+                  subject={currentStop.prompt.audioSubject}
+                  initialDataUrl={audioDataUrl ?? undefined}
+                  onReady={(url, dur) => { setAudioDataUrl(url); setAudioDurationMs(dur); }}
+                  onClear={() => { setAudioDataUrl(null); setAudioDurationMs(0); }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="shrink-0 grid grid-cols-[0.35fr_0.65fr] gap-3 p-4 bg-black/80 backdrop-blur border-t border-white/10"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 14px)' }}
+        >
+          <button
+            onClick={skipStop}
+            className="h-12 rounded-2xl border border-white/20 bg-white/10 text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5"
+          >
+            <SkipForward className="w-4 h-4" /> Skip
+          </button>
+          <button
+            onClick={submitAnswer}
+            className="h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold tap-highlight flex items-center justify-center gap-1.5"
+          >
+            {submitLabel} <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render: finished summary ────────────────────────────────────────────────
 
   if (isFinished) {
@@ -472,15 +583,36 @@ export default function HuntPlay() {
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{currentStop.order + 1}</div>
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Clue</span>
+                {hasLatvianCopy && (
+                  <div className="flex items-center rounded-full border bg-background p-0.5">
+                    {(['en', 'lv'] as const).map(lang => (
+                      <button
+                        key={lang}
+                        onClick={() => {
+                          window.speechSynthesis?.cancel();
+                          setSpeaking(false);
+                          setStopLanguage(lang);
+                        }}
+                        className={cn(
+                          'h-7 px-2 rounded-full text-[11px] font-bold tap-highlight',
+                          activeStopLanguage === lang ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                        )}
+                        aria-pressed={activeStopLanguage === lang}
+                      >
+                        {lang === 'lv' ? '🇱🇻 LV' : '🇺🇸 EN'}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
-                  onClick={() => speak(currentStop.clueText)}
+                  onClick={() => speak(displayedClueText, activeStopLanguage)}
                   className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
                   aria-label={speaking ? 'Stop reading' : 'Read clue aloud'}
                 >
                   {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-base leading-relaxed">{currentStop.clueText}</p>
+              <p className="text-base leading-relaxed">{displayedClueText}</p>
               {currentStop.address && (
                 <div className="flex items-start gap-2 text-sm pt-2 border-t border-border/40">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
@@ -689,15 +821,36 @@ export default function HuntPlay() {
               <div className="rounded-3xl bg-gradient-to-br from-primary/5 to-amber-50 border p-5 space-y-2">
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Did you know?</p>
+                  {hasLatvianCopy && (
+                    <div className="flex items-center rounded-full border bg-background p-0.5">
+                      {(['en', 'lv'] as const).map(lang => (
+                        <button
+                          key={lang}
+                          onClick={() => {
+                            window.speechSynthesis?.cancel();
+                            setSpeaking(false);
+                            setStopLanguage(lang);
+                          }}
+                          className={cn(
+                            'h-7 px-2 rounded-full text-[11px] font-bold tap-highlight',
+                            activeStopLanguage === lang ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                          )}
+                          aria-pressed={activeStopLanguage === lang}
+                        >
+                          {lang === 'lv' ? '🇱🇻 LV' : '🇺🇸 EN'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <button
-                    onClick={() => speak(currentStop.reveal.funFact)}
+                    onClick={() => speak(displayedFunFact, activeStopLanguage)}
                     className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
                     aria-label={speaking ? 'Stop reading' : 'Read fact aloud'}
                   >
                     {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-base leading-relaxed">{currentStop.reveal.funFact}</p>
+                <p className="text-base leading-relaxed">{displayedFunFact}</p>
                 {/* Photo verification feedback */}
                 {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'pending' && (
                   <p className="text-[11px] text-amber-700 mt-2">📸 Photo saved — queued for a grown-up/admin check.</p>

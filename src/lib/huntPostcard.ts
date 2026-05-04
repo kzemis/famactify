@@ -143,11 +143,12 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.fillStyle = '#ec4899'; // primary pink
   ctx.font = 'bold 44px system-ui, -apple-system, sans-serif';
   ctx.textBaseline = 'top';
+  const brandWidth = ctx.measureText('FamActify').width;
   ctx.fillText('FamActify', margin, cursorY);
 
   ctx.fillStyle = '#9ca3af'; // muted
   ctx.font = '500 22px system-ui, sans-serif';
-  ctx.fillText('· Scavenger Hunt', margin + ctx.measureText('FamActify').width + 14, cursorY + 16);
+  ctx.fillText('· Scavenger Hunt', margin + brandWidth + 18, cursorY + 16);
 
   cursorY += 70;
 
@@ -271,9 +272,9 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
     ctx.fill();
     ctx.fillStyle = '#9ca3af';
     ctx.font = '500 28px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    wrapText(ctx, hunt.blurb, collageX + 40, collageY + 60, collageW - 80, 38, 8);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    wrapText(ctx, hunt.blurb, collageX + 52, collageY + 72, collageW - 104, 40, 7);
     ctx.restore();
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';

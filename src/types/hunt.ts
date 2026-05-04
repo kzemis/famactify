@@ -45,6 +45,8 @@ export interface HuntStop {
   address?: string;
   /** Clue copy shown to player BEFORE they arrive */
   clueText: string;
+  /** Optional Latvian clue copy */
+  clueTextLv?: string;
   clueImage?: string;
   /** Optional voice-over URL (Phase 3) — when present, plays an audio file; otherwise falls back to TTS */
   clueAudio?: string;
@@ -54,6 +56,7 @@ export interface HuntStop {
   /** Shown AFTER answering — fun fact / reveal */
   reveal: {
     funFact: string;
+    funFactLv?: string;
     image?: string;
   };
 }

@@ -61,7 +61,7 @@ interface MapViewProps {
 
 const MapView: React.FC<MapViewProps> = ({
   places,
-  center = { lat: 56.9496, lon: 24.1052 },
+  center,
   path,
   onSelect,
   getMarkerIcon,
@@ -103,7 +103,9 @@ const MapView: React.FC<MapViewProps> = ({
 
     const map = L.map(mapRef.current, {
       scrollWheelZoom: true,
-    }).setView([center.lat, center.lon], 12);
+    });
+    const initialCenter = center ?? { lat: 56.9496, lon: 24.1052 };
+    map.setView([initialCenter.lat, initialCenter.lon], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -331,22 +333,32 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Numbered markers with name label beneath
     validPath.forEach((point, idx) => {
+      const safeName = (point.name ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
       const label = point.name
         ? `<div style="
             margin-top: 3px;
             background: white;
             color: #1e293b;
-            padding: 1px 6px;
-            border-radius: 4px;
+            padding: 3px 7px;
+            border-radius: 8px;
             font-size: 10px;
-            font-weight: 600;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-            white-space: nowrap;
-            max-width: 120px;
+            line-height: 1.15;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            max-width: 180px;
+            text-align: center;
+            white-space: normal;
             overflow: hidden;
-            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             pointer-events: none;
-          ">${point.name}</div>`
+          ">${safeName}</div>`
         : '';
 
       const html = `
@@ -376,6 +388,15 @@ const MapView: React.FC<MapViewProps> = ({
       });
 
       const marker = L.marker([point.lat, point.lon], { icon });
+
+      if (point.name) {
+        marker.bindPopup(`<strong>${safeName}</strong>`, { maxWidth: 260 });
+        marker.bindTooltip(point.name, {
+          direction: 'top',
+          offset: [0, -12],
+          className: 'activity-name-tooltip',
+        });
+      }
 
       if (onSelect) {
         marker.on('click', () => onSelect(point.id));
@@ -448,7 +469,7 @@ const MapView: React.FC<MapViewProps> = ({
 
   // Recenter map when center prop changes (e.g., after GPS or selecting a point)
   useEffect(() => {
-    if (leafletRef.current && typeof center?.lat === 'number' && typeof center?.lon === 'number') {
+    if (center && leafletRef.current && typeof center.lat === 'number' && typeof center.lon === 'number') {
       leafletRef.current.setView([center.lat, center.lon], leafletRef.current.getZoom() || 12, {
         animate: true,
       });

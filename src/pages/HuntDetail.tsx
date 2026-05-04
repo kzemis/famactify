@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones } from 'lucide-react';
-import HuntRouteCanvas from '@/components/HuntRouteCanvas';
+import MapView from '@/components/MapView';
 import { huntsService, type ScavengerHunt, type HuntAttempt } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,15 @@ export default function HuntDetail() {
   const isInProgress = !!latestAttempt && !latestAttempt.completedAt;
   const isCompleted = !!latestAttempt?.completedAt;
   const ctaLabel = isInProgress ? 'Continue hunt' : isCompleted ? 'Play again' : 'Start hunt';
+  const huntPath = [...hunt.stops]
+    .sort((a, b) => a.order - b.order)
+    .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lon) && !(Math.abs(s.lat) < 0.0001 && Math.abs(s.lon) < 0.0001))
+    .map((s, i) => ({
+      id: s.id,
+      lat: s.lat,
+      lon: s.lon,
+      name: `${i + 1}. ${s.title}`,
+    }));
 
   return (
     <div className="min-h-[100dvh] bg-background pb-tab-bar">
@@ -97,10 +106,22 @@ export default function HuntDetail() {
         </div>
       </div>
 
-      {/* Generated story map */}
-      <div className="px-5 mt-5">
-        <HuntRouteCanvas hunt={hunt} />
-      </div>
+      {/* Route map */}
+      {huntPath.length > 0 && (
+        <div className="px-5 mt-5 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Route map</p>
+            <p className="text-[11px] text-muted-foreground">Tap pins for full names</p>
+          </div>
+          <div className="h-72 rounded-3xl overflow-hidden border bg-muted shadow-sm">
+            <MapView
+              places={[]}
+              path={huntPath}
+              className="rounded-3xl border-0"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Stops preview */}
       <div className="px-5 mt-5 space-y-2">

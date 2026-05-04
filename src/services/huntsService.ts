@@ -129,11 +129,12 @@ function mapStopRow(s: any): HuntStop {
     lon: s.lon,
     address: s.address ?? undefined,
     clueText: s.clue_text,
+    clueTextLv: s.clue_text_lv ?? undefined,
     clueImage: s.clue_image ?? undefined,
     clueAudio: s.clue_audio ?? undefined,
     parentHint: s.parent_hint ?? undefined,
     prompt,
-    reveal: { funFact: s.reveal_fun_fact, image: s.reveal_image ?? undefined },
+    reveal: { funFact: s.reveal_fun_fact, funFactLv: s.reveal_fun_fact_lv ?? undefined, image: s.reveal_image ?? undefined },
   };
 }
 
@@ -338,6 +339,7 @@ export const huntsService = {
       lon: s.lon,
       address: s.address ?? null,
       clue_text: s.clueText,
+      clue_text_lv: s.clueTextLv ?? null,
       clue_image: s.clueImage ?? null,
       clue_audio: s.clueAudio ?? null,
       parent_hint: s.parentHint ?? null,
@@ -348,6 +350,7 @@ export const huntsService = {
       prompt_photo_subject: s.prompt.photoSubject ?? null,
       prompt_metadata: promptMetadata(s.prompt),
       reveal_fun_fact: s.reveal.funFact,
+      reveal_fun_fact_lv: s.reveal.funFactLv ?? null,
       reveal_image: s.reveal.image ?? null,
     }));
     const { error: insErr } = await supabase.from('hunt_stops').insert(rows);

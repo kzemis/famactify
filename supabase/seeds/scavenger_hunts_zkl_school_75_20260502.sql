@@ -6,7 +6,9 @@
 -- ============================================================
 
 ALTER TABLE public.hunt_stops
-  ADD COLUMN IF NOT EXISTS parent_hint TEXT;
+  ADD COLUMN IF NOT EXISTS parent_hint TEXT,
+  ADD COLUMN IF NOT EXISTS clue_text_lv TEXT,
+  ADD COLUMN IF NOT EXISTS reveal_fun_fact_lv TEXT;
 
 DO $$
 DECLARE
@@ -143,4 +145,26 @@ BEGIN
     'Latvian pattern, sign, or event detail without faces',
     'Latvian visual culture often uses geometric folk patterns. In a community event, those patterns become a small bridge between language, music, memory, and belonging.'
   );
+
+  UPDATE public.hunt_stops
+  SET
+    clue_text_lv = CASE stop_order
+      WHEN 0 THEN 'Sāc ārā vai pie ieejas. Atrodi šodienas vietas nosaukumu: Latviešu nams — Latvian Hall. Te pulcējas Ziemeļkalifornijas latviešu kopiena.'
+      WHEN 1 THEN 'Meklē jubilejas skaitli uz afišas, programmā, uz skatuves vai apsveikumos. Tas ir skaitlis, ko šodien visi svin.'
+      WHEN 2 THEN 'Atrodi skolas latvisko nosaukumu. Pamēģini to pateikt lēnām: Zie-meļ-ka-li-for-ni-jas Lat-vie-šu sko-la.'
+      WHEN 3 THEN 'Programmas laikā ieklausies skolas bērnu priekšnesumos. Ievēro vienu lietu: dziesmu, dzejoli, tērpa detaļu, saprotamu vārdu vai brīdi, kas cilvēkiem liek smaidīt.'
+      WHEN 4 THEN 'Afišā ir minēts īpašais viesis — dziedātājs. Atrodi viņa vārdu uz afišas vai ieklausies apsveikumos.'
+      WHEN 5 THEN 'Atrodi latviešu rakstu, zaļi baltu afišas detaļu, programmas detaļu vai rotājumu. Uzņem privātumam drošu foto — bez bērnu sejām, lūdzu.'
+      ELSE clue_text_lv
+    END,
+    reveal_fun_fact_lv = CASE stop_order
+      WHEN 0 THEN 'ZKLB savā mājaslapā norāda adresi 425 Hoffman Ave, San Francisco. Tā pati adrese redzama jubilejas koncerta afišā kā “Latviešu namā / Latvian Hall”.'
+      WHEN 1 THEN '75 gadu jubileja nozīmē, ka skola jau daudzās Piejūras līča ģimeņu paaudzēs ir nesusi latviešu valodu un kultūru.'
+      WHEN 2 THEN '“Skola” latviski nozīmē “school”. ZKLB mājaslapā skola ir minēta kā viena no Ziemeļkalifornijas Latviešu biedrības organizācijām.'
+      WHEN 3 THEN 'Afišā rakstīts, ka svētku programmā ir “skolas bērnu priekšnesumi”. Tas nozīmē, ka svētku centrā ir arī bērni, ne tikai pieaugušie.'
+      WHEN 4 THEN 'Pasākuma afišā rakstīts, ka programmā būs apsveikumi, loterija un īpašais viesis — dziedātājs Lauris Reiniks.'
+      WHEN 5 THEN 'Latviešu vizuālajā kultūrā bieži izmanto ģeometriskus tautas rakstus. Kopienas pasākumā tie kļūst par mazu tiltu starp valodu, mūziku, atmiņām un piederību.'
+      ELSE reveal_fun_fact_lv
+    END
+  WHERE hunt_id = v_hunt_id;
 END $$;

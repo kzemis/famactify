@@ -410,7 +410,7 @@ export default function HuntEdit() {
   })();
 
   return (
-    <div className="min-h-[100dvh] bg-background pb-tab-bar">
+    <div className="min-h-[100dvh] bg-background pb-tab-bar [&_input::placeholder]:italic [&_textarea::placeholder]:italic [&_input::placeholder]:text-muted-foreground/45 [&_textarea::placeholder]:text-muted-foreground/45">
       {/* Top bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 flex items-center gap-2" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
         <button onClick={() => navigate(backTo)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight" aria-label="Back">
@@ -551,38 +551,38 @@ export default function HuntEdit() {
 
         {/* Basics */}
         <Section title="Basics">
-          <Field label="Title">
+          <Field label="Title" required>
             <Input value={hunt.title ?? ''} onChange={e => updateField('title', e.target.value)} placeholder="Berkeley Through Kids' Eyes" />
           </Field>
-          <Field label="Slug (URL part — letters, numbers, dashes)">
+          <Field label="Slug (URL part — letters, numbers, dashes)" required>
             <Input value={hunt.slug ?? ''} onChange={e => updateField('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} placeholder="berkeley-kids-eyes" />
           </Field>
-          <Field label="Blurb (1–2 sentences)">
+          <Field label="Blurb (1–2 sentences)" required>
             <Textarea value={hunt.blurb ?? ''} onChange={e => updateField('blurb', e.target.value)} rows={3} placeholder="A four-stop walk for the youngest explorers…" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Cover emoji">
               <Input value={hunt.coverEmoji ?? '🔍'} onChange={e => updateField('coverEmoji', e.target.value)} maxLength={4} />
             </Field>
-            <Field label="Primary theme">
+            <Field label="Primary theme" required>
               <select className="h-11 w-full rounded-xl border bg-background px-3 text-sm" value={hunt.primaryTheme} onChange={e => updateField('primaryTheme', e.target.value as any)}>
                 {['history', 'music', 'nature', 'art', 'food', 'science', 'community'].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
           </div>
-          <Field label="Host name (org / venue)">
+          <Field label="Host name (org / venue)" required>
             <Input value={hunt.hostName ?? ''} onChange={e => updateField('hostName', e.target.value)} placeholder="Brockton Art Museum" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="City"><Input value={hunt.city ?? ''} onChange={e => updateField('city', e.target.value)} /></Field>
-            <Field label="Country code (US / LV)">
+            <Field label="City" required><Input value={hunt.city ?? ''} onChange={e => updateField('city', e.target.value)} placeholder="San Francisco" /></Field>
+            <Field label="Country code (US / LV)" required>
               <Input value={hunt.countryCode ?? 'US'} onChange={e => updateField('countryCode', e.target.value.toUpperCase())} maxLength={2} />
             </Field>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Min age"><Input type="number" min={0} max={18} value={hunt.ageMin ?? 6} onChange={e => updateField('ageMin', parseInt(e.target.value || '0'))} /></Field>
-            <Field label="Max age"><Input type="number" min={0} max={99} value={hunt.ageMax ?? 14} onChange={e => updateField('ageMax', parseInt(e.target.value || '0'))} /></Field>
-            <Field label="Difficulty">
+            <Field label="Min age" required><Input type="number" min={0} max={18} value={hunt.ageMin ?? 6} onChange={e => updateField('ageMin', parseInt(e.target.value || '0'))} /></Field>
+            <Field label="Max age" required><Input type="number" min={0} max={99} value={hunt.ageMax ?? 14} onChange={e => updateField('ageMax', parseInt(e.target.value || '0'))} /></Field>
+            <Field label="Difficulty" required>
               <select className="h-11 w-full rounded-xl border bg-background px-3 text-sm" value={hunt.difficulty} onChange={e => updateField('difficulty', e.target.value as any)}>
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
@@ -590,7 +590,7 @@ export default function HuntEdit() {
               </select>
             </Field>
           </div>
-          <Field label="Duration (minutes)">
+          <Field label="Duration (minutes)" required>
             <Input type="number" min={10} value={hunt.durationMinutes ?? 120} onChange={e => updateField('durationMinutes', parseInt(e.target.value || '0'))} />
           </Field>
           <Field label="Credits / 'designed by' (optional)">
@@ -610,14 +610,22 @@ export default function HuntEdit() {
                 <button onClick={() => removeStop(i)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
 
-              <Field label="Title"><Input value={s.title} onChange={e => updateStop(i, x => ({ ...x, title: e.target.value }))} placeholder="Tilden Little Farm" /></Field>
+              <Field label="Title" required><Input value={s.title} onChange={e => updateStop(i, x => ({ ...x, title: e.target.value }))} placeholder="Tilden Little Farm" /></Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Latitude"><Input type="number" step="any" value={s.lat} onChange={e => updateStop(i, x => ({ ...x, lat: parseFloat(e.target.value || '0') }))} /></Field>
-                <Field label="Longitude"><Input type="number" step="any" value={s.lon} onChange={e => updateStop(i, x => ({ ...x, lon: parseFloat(e.target.value || '0') }))} /></Field>
+                <Field label="Latitude" required><Input type="number" step="any" value={s.lat} onChange={e => updateStop(i, x => ({ ...x, lat: parseFloat(e.target.value || '0') }))} placeholder="37.75046" /></Field>
+                <Field label="Longitude" required><Input type="number" step="any" value={s.lon} onChange={e => updateStop(i, x => ({ ...x, lon: parseFloat(e.target.value || '0') }))} placeholder="-122.44053" /></Field>
               </div>
               <Field label="Address (optional)"><Input value={s.address ?? ''} onChange={e => updateStop(i, x => ({ ...x, address: e.target.value }))} /></Field>
-              <Field label="Clue (shown to player)">
+              <Field label="Clue (shown to player)" required>
                 <Textarea value={s.clueText} rows={3} onChange={e => updateStop(i, x => ({ ...x, clueText: e.target.value }))} />
+              </Field>
+              <Field label="Clue in Latvian (optional — shown when player taps 🇱🇻)">
+                <Textarea
+                  value={s.clueTextLv ?? ''}
+                  rows={3}
+                  onChange={e => updateStop(i, x => ({ ...x, clueTextLv: e.target.value }))}
+                  placeholder="Latviešu versija šim pavedienam."
+                />
               </Field>
               <Field label="Parent hint (optional — shown when kid taps 'Ask a grown-up')">
                 <Textarea value={s.parentHint ?? ''} rows={2} onChange={e => updateStop(i, x => ({ ...x, parentHint: e.target.value }))} placeholder="A nudge a grown-up can read aloud or paraphrase, without giving the answer outright." />
@@ -653,7 +661,7 @@ export default function HuntEdit() {
                     </button>
                   ))}
                 </div>
-                <Field label="Question"><Input value={s.prompt.question} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, question: e.target.value } }))} /></Field>
+                <Field label="Question" required><Input value={s.prompt.question} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, question: e.target.value } }))} placeholder="What should the kid do or answer here?" /></Field>
 
                 {s.prompt.kind === 'text' && (
                   <Field label="Acceptable answers (comma-separated, case-insensitive)">
@@ -667,7 +675,7 @@ export default function HuntEdit() {
 
                 {s.prompt.kind === 'multiple_choice' && (
                   <>
-                    <Field label="Options (one per line)">
+                    <Field label="Options (one per line)" required>
                       <Textarea
                         rows={4}
                         value={(s.prompt.options ?? []).join('\n')}
@@ -675,7 +683,7 @@ export default function HuntEdit() {
                         placeholder={'Pig\nGoat\nSheep\nCow'}
                       />
                     </Field>
-                    <Field label="Correct option (must match one option exactly)">
+                    <Field label="Correct option (must match one option exactly)" required>
                       <Input
                         value={(s.prompt.correctAnswers ?? [])[0] ?? ''}
                         onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: [e.target.value] } }))}
@@ -716,7 +724,7 @@ export default function HuntEdit() {
 
                 {s.prompt.kind === 'time_travel_photo' && (
                   <>
-                    <Field label="Historical/source image URL">
+                    <Field label="Historical/source image URL" required>
                       <Input
                         value={s.prompt.timeTravelImageUrl ?? ''}
                         onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelImageUrl: e.target.value } }))}
@@ -748,7 +756,17 @@ export default function HuntEdit() {
               {/* Reveal */}
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Reveal — fun fact</p>
-                <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} />
+                <Field label="Fun fact" required>
+                  <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} placeholder="A source-backed fact revealed after the stop." />
+                </Field>
+                <Field label="Fun fact in Latvian (optional — shown when player taps 🇱🇻)">
+                  <Textarea
+                    rows={3}
+                    value={s.reveal.funFactLv ?? ''}
+                    onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFactLv: e.target.value } }))}
+                    placeholder="Latviešu versija atklājumam / interesantajam faktam."
+                  />
+                </Field>
               </div>
             </div>
           ))}
@@ -830,10 +848,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, required = false }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs font-medium">{label}</Label>
+      <Label className={cn('text-xs font-medium flex items-center gap-1.5', required ? 'text-rose-700' : 'text-muted-foreground')}>
+        <span>{label}</span>
+        {required && <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-rose-700">Required</span>}
+      </Label>
       {children}
     </div>
   );

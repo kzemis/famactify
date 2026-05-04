@@ -11,6 +11,8 @@ interface DrawingPadProps {
   initialDataUrl?: string;
   /** CSS aspect ratio for the canvas — defaults to 4/3. */
   aspect?: string;
+  /** Fill the available mobile prompt shell. */
+  immersive?: boolean;
 }
 
 const COLORS = ['#111827', '#ec4899', '#2563eb', '#10b981', '#f59e0b'];
@@ -23,7 +25,7 @@ const ERASER_WIDTH = 18;
  * canvas; an in-memory history of dataURLs powers undo. Output is exported as
  * a PNG data URL (typically 80–250KB depending on complexity).
  */
-export default function DrawingPad({ subject, onChange, initialDataUrl, aspect = '4 / 3' }: DrawingPadProps) {
+export default function DrawingPad({ subject, onChange, initialDataUrl, aspect = '4 / 3', immersive = false }: DrawingPadProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
@@ -147,13 +149,13 @@ export default function DrawingPad({ subject, onChange, initialDataUrl, aspect =
   };
 
   return (
-    <div className="space-y-2">
+    <div className={cn(immersive ? 'h-full min-h-0 flex flex-col gap-3' : 'space-y-2')}>
       {subject && (
-        <p className="text-xs text-muted-foreground text-center px-4">{subject}</p>
+        <p className={cn('text-xs text-center px-4', immersive ? 'text-white/75' : 'text-muted-foreground')}>{subject}</p>
       )}
       <div
-        className="relative rounded-2xl overflow-hidden border bg-white shadow-sm"
-        style={{ aspectRatio: aspect }}
+        className={cn('relative rounded-2xl overflow-hidden border bg-white shadow-sm', immersive && 'flex-1 min-h-0 rounded-3xl')}
+        style={immersive ? undefined : { aspectRatio: aspect }}
       >
         <canvas
           ref={canvasRef}
@@ -167,7 +169,7 @@ export default function DrawingPad({ subject, onChange, initialDataUrl, aspect =
       </div>
 
       {/* Tools */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className={cn('flex items-center gap-2 flex-wrap', immersive && 'justify-center')}>
         {/* Colors */}
         {COLORS.map(c => (
           <button

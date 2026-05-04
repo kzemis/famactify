@@ -418,9 +418,21 @@ export const huntsService = {
 
   /** Upload a public hunt asset (sponsor logo, cover, step audio guide). Returns public URL. */
   async uploadAsset(file: File, pathPrefix = 'sponsors'): Promise<string> {
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('hunt-assets').upload(path, file, { upsert: false });
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    const user = userData.user;
+    if (!user) throw new Error('Sign in to upload hunt assets');
+
+    const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+    const safePrefix = pathPrefix
+      .replace(/[^a-z0-9/_-]/gi, '-')
+      .replace(/^\/+|\/+$/g, '') || 'assets';
+    const path = `${user.id}/${safePrefix}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('hunt-assets').upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type || undefined,
+      upsert: false,
+    });
     if (error) throw error;
     const { data } = supabase.storage.from('hunt-assets').getPublicUrl(path);
     return data.publicUrl;

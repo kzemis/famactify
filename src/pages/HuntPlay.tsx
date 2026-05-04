@@ -348,6 +348,54 @@ export default function HuntPlay() {
         ? 'Save drawing'
         : 'Save sound';
 
+    if (currentStop.prompt.kind === 'time_travel_photo') {
+      return (
+        <div className="fixed inset-0 z-[90] bg-black text-white overflow-hidden">
+          <TimeTravelCamera
+            key={currentStop.id}
+            immersive
+            overlayImageUrl={currentStop.prompt.timeTravelImageUrl}
+            caption={currentStop.prompt.timeTravelCaption}
+            opacity={currentStop.prompt.timeTravelOpacity ?? 0.5}
+            initialDataUrl={timeTravelPhotoDataUrl ?? undefined}
+            onCapture={setTimeTravelPhotoDataUrl}
+            overlayHeader={(
+              <div className="flex items-start gap-3">
+                <button
+                  onClick={() => setPhase('clue')}
+                  className="w-12 h-12 rounded-full bg-black/45 backdrop-blur flex items-center justify-center tap-highlight shrink-0"
+                  aria-label="Back to clue"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/70">Time-travel view · Stop {attempt.currentStopOrder + 1} of {totalStops}</p>
+                  <h2 className="text-lg font-black leading-tight drop-shadow line-clamp-2">{currentStop.title}</h2>
+                  <p className="mt-1 text-sm font-semibold leading-snug text-white/92 drop-shadow line-clamp-3">{currentStop.prompt.question}</p>
+                </div>
+              </div>
+            )}
+            overlayFooter={(
+              <div className="grid grid-cols-[0.35fr_0.65fr] gap-3">
+                <button
+                  onClick={skipStop}
+                  className="h-12 rounded-2xl border border-white/20 bg-black/45 text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5 backdrop-blur"
+                >
+                  <SkipForward className="w-4 h-4" /> Skip
+                </button>
+                <button
+                  onClick={submitAnswer}
+                  className="h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold tap-highlight flex items-center justify-center gap-1.5"
+                >
+                  {submitLabel} <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="fixed inset-0 z-[90] bg-black text-white flex flex-col overflow-hidden">
         <div

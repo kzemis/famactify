@@ -4,6 +4,7 @@
 // remain visible until they are explicitly imported into Supabase.
 
 import { supabase } from '@/integrations/supabase/client';
+import { flags } from '@/lib/flags';
 import type {
   ScavengerHunt,
   HuntStop,
@@ -688,6 +689,15 @@ export const huntsService = {
   },
 
   async verifyPhotoML(photoDataUrl: string, subject: string | undefined): Promise<{ verified: boolean; confidence: number; needsReview?: boolean; reason?: string; model?: string }> {
+    if (!flags.scv_ml_photo_verification) {
+      return {
+        verified: false,
+        confidence: 0,
+        needsReview: true,
+        reason: 'ML photo verification is disabled; saved for manual review.',
+      };
+    }
+
     if (!subject?.trim()) {
       return { verified: false, confidence: 0, needsReview: true, reason: 'No photo subject was configured for this stop.' };
     }

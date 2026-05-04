@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent, type ReactNode } from 'react';
-import { Camera, History, ImagePlus, Pencil, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import { Camera, History, ImagePlus, Pencil, Redo2, RotateCcw, SlidersHorizontal, Sparkles, SwitchCamera, Trash2, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -26,9 +26,11 @@ function getSourceSize(source: HTMLVideoElement | HTMLImageElement) {
   return { width: source.naturalWidth, height: source.naturalHeight };
 }
 
-function drawCover(
+function drawCoverInto(
   ctx: CanvasRenderingContext2D,
   source: HTMLVideoElement | HTMLImageElement,
+  targetX: number,
+  targetY: number,
   targetWidth: number,
   targetHeight: number,
 ) {
@@ -41,7 +43,54 @@ function drawCover(
   const sourceX = (width - sourceWidth) / 2;
   const sourceY = (height - sourceHeight) / 2;
 
-  ctx.drawImage(source, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+  ctx.drawImage(source, sourceX, sourceY, sourceWidth, sourceHeight, targetX, targetY, targetWidth, targetHeight);
+}
+
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  source: HTMLVideoElement | HTMLImageElement,
+  targetWidth: number,
+  targetHeight: number,
+) {
+  drawCoverInto(ctx, source, 0, 0, targetWidth, targetHeight);
+}
+
+function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function drawHistoricalInset(
+  ctx: CanvasRenderingContext2D,
+  source: HTMLImageElement,
+  targetWidth: number,
+  targetHeight: number,
+  alpha: number,
+) {
+  const insetWidth = Math.round(targetWidth * 0.28);
+  const insetHeight = Math.round(targetHeight * 0.22);
+  const x = targetWidth - insetWidth - Math.round(targetWidth * 0.04);
+  const y = Math.round(targetHeight * 0.055);
+
+  ctx.save();
+  roundedRectPath(ctx, x - 8, y - 8, insetWidth + 16, insetHeight + 16, 28);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  roundedRectPath(ctx, x, y, insetWidth, insetHeight, 20);
+  ctx.clip();
+  ctx.globalAlpha = alpha;
+  drawCoverInto(ctx, source, x, y, insetWidth, insetHeight);
+  ctx.restore();
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -81,23 +130,56 @@ export default function TimeTravelCamera({
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const hasAnnotationsRef = useRef(false);
+  const historyRef = useRef<string[]>([]);
+  const historyIndexRef = useRef(-1);
+  const strokeChangedRef = useRef(false);
 
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(initialDataUrl ?? null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [previewOpacity, setPreviewOpacity] = useState(() => Math.max(0.1, Math.min(0.85, opacity)));
   const [includeOverlayInCapture, setIncludeOverlayInCapture] = useState(false);
+  const [showOpacityControls, setShowOpacityControls] = useState(false);
   const [drawToolsOpen, setDrawToolsOpen] = useState(false);
   const [drawColor, setDrawColor] = useState('#ec4899');
   const [brushSize, setBrushSize] = useState(7);
   const [drawMode, setDrawMode] = useState<'pen' | 'emoji'>('pen');
   const [emojiStamp, setEmojiStamp] = useState('⭐');
   const [hasAnnotations, setHasAnnotations] = useState(false);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const markAnnotations = (value: boolean) => {
     hasAnnotationsRef.current = value;
     setHasAnnotations(value);
+  };
+
+  const setHistoryCursor = (index: number) => {
+    historyIndexRef.current = index;
+    setHistoryIndex(index);
+  };
+
+  const loadAnnotationSnapshot = (dataUrl: string) => {
+    const canvas = annotationCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const image = new Image();
+    image.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      markAnnotations(true);
+    };
+    image.src = dataUrl;
+  };
+
+  const pushAnnotationHistory = () => {
+    const canvas = annotationCanvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+    historyRef.current.push(dataUrl);
+    setHistoryCursor(historyRef.current.length - 1);
   };
 
   const stopCamera = useCallback(() => {
@@ -138,8 +220,32 @@ export default function TimeTravelCamera({
     const canvas = annotationCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    historyRef.current = [];
+    setHistoryCursor(-1);
     markAnnotations(false);
   }, []);
+
+  const undoAnnotation = () => {
+    if (historyIndexRef.current < 0) return;
+    if (historyIndexRef.current === 0) {
+      const canvas = annotationCanvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setHistoryCursor(-1);
+      markAnnotations(false);
+      return;
+    }
+    const nextIndex = historyIndexRef.current - 1;
+    setHistoryCursor(nextIndex);
+    loadAnnotationSnapshot(historyRef.current[nextIndex]);
+  };
+
+  const redoAnnotation = () => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return;
+    const nextIndex = historyIndexRef.current + 1;
+    setHistoryCursor(nextIndex);
+    loadAnnotationSnapshot(historyRef.current[nextIndex]);
+  };
 
   useEffect(() => {
     syncAnnotationCanvas();
@@ -153,7 +259,7 @@ export default function TimeTravelCamera({
     return () => observer.disconnect();
   }, [syncAnnotationCanvas]);
 
-  const startCamera = useCallback(async (force = false) => {
+  const startCamera = useCallback(async (force = false, requestedFacing: 'environment' | 'user' = facingMode) => {
     if (!force && (capturedDataUrl || streamRef.current)) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError('Camera is not available in this browser');
@@ -164,7 +270,7 @@ export default function TimeTravelCamera({
     setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: { facingMode: { ideal: requestedFacing } },
         audio: false,
       });
       streamRef.current = stream;
@@ -178,7 +284,7 @@ export default function TimeTravelCamera({
     } finally {
       setStarting(false);
     }
-  }, [capturedDataUrl, syncAnnotationCanvas]);
+  }, [capturedDataUrl, facingMode, syncAnnotationCanvas]);
 
   useEffect(() => {
     startCamera();
@@ -215,13 +321,26 @@ export default function TimeTravelCamera({
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is not supported');
 
-    drawCover(ctx, video, canvas.width, canvas.height);
+    if (facingMode === 'user') {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      drawCover(ctx, video, canvas.width, canvas.height);
+      ctx.restore();
+    } else {
+      drawCover(ctx, video, canvas.width, canvas.height);
+    }
 
-    if (includeOverlay && overlayImageUrl) {
+    if ((includeOverlay || facingMode === 'user') && overlayImageUrl) {
       const overlay = await loadImage(overlayImageUrl);
       ctx.save();
       ctx.globalAlpha = previewOpacity;
-      drawCover(ctx, overlay, canvas.width, canvas.height);
+      if (facingMode === 'user') {
+        ctx.globalAlpha = 1;
+        drawHistoricalInset(ctx, overlay, canvas.width, canvas.height, previewOpacity);
+      } else {
+        drawCover(ctx, overlay, canvas.width, canvas.height);
+      }
       ctx.restore();
     }
 
@@ -272,6 +391,12 @@ export default function TimeTravelCamera({
     startCamera(true);
   };
 
+  const switchCamera = () => {
+    const nextFacing = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextFacing);
+    stopCamera();
+  };
+
   const handleFallbackPick = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -308,6 +433,7 @@ export default function TimeTravelCamera({
     ctx.textBaseline = 'middle';
     ctx.fillText(emojiStamp, point.x, point.y);
     markAnnotations(true);
+    pushAnnotationHistory();
   };
 
   const drawLine = (from: { x: number; y: number; scale: number }, to: { x: number; y: number; scale: number }) => {
@@ -322,6 +448,7 @@ export default function TimeTravelCamera({
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
     markAnnotations(true);
+    strokeChangedRef.current = true;
   };
 
   const handleDrawStart = (event: PointerEvent<HTMLCanvasElement>) => {
@@ -335,6 +462,7 @@ export default function TimeTravelCamera({
       return;
     }
     drawingRef.current = true;
+    strokeChangedRef.current = true;
     lastPointRef.current = point;
     drawLine(point, point);
   };
@@ -349,11 +477,14 @@ export default function TimeTravelCamera({
   };
 
   const handleDrawEnd = (event: PointerEvent<HTMLCanvasElement>) => {
+    const shouldPush = drawingRef.current && strokeChangedRef.current;
     drawingRef.current = false;
     lastPointRef.current = null;
+    strokeChangedRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (shouldPush) pushAnnotationHistory();
   };
 
   const cameraFrame = (
@@ -373,15 +504,25 @@ export default function TimeTravelCamera({
             ref={videoRef}
             playsInline
             muted
-            className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]', cameraError && 'hidden')}
+            className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]', facingMode === 'user' && 'scale-x-[-1]', cameraError && 'hidden')}
           />
-          {overlayImageUrl && !cameraError && (
+          {overlayImageUrl && !cameraError && facingMode === 'environment' && (
             <img
               src={overlayImageUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               style={{ opacity: previewOpacity }}
             />
+          )}
+          {overlayImageUrl && !cameraError && facingMode === 'user' && (
+            <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+86px)] w-24 h-32 rounded-2xl border-2 border-white/85 bg-white/15 shadow-2xl overflow-hidden pointer-events-none">
+              <img
+                src={overlayImageUrl}
+                alt=""
+                className="w-full h-full object-cover"
+                style={{ opacity: previewOpacity }}
+              />
+            </div>
           )}
           {(starting || cameraError) && (
             <div className={cn('w-full flex flex-col items-center justify-center gap-3 text-center px-5 text-white', immersive ? 'h-full' : 'aspect-[4/3]')}>
@@ -418,18 +559,32 @@ export default function TimeTravelCamera({
   );
 
   const doodleToolbar = drawToolsOpen && !capturedDataUrl && (
-    <div className={cn('rounded-2xl border p-3 space-y-3', immersive ? 'border-white/15 bg-black/45 backdrop-blur text-white' : 'border-border bg-card')}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-xs font-black uppercase tracking-widest">Doodle tools</span>
-        </div>
+    <div className={cn('rounded-2xl border p-2 space-y-2', immersive ? 'border-white/15 bg-black/45 backdrop-blur text-white' : 'border-border bg-card')}>
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <Sparkles className="w-4 h-4 text-primary shrink-0" />
+        <button
+          onClick={undoAnnotation}
+          disabled={historyIndex < 0}
+          className="w-8 h-8 rounded-full bg-white/10 disabled:opacity-35 flex items-center justify-center shrink-0"
+          aria-label="Undo doodle"
+        >
+          <Undo2 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={redoAnnotation}
+          disabled={historyIndex >= historyRef.current.length - 1}
+          className="w-8 h-8 rounded-full bg-white/10 disabled:opacity-35 flex items-center justify-center shrink-0"
+          aria-label="Redo doodle"
+        >
+          <Redo2 className="w-4 h-4" />
+        </button>
         <button
           onClick={clearAnnotations}
           disabled={!hasAnnotations}
-          className="h-8 px-3 rounded-full bg-white/10 text-xs font-semibold disabled:opacity-40 flex items-center gap-1"
+          className="w-8 h-8 rounded-full bg-white/10 disabled:opacity-35 flex items-center justify-center shrink-0"
+          aria-label="Clear doodles"
         >
-          <Trash2 className="w-3.5 h-3.5" /> Clear
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
@@ -470,12 +625,9 @@ export default function TimeTravelCamera({
 
   const controlsContent = (
     <>
-      {overlayImageUrl && !capturedDataUrl && (
-        <div className={cn('rounded-2xl border p-3 space-y-2', immersive ? 'border-white/15 bg-black/50 backdrop-blur text-white' : 'border-border bg-card')}>
-          <div className="flex items-center justify-between gap-3">
-            <label className="text-xs font-bold uppercase tracking-widest">Old image opacity</label>
-            <span className={cn('text-xs font-semibold tabular-nums', immersive ? 'text-white/75' : 'text-muted-foreground')}>{Math.round(previewOpacity * 100)}%</span>
-          </div>
+      {overlayImageUrl && !capturedDataUrl && showOpacityControls && (
+        <div className={cn('rounded-full border px-3 py-2 flex items-center gap-2', immersive ? 'border-white/15 bg-black/45 backdrop-blur text-white' : 'border-border bg-card')}>
+          <SlidersHorizontal className="w-4 h-4 text-white/80 shrink-0" />
           <input
             type="range"
             min={10}
@@ -483,13 +635,15 @@ export default function TimeTravelCamera({
             step={5}
             value={Math.round(previewOpacity * 100)}
             onChange={e => setPreviewOpacity(Number(e.target.value) / 100)}
-            className="w-full accent-primary"
+            className="min-w-0 flex-1 accent-primary"
           />
           <button
             onClick={() => setIncludeOverlayInCapture(v => !v)}
-            className={cn('w-full h-9 rounded-xl text-xs font-semibold tap-highlight', includeOverlayInCapture ? 'bg-primary text-primary-foreground' : immersive ? 'bg-white/10 text-white' : 'bg-muted text-foreground')}
+            className={cn('w-9 h-9 rounded-full flex items-center justify-center tap-highlight shrink-0', includeOverlayInCapture ? 'bg-primary text-primary-foreground' : 'bg-white/10 text-white')}
+            aria-label="Include old image in saved photo"
+            title="Include old image in saved photo"
           >
-            {includeOverlayInCapture ? 'Saved photo will include old image' : 'Saved photo will be clean modern view'}
+            <History className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -505,51 +659,63 @@ export default function TimeTravelCamera({
         className="hidden"
       />
 
-      <div className={cn('grid gap-2', capturedDataUrl ? 'grid-cols-1' : 'grid-cols-3')}>
+      <div className="flex items-center justify-center gap-2">
         {capturedDataUrl ? (
           <button
             onClick={retake}
-            className={cn('h-11 rounded-2xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+            className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+            aria-label="Retake photo"
           >
-            <RotateCcw className="w-4 h-4" /> Retake alignment
+            <RotateCcw className="w-5 h-5" />
           </button>
         ) : (
           <>
             <button
               onClick={capture}
               disabled={capturing || starting || !!cameraError}
-              className="h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-12 h-12 rounded-full bg-primary text-primary-foreground tap-highlight disabled:opacity-60 flex items-center justify-center"
+              aria-label="Capture photo"
             >
-              <Camera className="w-4 h-4" /> {capturing ? 'Saving…' : 'Capture'}
+              <Camera className={cn('w-5 h-5', capturing && 'animate-pulse')} />
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className={cn('h-11 rounded-2xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+              aria-label="Upload photo"
             >
-              <ImagePlus className="w-4 h-4" /> Upload
+              <ImagePlus className="w-5 h-5" />
             </button>
             <button
               onClick={() => {
                 setDrawToolsOpen(v => !v);
+                setShowOpacityControls(false);
                 syncAnnotationCanvas();
               }}
-              className={cn('h-11 rounded-2xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2', drawToolsOpen ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', drawToolsOpen ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+              aria-label="Open drawing tools"
             >
-              <Pencil className="w-4 h-4" /> Draw
+              <Pencil className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                setShowOpacityControls(v => !v);
+                setDrawToolsOpen(false);
+              }}
+              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', showOpacityControls ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+              aria-label="Adjust old image opacity"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+            </button>
+            <button
+              onClick={switchCamera}
+              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', facingMode === 'user' ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+              aria-label="Switch camera"
+            >
+              <SwitchCamera className="w-5 h-5" />
             </button>
           </>
         )}
       </div>
-
-      <p className={cn('text-[11px] px-1 leading-snug', immersive ? 'text-white/72 drop-shadow' : overlayImageUrl ? 'text-muted-foreground' : 'text-amber-700')}>
-        {drawToolsOpen
-          ? 'Draw or stamp before capture — doodles are saved onto the photo.'
-          : overlayImageUrl
-            ? includeOverlayInCapture
-              ? 'Tip: this saves old view + modern view + doodles together.'
-              : 'Tip: old view is only a guide. Saved photo is today’s clean view plus doodles.'
-            : 'Add a source-backed historical image URL in the hunt builder for the live overlay.'}
-      </p>
     </>
   );
 

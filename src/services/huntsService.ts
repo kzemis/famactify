@@ -106,12 +106,19 @@ function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): Scavenge
 }
 
 function mapStopRow(s: any): HuntStop {
+  const metadata = s.prompt_metadata ?? {};
   const prompt: HuntPrompt = {
     kind: s.prompt_kind,
     question: s.prompt_question,
     options: s.prompt_options ?? undefined,
     correctAnswers: s.prompt_correct ?? undefined,
     photoSubject: s.prompt_photo_subject ?? undefined,
+    audioSubject: metadata.audioSubject ?? undefined,
+    audioMaxSeconds: metadata.audioMaxSeconds ?? undefined,
+    drawingSubject: metadata.drawingSubject ?? undefined,
+    timeTravelImageUrl: metadata.timeTravelImageUrl ?? undefined,
+    timeTravelCaption: metadata.timeTravelCaption ?? undefined,
+    timeTravelOpacity: metadata.timeTravelOpacity ?? undefined,
   };
   return {
     id: s.id,
@@ -131,6 +138,17 @@ function mapStopRow(s: any): HuntStop {
 
 function mapSponsorRow(s: any): HuntSponsor {
   return { name: s.name, logo: s.logo ?? undefined, url: s.url ?? undefined };
+}
+
+function promptMetadata(prompt: HuntPrompt): Record<string, unknown> {
+  return {
+    audioSubject: prompt.audioSubject ?? null,
+    audioMaxSeconds: prompt.audioMaxSeconds ?? null,
+    drawingSubject: prompt.drawingSubject ?? null,
+    timeTravelImageUrl: prompt.timeTravelImageUrl ?? null,
+    timeTravelCaption: prompt.timeTravelCaption ?? null,
+    timeTravelOpacity: prompt.timeTravelOpacity ?? null,
+  };
 }
 
 // ── Service ──────────────────────────────────────────────────────────────────
@@ -327,6 +345,7 @@ export const huntsService = {
       prompt_options: s.prompt.options ?? null,
       prompt_correct: s.prompt.correctAnswers ?? null,
       prompt_photo_subject: s.prompt.photoSubject ?? null,
+      prompt_metadata: promptMetadata(s.prompt),
       reveal_fun_fact: s.reveal.funFact,
       reveal_image: s.reveal.image ?? null,
     }));

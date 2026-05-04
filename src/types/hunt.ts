@@ -9,7 +9,8 @@ export type HuntPromptKind =
   | 'photo'            // submit a photo of the subject
   | 'observation'      // no answer required, just acknowledge
   | 'audio'            // record a short sound clip (default 5s)
-  | 'drawing';         // draw on an in-app canvas
+  | 'drawing'          // draw on an in-app canvas
+  | 'time_travel_photo'; // line up a historical/source image over live camera
 
 export interface HuntPrompt {
   kind: HuntPromptKind;
@@ -26,6 +27,12 @@ export interface HuntPrompt {
   audioMaxSeconds?: number;
   /** for drawing — what to draw; informative only */
   drawingSubject?: string;
+  /** for time_travel_photo — source-backed historical/archival image URL */
+  timeTravelImageUrl?: string;
+  /** for time_travel_photo — source/caption copy shown under the overlay */
+  timeTravelCaption?: string;
+  /** for time_travel_photo — overlay opacity, default 0.5 */
+  timeTravelOpacity?: number;
 }
 
 export interface HuntStop {

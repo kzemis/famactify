@@ -62,9 +62,18 @@ export default function Hunts() {
                 className="w-full text-left rounded-3xl border bg-card overflow-hidden shadow-sm tap-highlight active:scale-[0.99] transition-transform"
               >
                 {/* Cover */}
-                <div className="relative h-32 bg-gradient-to-br from-primary/20 via-pink-100 to-amber-100 flex items-center justify-center">
-                  <span className="text-6xl drop-shadow-sm">{h.coverEmoji}</span>
-                  <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-[11px] font-semibold ${DIFFICULTY_COLOR[h.difficulty]}`}>
+                <div className="relative h-36 bg-gradient-to-br from-primary/20 via-pink-100 to-amber-100 flex items-center justify-center overflow-hidden">
+                  {h.coverImage ? (
+                    <img
+                      src={h.coverImage}
+                      alt={h.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="text-6xl drop-shadow-sm">{h.coverEmoji}</span>
+                  )}
+                  <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-sm ${DIFFICULTY_COLOR[h.difficulty]}`}>
                     {DIFFICULTY_LABEL[h.difficulty]}
                   </span>
                 </div>

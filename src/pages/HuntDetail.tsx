@@ -60,50 +60,69 @@ export default function HuntDetail() {
       name: `${i + 1}. ${s.title}`,
     }));
 
+  const hours = Math.round(hunt.durationMinutes / 60 * 10) / 10;
+
   return (
     <div className="min-h-[100dvh] bg-background pb-tab-bar">
-      {/* Top bar with back */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center gap-2" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
-        <button onClick={() => navigate('/hunts')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight" aria-label="Back to hunts">
+      {/* Hero — full-bleed cover photo with overlaid title, host, blurb, stats */}
+      <div className="relative">
+        {/* Background: photo if available, gradient + emoji fallback */}
+        <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/30 via-pink-200 to-amber-200">
+          {hunt.coverImage ? (
+            <img
+              src={hunt.coverImage}
+              alt={hunt.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-9xl drop-shadow-sm opacity-90">{hunt.coverEmoji}</span>
+            </div>
+          )}
+          {/* Gradient scrim — darker at top (back button) and bottom (text) for readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/0 to-black/80 pointer-events-none" />
+        </div>
+
+        {/* Floating back button */}
+        <button
+          onClick={() => navigate('/hunts')}
+          className="absolute top-3 left-3 w-10 h-10 rounded-full bg-black/45 backdrop-blur text-white flex items-center justify-center tap-highlight active:scale-95 transition-transform"
+          style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
+          aria-label="Back to hunts"
+        >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="text-sm font-semibold truncate">{hunt.title}</span>
-      </div>
 
-      {/* Cover */}
-      <div className="relative h-48 bg-gradient-to-br from-primary/20 via-pink-100 to-amber-100 flex items-center justify-center">
-        <span className="text-8xl drop-shadow-sm">{hunt.coverEmoji}</span>
+        {/* Completed badge */}
         {isCompleted && (
-          <div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-semibold shadow-md">
+          <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-semibold shadow-md" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}>
             <CheckCircle2 className="w-3.5 h-3.5" /> Completed
           </div>
         )}
-      </div>
 
-      {/* Header */}
-      <div className="px-5 pt-5 pb-3 space-y-2">
-        <h1 className="text-2xl font-black tracking-tight leading-tight">{hunt.title}</h1>
-        <p className="text-xs text-muted-foreground">by {hunt.hostName} · {hunt.city}</p>
-        <p className="text-base text-muted-foreground leading-relaxed pt-1">{hunt.blurb}</p>
-      </div>
+        {/* Overlaid text content */}
+        <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-12 text-white">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80 mb-1 drop-shadow">
+            by {hunt.hostName} · {hunt.city}
+          </p>
+          <h1 className="text-2xl font-black tracking-tight leading-tight drop-shadow-md">{hunt.title}</h1>
+          <p className="text-sm leading-snug mt-1.5 text-white/95 drop-shadow line-clamp-3">{hunt.blurb}</p>
 
-      {/* Quick facts */}
-      <div className="px-5 grid grid-cols-2 gap-2 mt-2">
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Stops</p>
-          <p className="font-semibold text-sm flex items-center gap-1.5 mt-0.5"><MapPin className="w-3.5 h-3.5" /> {hunt.stops.length}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Duration</p>
-          <p className="font-semibold text-sm flex items-center gap-1.5 mt-0.5"><Clock className="w-3.5 h-3.5" /> ~{Math.round(hunt.durationMinutes / 60 * 10) / 10}h</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ages</p>
-          <p className="font-semibold text-sm flex items-center gap-1.5 mt-0.5"><Users className="w-3.5 h-3.5" /> {hunt.ageMin}–{hunt.ageMax}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Difficulty</p>
-          <p className="font-semibold text-sm flex items-center gap-1.5 mt-0.5"><Sparkles className="w-3.5 h-3.5" /> {hunt.difficulty}</p>
+          {/* Compact 4-stat chip strip — single row */}
+          <div className="flex items-center gap-1.5 mt-3 overflow-x-auto no-scrollbar">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur border border-white/25 text-[11px] font-semibold whitespace-nowrap">
+              <MapPin className="w-3 h-3" /> {hunt.stops.length} stops
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur border border-white/25 text-[11px] font-semibold whitespace-nowrap">
+              <Clock className="w-3 h-3" /> ~{hours}h
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur border border-white/25 text-[11px] font-semibold whitespace-nowrap">
+              <Users className="w-3 h-3" /> {hunt.ageMin}–{hunt.ageMax}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur border border-white/25 text-[11px] font-semibold whitespace-nowrap capitalize">
+              <Sparkles className="w-3 h-3" /> {hunt.difficulty}
+            </span>
+          </div>
         </div>
       </div>
 

@@ -101,6 +101,7 @@ export default function HuntEdit() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingFor, setUploadingFor] = useState<number | null>(null); // sponsor index being uploaded for
   const [uploadingStepAudioFor, setUploadingStepAudioFor] = useState<number | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(isNew && startsFromAi);
   const [aiPlace, setAiPlace] = useState('');
   const [aiSourceLinks, setAiSourceLinks] = useState('');
@@ -305,7 +306,8 @@ export default function HuntEdit() {
         id = await huntsService.createDraft({
           slug: hunt.slug!, title: hunt.title!, blurb: hunt.blurb!,
           hostName: hunt.hostName!, city: hunt.city!, countryCode: hunt.countryCode,
-          coverEmoji: hunt.coverEmoji, primaryTheme: hunt.primaryTheme,
+          coverEmoji: hunt.coverEmoji, coverImage: hunt.coverImage,
+          primaryTheme: hunt.primaryTheme,
           ageMin: hunt.ageMin, ageMax: hunt.ageMax,
           durationMinutes: hunt.durationMinutes, difficulty: hunt.difficulty as any,
           credits: hunt.credits,
@@ -320,7 +322,8 @@ export default function HuntEdit() {
         await huntsService.updateHunt(id, {
           slug: hunt.slug, title: hunt.title, blurb: hunt.blurb,
           hostName: hunt.hostName, city: hunt.city, countryCode: hunt.countryCode,
-          coverEmoji: hunt.coverEmoji, primaryTheme: hunt.primaryTheme,
+          coverEmoji: hunt.coverEmoji, coverImage: hunt.coverImage,
+          primaryTheme: hunt.primaryTheme,
           ageMin: hunt.ageMin, ageMax: hunt.ageMax,
           durationMinutes: hunt.durationMinutes, difficulty: hunt.difficulty,
           credits: hunt.credits,
@@ -378,6 +381,19 @@ export default function HuntEdit() {
       setReviewNotes(notes);
       toast.success('Hunt rejected');
     } catch (e: any) { toast.error(e.message || 'Reject failed'); }
+  };
+
+  const handleCoverImageUpload = async (file: File) => {
+    setUploadingCover(true);
+    try {
+      const url = await huntsService.uploadAsset(file, 'covers');
+      updateField('coverImage', url);
+      toast.success('Cover image uploaded');
+    } catch (e: any) {
+      toast.error(e.message || 'Cover upload failed');
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   const handleSponsorLogoUpload = async (idx: number, file: File) => {
@@ -589,8 +605,56 @@ export default function HuntEdit() {
           <Field label="Blurb (1–2 sentences)" required>
             <Textarea value={hunt.blurb ?? ''} onChange={e => updateField('blurb', e.target.value)} rows={3} placeholder="A four-stop walk for the youngest explorers…" />
           </Field>
+          <Field label="Cover photo (optional — uses emoji + gradient as fallback)">
+            <div className="space-y-2">
+              {hunt.coverImage ? (
+                <div className="relative rounded-2xl overflow-hidden border bg-muted aspect-[16/9]">
+                  <img src={hunt.coverImage} alt="Cover preview" className="absolute inset-0 w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => updateField('coverImage', '')}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center tap-highlight"
+                    aria-label="Remove cover photo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-2xl border-2 border-dashed border-border bg-gradient-to-br from-primary/10 via-pink-50 to-amber-50 aspect-[16/9] flex items-center justify-center">
+                  <span className="text-6xl drop-shadow-sm">{hunt.coverEmoji || '🔍'}</span>
+                </div>
+              )}
+              <Input
+                value={hunt.coverImage ?? ''}
+                onChange={e => updateField('coverImage', e.target.value)}
+                placeholder="https://upload.wikimedia.org/.../photo.jpg (or upload below)"
+              />
+              <div className="flex flex-wrap gap-2">
+                <label className={cn(
+                  'h-10 px-3 rounded-xl border bg-background text-sm font-medium tap-highlight flex items-center justify-center gap-2 cursor-pointer',
+                  uploadingCover && 'opacity-60 pointer-events-none',
+                )}>
+                  <Upload className="w-4 h-4" />
+                  {uploadingCover ? 'Uploading…' : hunt.coverImage ? 'Replace photo' : 'Upload photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCoverImageUpload(file);
+                      e.currentTarget.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Use a CC-licensed Wikimedia/Commons photo or your own. Cover appears full-bleed on the hunt detail page with title overlaid.
+              </p>
+            </div>
+          </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Cover emoji">
+            <Field label="Cover emoji (fallback)">
               <Input value={hunt.coverEmoji ?? '🔍'} onChange={e => updateField('coverEmoji', e.target.value)} maxLength={4} />
             </Field>
             <Field label="Primary theme" required>

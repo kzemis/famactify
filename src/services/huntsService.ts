@@ -396,6 +396,7 @@ export const huntsService = {
     city: string;
     countryCode?: string;
     coverEmoji?: string;
+    coverImage?: string;
     primaryTheme?: string;
     ageMin?: number;
     ageMax?: number;
@@ -420,6 +421,7 @@ export const huntsService = {
         city: input.city,
         country_code: input.countryCode ?? 'US',
         cover_emoji: input.coverEmoji ?? '🔍',
+        cover_image: input.coverImage ?? null,
         primary_theme: input.primaryTheme ?? 'history',
         age_min: input.ageMin ?? 6,
         age_max: input.ageMax ?? 14,

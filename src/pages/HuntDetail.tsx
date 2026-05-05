@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap } from 'lucide-react';
 import MapView from '@/components/MapView';
 import { huntsService, type ScavengerHunt, type HuntAttempt } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
+import { flags } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 export default function HuntDetail() {
@@ -181,6 +182,14 @@ export default function HuntDetail() {
             <Play className="w-4 h-4" /> {ctaLabel}
           </button>
         </div>
+        {flags.scv_live_races && (
+          <button
+            onClick={() => navigate(`/race/create/${hunt.slug}`)}
+            className="w-full mt-2 h-11 rounded-2xl border-2 border-primary/30 text-primary font-semibold text-sm flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform"
+          >
+            <Zap className="w-4 h-4" /> Race this hunt with another family
+          </button>
+        )}
       </div>
     </div>
   );

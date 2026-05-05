@@ -217,6 +217,16 @@ export default function TimeTravelCamera({
   const strokeChangedRef = useRef(false);
   const cameraSessionRef = useRef(0);
 
+  // Ref callback: whenever React replaces the <video> element (layout switch),
+  // re-attach the existing MediaStream so the camera feed isn't lost.
+  const videoRefCallback = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current && node.srcObject !== streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(() => {});
+    }
+  }, []);
+
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(initialDataUrl ?? null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -448,6 +458,12 @@ export default function TimeTravelCamera({
     ctx.drawImage(canvas, 0, 0, width, height);
   };
 
+  /** Try to load an image; returns null instead of throwing on CORS/network errors. */
+  const tryLoadImage = async (url: string): Promise<HTMLImageElement | null> => {
+    try { return await loadImage(url); }
+    catch { console.warn('[TimeTravelCamera] Could not load image for canvas:', url.slice(0, 80)); return null; }
+  };
+
   const renderVideoFrame = async (layout: CaptureLayout = captureLayout, selfieUrl?: string | null) => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) {
@@ -466,12 +482,24 @@ export default function TimeTravelCamera({
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas is not supported');
 
-      const overlay = await loadImage(overlaySource);
-      drawSideBySide(ctx, video, overlay, canvas.width, canvas.height, mirrorCamera);
+      const overlay = await tryLoadImage(overlaySource);
+      if (overlay) {
+        drawSideBySide(ctx, video, overlay, canvas.width, canvas.height, mirrorCamera);
+      } else {
+        // Overlay failed to load — save camera-only frame
+        if (mirrorCamera) {
+          ctx.save(); ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+          drawCover(ctx, video, canvas.width, canvas.height);
+          ctx.restore();
+        } else {
+          drawCover(ctx, video, canvas.width, canvas.height);
+        }
+        toast.warning('Saved photo without historical reference — source image could not be embedded');
+      }
 
       if (layout === 'split_selfie' && selfieUrl) {
-        const selfieImg = await loadImage(selfieUrl);
-        drawSelfieCircle(ctx, selfieImg, canvas.width, canvas.height);
+        const selfieImg = await tryLoadImage(selfieUrl);
+        if (selfieImg) drawSelfieCircle(ctx, selfieImg, canvas.width, canvas.height);
       }
 
       drawAnnotationsTo(ctx, canvas.width, canvas.height);
@@ -497,16 +525,18 @@ export default function TimeTravelCamera({
     }
 
     if (overlaySource) {
-      const overlay = await loadImage(overlaySource);
-      ctx.save();
-      if (includeOverlayInCapture) {
-        ctx.globalAlpha = previewOpacity;
-        drawCover(ctx, overlay, canvas.width, canvas.height);
-      } else {
-        ctx.globalAlpha = 1;
-        drawHistoricalInset(ctx, overlay, canvas.width, canvas.height, previewOpacity);
+      const overlay = await tryLoadImage(overlaySource);
+      if (overlay) {
+        ctx.save();
+        if (includeOverlayInCapture) {
+          ctx.globalAlpha = previewOpacity;
+          drawCover(ctx, overlay, canvas.width, canvas.height);
+        } else {
+          ctx.globalAlpha = 1;
+          drawHistoricalInset(ctx, overlay, canvas.width, canvas.height, previewOpacity);
+        }
+        ctx.restore();
       }
-      ctx.restore();
     }
 
     drawAnnotationsTo(ctx, canvas.width, canvas.height);
@@ -516,7 +546,6 @@ export default function TimeTravelCamera({
   /** Render a side-by-side using an already-captured scene image instead of the live video. */
   const renderScenePlusSelfie = async (sceneUrl: string, selfieUrl: string) => {
     const overlaySource = overlayDataUrl ?? overlayImageUrl;
-    if (!overlaySource) throw new Error('No historical reference image');
 
     const { width, height } = getOutputSize();
     const canvas = document.createElement('canvas');
@@ -525,12 +554,18 @@ export default function TimeTravelCamera({
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is not supported');
 
-    const scene = await loadImage(sceneUrl);
-    const overlay = await loadImage(overlaySource);
-    drawSideBySide(ctx, scene, overlay, canvas.width, canvas.height, false);
+    const scene = await tryLoadImage(sceneUrl);
+    if (!scene) throw new Error('Could not load scene image');
 
-    const selfie = await loadImage(selfieUrl);
-    drawSelfieCircle(ctx, selfie, canvas.width, canvas.height);
+    const overlay = overlaySource ? await tryLoadImage(overlaySource) : null;
+    if (overlay) {
+      drawSideBySide(ctx, scene, overlay, canvas.width, canvas.height, false);
+    } else {
+      drawCover(ctx, scene, canvas.width, canvas.height);
+    }
+
+    const selfie = await tryLoadImage(selfieUrl);
+    if (selfie) drawSelfieCircle(ctx, selfie, canvas.width, canvas.height);
 
     drawAnnotationsTo(ctx, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.9);
@@ -563,6 +598,7 @@ export default function TimeTravelCamera({
           if (facingMode !== 'user') {
             setFacingMode('user');
             stopCamera();
+            setTimeout(() => startCamera(true, 'user'), 50);
           }
           return;
         }
@@ -596,15 +632,8 @@ export default function TimeTravelCamera({
       }
 
       // ── Single-step capture (inset or split) ──
-      let dataUrl: string;
-      try {
-        dataUrl = await renderVideoFrame(captureLayout);
-      } catch (error) {
-        if (!overlayImageUrl) throw error;
-        // Fallback: render without overlay
-        dataUrl = await renderVideoFrame('inset');
-        toast.warning('Saved photo without historical reference — source image could not be embedded');
-      }
+      // renderVideoFrame handles overlay failures gracefully (non-fatal)
+      const dataUrl = await renderVideoFrame(captureLayout);
       setCapturedDataUrl(dataUrl);
       onCapture(dataUrl);
       clearAnnotations();
@@ -633,6 +662,8 @@ export default function TimeTravelCamera({
     const nextFacing = facingMode === 'environment' ? 'user' : 'environment';
     setFacingMode(nextFacing);
     stopCamera();
+    // Explicitly restart with the new facing — don't rely on effect chain timing
+    setTimeout(() => startCamera(true, nextFacing), 50);
   };
 
   const handleFallbackPick = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -747,7 +778,7 @@ export default function TimeTravelCamera({
             {/* Live selfie preview circle */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border-4 border-white shadow-2xl overflow-hidden">
               <video
-                ref={videoRef}
+                ref={videoRefCallback}
                 playsInline
                 muted
                 className="w-full h-full object-cover scale-x-[-1]"
@@ -766,7 +797,7 @@ export default function TimeTravelCamera({
           <div className={cn('relative flex w-full', immersive ? 'h-full' : 'aspect-[4/3]')}>
             <div className="w-1/2 h-full relative overflow-hidden">
               <video
-                ref={videoRef}
+                ref={videoRefCallback}
                 playsInline
                 muted
                 className={cn('w-full h-full object-cover', facingMode === 'user' && 'scale-x-[-1]', cameraError && 'hidden')}
@@ -800,7 +831,7 @@ export default function TimeTravelCamera({
         /* ── Inset (default) preview ── */
         <>
           <video
-            ref={videoRef}
+            ref={videoRefCallback}
             playsInline
             muted
             className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]', facingMode === 'user' && 'scale-x-[-1]', cameraError && 'hidden')}

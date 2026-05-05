@@ -58,6 +58,9 @@ import OrgHunts from "./pages/OrgHunts";
 import AdminHunts from "./pages/AdminHunts";
 import HuntEdit from "./pages/HuntEdit";
 import AdminPhotoReviews from "./pages/AdminPhotoReviews";
+import Passport from "./pages/Passport";
+import RaceLobby from "./pages/RaceLobby";
+import RaceResults from "./pages/RaceResults";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +138,11 @@ const App = () => (
           <Route path="/admin/hunts/photo-review" element={<ProtectedRoute><AdminRoute><AdminPhotoReviews /></AdminRoute></ProtectedRoute>} />
           <Route path="/admin/hunts/new" element={<ProtectedRoute><AdminRoute><HuntEdit /></AdminRoute></ProtectedRoute>} />
           <Route path="/admin/hunts/:id" element={<ProtectedRoute><AdminRoute><HuntEdit /></AdminRoute></ProtectedRoute>} />
+          {/* Passport & Races */}
+          <Route path="/passport" element={<ProtectedRoute><Passport /></ProtectedRoute>} />
+          <Route path="/race/create/:slug" element={<ProtectedRoute><RaceLobby /></ProtectedRoute>} />
+          <Route path="/race/join" element={<ProtectedRoute><RaceLobby /></ProtectedRoute>} />
+          <Route path="/race/:raceId/results" element={<ProtectedRoute><RaceResults /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

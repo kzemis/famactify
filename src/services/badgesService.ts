@@ -19,17 +19,16 @@ export const badgesService = {
 
     // Resolve hunt metadata for each unique huntId
     const huntIds = Array.from(new Set(completed.map(a => a.huntId)));
-    const huntMeta = new Map<string, { slug: string; title: string; coverEmoji: string; city: string; totalStops: number }>();
+    const huntMeta = new Map<string, { slug: string; title: string; coverEmoji: string; city: string; countryCode: string; totalStops: number }>();
     for (const id of huntIds) {
-      // Try DB-id-keyed first, fall back to slug match (seed hunts use slug as id)
       const byId = await huntsService.getHuntById(id).catch(() => null);
       if (byId) {
-        huntMeta.set(id, { slug: byId.slug, title: byId.title, coverEmoji: byId.coverEmoji, city: byId.city, totalStops: byId.stops.length });
+        huntMeta.set(id, { slug: byId.slug, title: byId.title, coverEmoji: byId.coverEmoji, city: byId.city, countryCode: (byId as any).countryCode ?? 'US', totalStops: byId.stops.length });
         continue;
       }
       const bySlug = await huntsService.getHunt(id);
       if (bySlug) {
-        huntMeta.set(id, { slug: bySlug.slug, title: bySlug.title, coverEmoji: bySlug.coverEmoji, city: bySlug.city, totalStops: bySlug.stops.length });
+        huntMeta.set(id, { slug: bySlug.slug, title: bySlug.title, coverEmoji: bySlug.coverEmoji, city: bySlug.city, countryCode: bySlug.countryCode ?? 'US', totalStops: bySlug.stops.length });
       }
     }
 
@@ -48,6 +47,7 @@ export const badgesService = {
           huntTitle: meta.title,
           coverEmoji: meta.coverEmoji,
           city: meta.city,
+          countryCode: meta.countryCode,
           tier: tierForScore(scorePct),
           scorePct,
           stopsCompleted,

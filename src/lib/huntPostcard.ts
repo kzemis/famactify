@@ -110,6 +110,51 @@ function fmtDate(iso: string): string {
   } catch { return ''; }
 }
 
+function drawMemoryCollage(
+  ctx: CanvasRenderingContext2D,
+  imgs: { img: HTMLImageElement; kind: 'photo' | 'drawing' }[],
+) {
+  if (imgs.length === 0) return;
+
+  if (imgs.length === 1) {
+    drawCover(ctx, imgs[0].img, 0, 0, W, H, 0);
+  } else if (imgs.length === 2) {
+    const h = Math.floor(H / 2);
+    drawCover(ctx, imgs[0].img, 0, 0, W, h, 0);
+    drawCover(ctx, imgs[1].img, 0, h, W, H - h, 0);
+  } else if (imgs.length === 3) {
+    const leftW = Math.floor(W * 0.62);
+    const rightW = W - leftW;
+    drawCover(ctx, imgs[0].img, 0, 0, leftW, H, 0);
+    drawCover(ctx, imgs[1].img, leftW, 0, rightW, Math.floor(H / 2), 0);
+    drawCover(ctx, imgs[2].img, leftW, Math.floor(H / 2), rightW, Math.ceil(H / 2), 0);
+  } else {
+    const tileW = Math.floor(W / 2);
+    const tileH = Math.floor(H / 2);
+    drawCover(ctx, imgs[0].img, 0, 0, tileW, tileH, 0);
+    drawCover(ctx, imgs[1].img, tileW, 0, W - tileW, tileH, 0);
+    drawCover(ctx, imgs[2].img, 0, tileH, tileW, H - tileH, 0);
+    drawCover(ctx, imgs[3].img, tileW, tileH, W - tileW, H - tileH, 0);
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  const top = ctx.createLinearGradient(0, 0, 0, 520);
+  top.addColorStop(0, 'rgba(17,24,39,0.82)');
+  top.addColorStop(0.48, 'rgba(17,24,39,0.36)');
+  top.addColorStop(1, 'rgba(17,24,39,0)');
+  ctx.fillStyle = top;
+  ctx.fillRect(0, 0, W, 540);
+
+  const bottom = ctx.createLinearGradient(0, H - 440, 0, H);
+  bottom.addColorStop(0, 'rgba(17,24,39,0)');
+  bottom.addColorStop(0.52, 'rgba(17,24,39,0.5)');
+  bottom.addColorStop(1, 'rgba(17,24,39,0.84)');
+  ctx.fillStyle = bottom;
+  ctx.fillRect(0, H - 460, W, 460);
+  ctx.restore();
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null> {
@@ -120,101 +165,9 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // ── Background gradient (warm pink → amber) ─────────────────────────────
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0,   '#fff7ed'); // amber-50
-  bg.addColorStop(0.6, '#fdf2f8'); // pink-50
-  bg.addColorStop(1,   '#faf5ff'); // purple-50
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  const margin = 56;
 
-  // Decorative blob top-right
-  ctx.save();
-  ctx.globalAlpha = 0.35;
-  const blob = ctx.createRadialGradient(W - 100, 100, 0, W - 100, 100, 380);
-  blob.addColorStop(0, '#f9a8d4');
-  blob.addColorStop(1, 'transparent');
-  ctx.fillStyle = blob;
-  ctx.fillRect(0, 0, W, H);
-  ctx.restore();
-
-  // ── Header ──────────────────────────────────────────────────────────────
-  const margin = 64;
-  let cursorY = 80;
-
-  ctx.fillStyle = '#ec4899'; // primary pink
-  ctx.font = 'bold 44px system-ui, -apple-system, sans-serif';
-  ctx.textBaseline = 'top';
-  const brandWidth = ctx.measureText('FamActify').width;
-  ctx.fillText('FamActify', margin, cursorY);
-
-  ctx.fillStyle = '#9ca3af'; // muted
-  ctx.font = '500 22px system-ui, sans-serif';
-  ctx.fillText('· Scavenger Hunt', margin + brandWidth + 18, cursorY + 16);
-
-  cursorY += 70;
-
-  // Cover emoji card top-right
-  ctx.save();
-  const emojiSize = 100;
-  const emojiX = W - margin - emojiSize;
-  const emojiY = 70;
-  roundedRectPath(ctx, emojiX, emojiY, emojiSize, emojiSize, 24);
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
-  ctx.font = '64px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(hunt.coverEmoji, emojiX + emojiSize / 2, emojiY + emojiSize / 2 + 4);
-  ctx.restore();
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-
-  // ── Hero copy ───────────────────────────────────────────────────────────
-  // "We did it!" eyebrow
-  ctx.fillStyle = '#9ca3af';
-  ctx.font = '700 22px system-ui, sans-serif';
-  ctx.fillText('WE DID IT!', margin, cursorY);
-  cursorY += 36;
-
-  // Hunt title (wraps to 2 lines)
-  ctx.fillStyle = '#111827';
-  ctx.font = '900 56px system-ui, sans-serif';
-  cursorY = wrapText(ctx, hunt.title, margin, cursorY, W - margin * 2, 64, 2);
-  cursorY += 12;
-
-  // "{kid name} · {date} · {city}"
-  const dateStr = fmtDate(attempt.completedAt ?? attempt.startedAt);
-  const subtitle = [profileName, dateStr, hunt.city].filter(Boolean).join('  ·  ');
-  ctx.fillStyle = '#6b7280';
-  ctx.font = '500 28px system-ui, sans-serif';
-  ctx.fillText(subtitle, margin, cursorY);
-  cursorY += 56;
-
-  // ── Badge tier pill ─────────────────────────────────────────────────────
-  const totalStops = hunt.stops.length || attempt.results.length;
-  const decided = attempt.results.filter(r => !r.skipped);
-  const correct = decided.filter(r => r.isCorrect).length;
-  const scorePct = totalStops > 0 ? correct / totalStops : 0;
-  const tier = tierFor(scorePct);
-  const tierMeta = TIER_DISPLAY[tier];
-  const pillH = 64;
-  ctx.font = 'bold 28px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
-  const pillLabel = `${tierMeta.emoji}  ${tierMeta.label}  ·  ${correct}/${totalStops} stops`;
-  const pillW = ctx.measureText(pillLabel).width + 56;
-  ctx.save();
-  roundedRectPath(ctx, margin, cursorY, pillW, pillH, pillH / 2);
-  ctx.fillStyle = tierMeta.bg;
-  ctx.fill();
-  ctx.fillStyle = tierMeta.fg;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(pillLabel, margin + 28, cursorY + pillH / 2);
-  ctx.restore();
-  cursorY += pillH + 36;
-  ctx.textBaseline = 'top';
-
-  // ── Photo / drawing collage ─────────────────────────────────────────────
-  // Collect up to 4 visual memories
+  // Collect up to 4 visual memories before drawing so the image can become the canvas.
   const visuals: { url: string; kind: 'photo' | 'drawing' }[] = [];
   for (const r of attempt.results) {
     if (r.photoDataUrl)   visuals.push({ url: r.photoDataUrl,   kind: 'photo' });
@@ -222,88 +175,119 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
     if (visuals.length >= 4) break;
   }
 
-  const collageY = cursorY;
-  const collageH = 600;
-  const collageX = margin;
-  const collageW = W - margin * 2;
+  const imgs: { img: HTMLImageElement; kind: 'photo' | 'drawing' }[] = [];
+  for (const v of visuals) {
+    try {
+      const img = await loadImage(v.url);
+      imgs.push({ img, kind: v.kind });
+    } catch { /* skip */ }
+  }
 
-  if (visuals.length > 0) {
-    // Try to load every image; skip ones that fail
-    const imgs: { img: HTMLImageElement; kind: 'photo' | 'drawing' }[] = [];
-    for (const v of visuals) {
-      try {
-        const img = await loadImage(v.url);
-        imgs.push({ img, kind: v.kind });
-      } catch { /* skip */ }
-    }
+  const totalStops = hunt.stops.length || attempt.results.length;
+  const decided = attempt.results.filter(r => !r.skipped);
+  const correct = decided.filter(r => r.isCorrect).length;
+  const scorePct = totalStops > 0 ? correct / totalStops : 0;
+  const tier = tierFor(scorePct);
+  const tierMeta = TIER_DISPLAY[tier];
+  const dateStr = fmtDate(attempt.completedAt ?? attempt.startedAt);
+  const subtitle = [profileName, dateStr, hunt.city].filter(Boolean).join('  ·  ');
+  const url = `famactify.app/hunts/${hunt.slug}`;
+  const hasVisuals = imgs.length > 0;
 
-    if (imgs.length === 1) {
-      drawCover(ctx, imgs[0].img, collageX, collageY, collageW, collageH, 32);
-    } else if (imgs.length === 2) {
-      const w = (collageW - 16) / 2;
-      drawCover(ctx, imgs[0].img, collageX,            collageY, w, collageH, 28);
-      drawCover(ctx, imgs[1].img, collageX + w + 16,   collageY, w, collageH, 28);
-    } else if (imgs.length === 3) {
-      // Big left, two stacked right
-      const big = (collageW - 16) * 0.6;
-      const small = collageW - 16 - big;
-      drawCover(ctx, imgs[0].img, collageX,             collageY,                   big,   collageH,           28);
-      drawCover(ctx, imgs[1].img, collageX + big + 16,  collageY,                   small, (collageH - 16) / 2, 24);
-      drawCover(ctx, imgs[2].img, collageX + big + 16,  collageY + (collageH - 16) / 2 + 16, small, (collageH - 16) / 2, 24);
-    } else {
-      // 2x2
-      const w = (collageW - 16) / 2;
-      const h = (collageH - 16) / 2;
-      drawCover(ctx, imgs[0].img, collageX,        collageY,        w, h, 24);
-      drawCover(ctx, imgs[1].img, collageX + w+16, collageY,        w, h, 24);
-      drawCover(ctx, imgs[2].img, collageX,        collageY + h+16, w, h, 24);
-      drawCover(ctx, imgs[3].img, collageX + w+16, collageY + h+16, w, h, 24);
-    }
-
-    // Tiny "drawing" badge overlay on drawings
-    imgs.forEach(({ kind }, i) => {
-      if (kind !== 'drawing') return;
-      // approximate position — put a small badge in the top-left of each cell
-      // (skipped per-cell for brevity; one overlay isn't critical here)
-    });
+  if (hasVisuals) {
+    drawMemoryCollage(ctx, imgs);
   } else {
-    // Empty collage placeholder — soft tile with hunt blurb
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#fff7ed');
+    bg.addColorStop(0.55, '#fdf2f8');
+    bg.addColorStop(1, '#faf5ff');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
     ctx.save();
-    roundedRectPath(ctx, collageX, collageY, collageW, collageH, 32);
+    roundedRectPath(ctx, margin, 420, W - margin * 2, 520, 40);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = '#6b7280';
     ctx.font = '500 28px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    wrapText(ctx, hunt.blurb, collageX + 52, collageY + 72, collageW - 104, 40, 7);
+    wrapText(ctx, hunt.blurb, margin + 48, 480, W - margin * 2 - 96, 42, 7);
     ctx.restore();
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
   }
 
-  cursorY = collageY + collageH + 32;
-
-  // ── Footer ──────────────────────────────────────────────────────────────
-  // by {host} · {city}
-  ctx.fillStyle = '#6b7280';
-  ctx.font = '500 24px system-ui, sans-serif';
-  const credit = `by ${hunt.hostName}`;
-  ctx.fillText(credit, margin, cursorY);
-  cursorY += 36;
-
-  // CTA URL (right-aligned, primary pink)
-  const url = `famactify.app/hunts/${hunt.slug}`;
-  ctx.fillStyle = '#ec4899';
-  ctx.font = '600 26px system-ui, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText(url, W - margin, H - margin - 30);
-
-  // "Walk it yourself →" left-aligned hook
-  ctx.fillStyle = '#111827';
-  ctx.font = '700 28px system-ui, sans-serif';
+  // ── Memory-first text overlay ───────────────────────────────────────────
+  ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-  ctx.fillText('Walk it yourself →', margin, H - margin - 30);
+  ctx.shadowColor = hasVisuals ? 'rgba(0,0,0,0.55)' : 'transparent';
+  ctx.shadowBlur = hasVisuals ? 12 : 0;
+  ctx.shadowOffsetY = hasVisuals ? 3 : 0;
+
+  ctx.fillStyle = hasVisuals ? '#ffffff' : '#ec4899';
+  ctx.font = '800 30px system-ui, -apple-system, sans-serif';
+  ctx.fillText('FamActify', margin, 54);
+  ctx.font = '700 18px system-ui, sans-serif';
+  ctx.fillStyle = hasVisuals ? 'rgba(255,255,255,0.78)' : '#9ca3af';
+  ctx.fillText('· Scavenger Hunt', margin + 155, 63);
+
+  ctx.save();
+  const emojiSize = 78;
+  const emojiX = W - margin - emojiSize;
+  const emojiY = 42;
+  roundedRectPath(ctx, emojiX, emojiY, emojiSize, emojiSize, 22);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.shadowColor = 'rgba(0,0,0,0.28)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 8;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.font = '50px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(hunt.coverEmoji, emojiX + emojiSize / 2, emojiY + emojiSize / 2 + 3);
+  ctx.restore();
+
+  let textY = 132;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.shadowColor = hasVisuals ? 'rgba(0,0,0,0.62)' : 'transparent';
+  ctx.shadowBlur = hasVisuals ? 16 : 0;
+  ctx.fillStyle = hasVisuals ? '#ffffff' : '#111827';
+  ctx.font = '900 58px system-ui, sans-serif';
+  textY = wrapText(ctx, hunt.title, margin, textY, W - margin * 2 - 90, 64, 2);
+  textY += 12;
+  ctx.font = '600 27px system-ui, sans-serif';
+  ctx.fillStyle = hasVisuals ? 'rgba(255,255,255,0.88)' : '#6b7280';
+  ctx.fillText(subtitle, margin, textY);
+
+  textY += 54;
+  ctx.shadowColor = 'transparent';
+  const pillH = 58;
+  ctx.font = 'bold 25px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
+  const pillLabel = `${tierMeta.emoji}  ${tierMeta.label}  ·  ${correct}/${totalStops} stops`;
+  const pillW = Math.min(W - margin * 2, ctx.measureText(pillLabel).width + 48);
+  roundedRectPath(ctx, margin, textY, pillW, pillH, pillH / 2);
+  ctx.fillStyle = tierMeta.bg;
+  ctx.fill();
+  ctx.fillStyle = tierMeta.fg;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(pillLabel, margin + 24, textY + pillH / 2);
+
+  // Bottom CTA, over the memory image.
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.shadowColor = hasVisuals ? 'rgba(0,0,0,0.55)' : 'transparent';
+  ctx.shadowBlur = hasVisuals ? 12 : 0;
+  ctx.fillStyle = hasVisuals ? '#ffffff' : '#6b7280';
+  ctx.font = '700 24px system-ui, sans-serif';
+  ctx.fillText(`by ${hunt.hostName}`, margin, H - 190);
+  ctx.fillStyle = hasVisuals ? '#ffffff' : '#111827';
+  ctx.font = '900 34px system-ui, sans-serif';
+  ctx.fillText('Walk it yourself →', margin, H - 118);
+  ctx.fillStyle = '#f472b6';
+  ctx.font = '800 27px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(url, W - margin, H - 74);
+  ctx.shadowColor = 'transparent';
 
   // ── Output blob ─────────────────────────────────────────────────────────
   return new Promise(resolve => {

@@ -9,9 +9,15 @@ import { rigaOldTownWeekend } from './riga-old-town-weekend';
 import { rigaUzvarasPark } from './riga-uzvaras-park';
 import { rigaZooWeekend } from './riga-zoo-weekend';
 import { richmondRosie } from './richmond-rosie';
+import { sanFranciscoNeighborhoodStories } from './san-francisco-neighborhood-stories';
+import { sanFranciscoPostcardIcons } from './san-francisco-postcard-icons';
+import { sanFranciscoWaterfrontWonders } from './san-francisco-waterfront-wonders';
 import { zklLatvianSchool75 } from './zkl-latvian-school-75';
 
 export const SEED_HUNTS: ScavengerHunt[] = [
+  sanFranciscoWaterfrontWonders,
+  sanFranciscoPostcardIcons,
+  sanFranciscoNeighborhoodStories,
   rigaAlbertStreetTimeTravel,
   rigaAgenskalnsGreenLoop,
   rigaMezaparksForest,

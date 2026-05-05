@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones, Loader2 } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import ARClueOverlay from '@/components/ARClueOverlay';
 import DrawingPad from '@/components/DrawingPad';
@@ -39,6 +39,9 @@ export default function HuntPlay() {
   const [stopLanguage, setStopLanguage] = useState<'en' | 'lv'>(language === 'lv' ? 'lv' : 'en');
   const [speaking, setSpeaking] = useState(false);
   const [verifyingPhoto, setVerifyingPhoto] = useState(false);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  const [skippingStop, setSkippingStop] = useState(false);
+  const [advancingStop, setAdvancingStop] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,7 +175,7 @@ export default function HuntPlay() {
   };
 
   const submitAnswer = async () => {
-    if (!currentStop || !attempt) return;
+    if (!currentStop || !attempt || submittingAnswer) return;
 
     const result: HuntStopResult = {
       stopId: currentStop.id,
@@ -232,54 +235,69 @@ export default function HuntPlay() {
       result.isCorrect = true;
     }
 
-    const updated = await huntsService.recordStop(attempt.id, result, /* advance */ false);
-    if (updated) setAttempt(updated);
-    setPhase('reveal');
+    setSubmittingAnswer(true);
+    try {
+      const updated = await huntsService.recordStop(attempt.id, result, /* advance */ false);
+      if (updated) setAttempt(updated);
+      setPhase('reveal');
+    } finally {
+      setSubmittingAnswer(false);
+    }
   };
 
   const skipStop = async () => {
-    if (!currentStop || !attempt) return;
+    if (!currentStop || !attempt || skippingStop) return;
     const result: HuntStopResult = {
       stopId: currentStop.id,
       answeredAt: new Date().toISOString(),
       answer: '',
       skipped: true,
     };
-    const updated = await huntsService.recordStop(attempt.id, result, false);
-    if (updated) setAttempt(updated);
-    setPhase('reveal');
+    setSkippingStop(true);
+    try {
+      const updated = await huntsService.recordStop(attempt.id, result, false);
+      if (updated) setAttempt(updated);
+      setPhase('reveal');
+    } finally {
+      setSkippingStop(false);
+    }
   };
 
   const next = async () => {
-    if (!attempt || !hunt) return;
-    // advance the pointer in storage now (we recorded the result without advancing)
-    const advanced = await huntsService.recordStop(
-      attempt.id,
-      { stopId: hunt.stops[attempt.currentStopOrder].id, answeredAt: new Date().toISOString(), answer: '__advance__' },
-      true,
-    );
-    if (!advanced) return;
-    // overwrite the spurious __advance__ result we just used to advance
-    const cleaned: HuntAttempt = {
-      ...advanced,
-      results: advanced.results.filter(r => r.answer !== '__advance__'),
-    };
-    setAttempt(cleaned);
-    setTextAnswer('');
-    setPhotoDataUrl(null);
-    setAudioDataUrl(null);
-    setAudioDurationMs(0);
-    setDrawingDataUrl(null);
-    setTimeTravelPhotoDataUrl(null);
-    setShowARGuide(false);
-    setShowParentHint(false);
-    try { window.speechSynthesis?.cancel(); } catch {}
-    if (cleaned.currentStopOrder >= hunt.stops.length) {
-      const completed = await huntsService.completeAttempt(cleaned.id);
-      if (completed) setAttempt(completed);
-      setPhase('finished');
-    } else {
-      setPhase('clue');
+    if (!attempt || !hunt || advancingStop) return;
+    setAdvancingStop(true);
+    try {
+      // advance the pointer in storage now (we recorded the result without advancing)
+      const advanced = await huntsService.recordStop(
+        attempt.id,
+        { stopId: hunt.stops[attempt.currentStopOrder].id, answeredAt: new Date().toISOString(), answer: '__advance__' },
+        true,
+      );
+      if (!advanced) return;
+      // overwrite the spurious __advance__ result we just used to advance
+      const cleaned: HuntAttempt = {
+        ...advanced,
+        results: advanced.results.filter(r => r.answer !== '__advance__'),
+      };
+      setAttempt(cleaned);
+      setTextAnswer('');
+      setPhotoDataUrl(null);
+      setAudioDataUrl(null);
+      setAudioDurationMs(0);
+      setDrawingDataUrl(null);
+      setTimeTravelPhotoDataUrl(null);
+      setShowARGuide(false);
+      setShowParentHint(false);
+      try { window.speechSynthesis?.cancel(); } catch {}
+      if (cleaned.currentStopOrder >= hunt.stops.length) {
+        const completed = await huntsService.completeAttempt(cleaned.id);
+        if (completed) setAttempt(completed);
+        setPhase('finished');
+      } else {
+        setPhase('clue');
+      }
+    } finally {
+      setAdvancingStop(false);
     }
   };
 
@@ -378,17 +396,19 @@ export default function HuntPlay() {
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={skipStop}
-                  className="w-12 h-12 rounded-full border border-white/20 bg-black/45 tap-highlight flex items-center justify-center backdrop-blur"
+                  disabled={skippingStop || submittingAnswer}
+                  className="w-12 h-12 rounded-full border border-white/20 bg-black/45 tap-highlight flex items-center justify-center backdrop-blur disabled:opacity-60"
                   aria-label="Skip stop"
                 >
-                  <SkipForward className="w-5 h-5" />
+                  {skippingStop ? <Loader2 className="w-5 h-5 animate-spin" /> : <SkipForward className="w-5 h-5" />}
                 </button>
                 <button
                   onClick={submitAnswer}
-                  className="w-14 h-14 rounded-full bg-primary text-primary-foreground tap-highlight flex items-center justify-center shadow-xl shadow-primary/30"
+                  disabled={submittingAnswer || skippingStop}
+                  className="w-14 h-14 rounded-full bg-primary text-primary-foreground tap-highlight flex items-center justify-center shadow-xl shadow-primary/30 disabled:opacity-70"
                   aria-label="Use photo"
                 >
-                  <ChevronRight className="w-7 h-7" />
+                  {submittingAnswer ? <Loader2 className="w-6 h-6 animate-spin" /> : <ChevronRight className="w-7 h-7" />}
                 </button>
               </div>
             )}
@@ -464,15 +484,19 @@ export default function HuntPlay() {
         >
           <button
             onClick={skipStop}
-            className="h-12 rounded-2xl border border-white/20 bg-white/10 text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5"
+            disabled={skippingStop || submittingAnswer}
+            className="h-12 rounded-2xl border border-white/20 bg-white/10 text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
-            <SkipForward className="w-4 h-4" /> Skip
+            {skippingStop ? <Loader2 className="w-4 h-4 animate-spin" /> : <SkipForward className="w-4 h-4" />} {skippingStop ? 'Skipping…' : 'Skip'}
           </button>
           <button
             onClick={submitAnswer}
-            className="h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold tap-highlight flex items-center justify-center gap-1.5"
+            disabled={submittingAnswer || skippingStop}
+            className="h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-bold tap-highlight flex items-center justify-center gap-1.5 disabled:opacity-70"
           >
-            {submitLabel} <ChevronRight className="w-4 h-4" />
+            {submittingAnswer ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {submittingAnswer ? 'Saving…' : submitLabel}
+            {!submittingAnswer && <ChevronRight className="w-4 h-4" />}
           </button>
         </div>
       </div>
@@ -848,11 +872,17 @@ export default function HuntPlay() {
             )}
 
             <div className="flex gap-2 pt-2">
-              <button onClick={skipStop} className="h-12 px-4 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center gap-1.5">
-                <SkipForward className="w-4 h-4" /> Skip
+              <button
+                onClick={skipStop}
+                disabled={skippingStop || submittingAnswer || verifyingPhoto}
+                className="h-12 px-4 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center gap-1.5 disabled:opacity-60"
+              >
+                {skippingStop ? <Loader2 className="w-4 h-4 animate-spin" /> : <SkipForward className="w-4 h-4" />} {skippingStop ? 'Skipping…' : 'Skip'}
               </button>
-              <button onClick={submitAnswer} disabled={verifyingPhoto} className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5 disabled:opacity-60">
-                {verifyingPhoto ? 'Checking photo…' : currentStop.prompt.kind === 'observation' ? 'Done' : 'Submit'} <ChevronRight className="w-4 h-4" />
+              <button onClick={submitAnswer} disabled={verifyingPhoto || submittingAnswer || skippingStop} className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5 disabled:opacity-60">
+                {(verifyingPhoto || submittingAnswer) && <Loader2 className="w-4 h-4 animate-spin" />}
+                {verifyingPhoto ? 'Checking photo…' : submittingAnswer ? 'Saving…' : currentStop.prompt.kind === 'observation' ? 'Done' : 'Submit'}
+                {!verifyingPhoto && !submittingAnswer && <ChevronRight className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -954,8 +984,16 @@ export default function HuntPlay() {
                 )}
               </div>
 
-              <button onClick={next} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2">
-                {attempt.currentStopOrder + 1 >= totalStops ? 'Finish hunt' : 'Next stop'} <ChevronRight className="w-4 h-4" />
+              <button onClick={next} disabled={advancingStop} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2 disabled:opacity-70">
+                {advancingStop ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                  </>
+                ) : (
+                  <>
+                    {attempt.currentStopOrder + 1 >= totalStops ? 'Finish hunt' : 'Next stop'} <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           );

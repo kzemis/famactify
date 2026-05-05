@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { User, Save, Plus, X, LogOut, ChevronRight, BookMarked, CalendarDays, Settings } from "lucide-react";
+import { User, Save, Plus, X, LogOut, ChevronRight, BookMarked, CalendarDays, Settings, Stamp } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { profileService, authService } from "@/services";
 import { badgesService } from "@/services/badgesService";
@@ -190,6 +190,17 @@ const Profile = () => {
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold">Saved Trips</p>
                   <p className="text-xs text-muted-foreground">Your planned adventures</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <div className="border-t" />
+              <button onClick={() => navigate('/passport')} className="w-full flex items-center gap-3 px-4 py-4 tap-highlight active:bg-muted/50 transition-colors">
+                <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <Stamp className="w-4 h-4 text-amber-700" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold">Explorer Passport</p>
+                  <p className="text-xs text-muted-foreground">Stamps, progression & printable</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>

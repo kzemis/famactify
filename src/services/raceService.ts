@@ -1,0 +1,172 @@
+// SCV-01 — Live multi-family race service
+// Uses Supabase for persistence + Realtime for live updates.
+
+import { supabase } from '@/integrations/supabase/client';
+import type { HuntRace, RaceParticipant } from '@/types/hunt';
+
+function generateJoinCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 for readability
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function mapRace(r: any): HuntRace {
+  return {
+    id: r.id,
+    huntId: r.hunt_id,
+    joinCode: r.join_code,
+    status: r.status,
+    createdBy: r.created_by,
+    startedAt: r.started_at ?? undefined,
+    finishedAt: r.finished_at ?? undefined,
+    createdAt: r.created_at,
+  };
+}
+
+function mapParticipant(p: any): RaceParticipant {
+  return {
+    id: p.id,
+    raceId: p.race_id,
+    userId: p.user_id,
+    familyName: p.family_name,
+    familyEmoji: p.family_emoji,
+    currentStop: p.current_stop,
+    score: p.score,
+    totalStops: p.total_stops,
+    finishedAt: p.finished_at ?? undefined,
+    joinedAt: p.joined_at,
+  };
+}
+
+export const raceService = {
+  async createRace(huntId: string): Promise<HuntRace> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Sign in to create a race');
+
+    // Generate unique join code with retry
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const joinCode = generateJoinCode();
+      const { data, error } = await supabase
+        .from('hunt_races')
+        .insert({ hunt_id: huntId, join_code: joinCode, created_by: user.user.id })
+        .select()
+        .single();
+      if (!error && data) return mapRace(data);
+      if (error && !error.message.includes('duplicate')) throw error;
+    }
+    throw new Error('Could not generate a unique join code');
+  },
+
+  async getRace(raceId: string): Promise<HuntRace | null> {
+    const { data, error } = await supabase
+      .from('hunt_races')
+      .select('*')
+      .eq('id', raceId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapRace(data);
+  },
+
+  async getRaceByCode(joinCode: string): Promise<HuntRace | null> {
+    const { data, error } = await supabase
+      .from('hunt_races')
+      .select('*')
+      .eq('join_code', joinCode.toUpperCase().trim())
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapRace(data);
+  },
+
+  async joinRace(raceId: string, familyName: string, familyEmoji: string, totalStops: number): Promise<RaceParticipant> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Sign in to join a race');
+
+    const { data, error } = await supabase
+      .from('hunt_race_participants')
+      .insert({
+        race_id: raceId,
+        user_id: user.user.id,
+        family_name: familyName,
+        family_emoji: familyEmoji,
+        total_stops: totalStops,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return mapParticipant(data);
+  },
+
+  async getParticipants(raceId: string): Promise<RaceParticipant[]> {
+    const { data, error } = await supabase
+      .from('hunt_race_participants')
+      .select('*')
+      .eq('race_id', raceId)
+      .order('score', { ascending: false });
+    if (error || !data) return [];
+    return data.map(mapParticipant);
+  },
+
+  async startRace(raceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('hunt_races')
+      .update({ status: 'racing', started_at: new Date().toISOString() })
+      .eq('id', raceId);
+    if (error) throw error;
+  },
+
+  async updateProgress(participantId: string, currentStop: number, score: number): Promise<void> {
+    const { error } = await supabase
+      .from('hunt_race_participants')
+      .update({ current_stop: currentStop, score })
+      .eq('id', participantId);
+    if (error) throw error;
+  },
+
+  async finishParticipant(participantId: string, score: number, totalStops: number): Promise<void> {
+    const { error } = await supabase
+      .from('hunt_race_participants')
+      .update({ finished_at: new Date().toISOString(), score, current_stop: totalStops })
+      .eq('id', participantId);
+    if (error) throw error;
+  },
+
+  async finishRace(raceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('hunt_races')
+      .update({ status: 'finished', finished_at: new Date().toISOString() })
+      .eq('id', raceId);
+    if (error) throw error;
+  },
+
+  /** Subscribe to race state changes (returns unsubscribe function) */
+  subscribeToRace(
+    raceId: string,
+    onParticipantsChange: (participants: RaceParticipant[]) => void,
+    onRaceChange: (race: HuntRace) => void,
+  ): () => void {
+    const channel = supabase
+      .channel(`race-${raceId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'hunt_race_participants',
+        filter: `race_id=eq.${raceId}`,
+      }, async () => {
+        // Re-fetch all participants on any change
+        const participants = await raceService.getParticipants(raceId);
+        onParticipantsChange(participants);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'hunt_races',
+        filter: `id=eq.${raceId}`,
+      }, (payload) => {
+        onRaceChange(mapRace(payload.new));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  },
+};

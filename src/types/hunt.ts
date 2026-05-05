@@ -140,6 +140,7 @@ export interface EarnedBadge {
   huntTitle: string;
   coverEmoji: string;
   city: string;
+  countryCode: string;
   tier: BadgeTier;
   /** % stops solved correctly (excluding skips) */
   scorePct: number;
@@ -147,6 +148,48 @@ export interface EarnedBadge {
   stopsCompleted: number;
   totalStops: number;
   earnedAt: string; // ISO date
+}
+
+// ── Explorer Progression ────────────────────────────────────────────────────
+
+export type ExplorerTier = 'beginner_explorer' | 'city_explorer' | 'trail_blazer' | 'world_adventurer';
+
+export interface ExplorerProgression {
+  totalCompleted: number;
+  currentTier: ExplorerTier | null;
+  currentTierLabel: string;
+  nextTier: ExplorerTier | null;
+  nextTierLabel: string | null;
+  huntsToNextTier: number;
+  progressPct: number; // 0-1 toward next tier
+}
+
+// ── Race ─────────────────────────────────────────────────────────────────────
+
+export type RaceStatus = 'waiting_for_players' | 'racing' | 'finished';
+
+export interface HuntRace {
+  id: string;
+  huntId: string;
+  joinCode: string;
+  status: RaceStatus;
+  createdBy: string;
+  startedAt?: string;
+  finishedAt?: string;
+  createdAt: string;
+}
+
+export interface RaceParticipant {
+  id: string;
+  raceId: string;
+  userId: string;
+  familyName: string;
+  familyEmoji: string;
+  currentStop: number;
+  score: number;
+  totalStops: number;
+  finishedAt?: string;
+  joinedAt: string;
 }
 
 export interface HuntAttempt {

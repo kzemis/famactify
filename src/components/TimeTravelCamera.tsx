@@ -150,10 +150,10 @@ function drawSelfieCircle(
   canvasWidth: number,
   canvasHeight: number,
 ) {
-  const radius = Math.round(Math.min(canvasWidth * 0.105, canvasHeight * 0.095));
+  const radius = Math.round(Math.min(canvasWidth * 0.16, canvasHeight * 0.19));
   const cx = canvasWidth / 2;
   const cy = Math.round(canvasHeight * 0.36);
-  const border = 5;
+  const border = 10;
 
   // White border + shadow
   ctx.save();
@@ -161,8 +161,8 @@ function drawSelfieCircle(
   ctx.arc(cx, cy, radius + border, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0,0,0,0.45)';
-  ctx.shadowBlur = 16;
-  ctx.shadowOffsetY = 4;
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 8;
   ctx.fill();
   ctx.restore();
 
@@ -876,7 +876,7 @@ export default function TimeTravelCamera({
           <div className={cn('relative w-full', immersive ? 'h-full' : 'aspect-[4/3]')}>
             <img src={pendingSceneDataUrl!} alt="" className="w-full h-full object-cover" />
             {/* Live selfie preview circle */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border-4 border-white shadow-2xl overflow-hidden">
+            <div className="absolute top-[36%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full border-[8px] border-white shadow-2xl overflow-hidden max-w-[68vw] max-h-[68vw]">
               <video
                 ref={videoRefCallback}
                 playsInline

@@ -633,14 +633,6 @@ export default function HuntEdit() {
               <Field label="Clue (shown to player)" required>
                 <Textarea value={s.clueText} rows={3} onChange={e => updateStop(i, x => ({ ...x, clueText: e.target.value }))} />
               </Field>
-              <Field label="Clue in Latvian (optional — shown when player taps 🇱🇻)">
-                <Textarea
-                  value={s.clueTextLv ?? ''}
-                  rows={3}
-                  onChange={e => updateStop(i, x => ({ ...x, clueTextLv: e.target.value }))}
-                  placeholder="Latviešu versija šim pavedienam."
-                />
-              </Field>
               <Field label="Audio guide / soundtrack (optional)">
                 <div className="space-y-2">
                   <Input
@@ -820,14 +812,6 @@ export default function HuntEdit() {
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Reveal — fun fact</p>
                 <Field label="Fun fact" required>
                   <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} placeholder="A source-backed fact revealed after the stop." />
-                </Field>
-                <Field label="Fun fact in Latvian (optional — shown when player taps 🇱🇻)">
-                  <Textarea
-                    rows={3}
-                    value={s.reveal.funFactLv ?? ''}
-                    onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFactLv: e.target.value } }))}
-                    placeholder="Latviešu versija atklājumam / interesantajam faktam."
-                  />
                 </Field>
               </div>
             </div>

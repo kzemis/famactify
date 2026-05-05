@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent, type ReactNode } from 'react';
-import { Camera, History, ImagePlus, Pencil, Redo2, RotateCcw, SlidersHorizontal, Sparkles, SwitchCamera, Trash2, Undo2 } from 'lucide-react';
+import { Camera, Columns2, History, ImagePlus, Pencil, Redo2, RotateCcw, SlidersHorizontal, Sparkles, SwitchCamera, Trash2, Undo2, UserCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
+type CaptureLayout = 'inset' | 'split' | 'split_selfie';
 
 type TimeTravelCameraProps = {
   overlayImageUrl?: string;
@@ -16,6 +18,7 @@ type TimeTravelCameraProps = {
 
 const OUTPUT_WIDTH = 1280;
 const OUTPUT_HEIGHT = 960;
+const SPLIT_GAP = 16;
 const DRAW_COLORS = ['#ffffff', '#ec4899', '#f59e0b', '#22c55e', '#38bdf8', '#111827'];
 const EMOJI_STAMPS = ['⭐', '❤️', '🌈', '🐾', '👀', '✨'];
 
@@ -93,6 +96,85 @@ function drawHistoricalInset(
   ctx.restore();
 }
 
+function drawSideBySide(
+  ctx: CanvasRenderingContext2D,
+  cameraSource: HTMLVideoElement | HTMLImageElement,
+  overlay: HTMLImageElement,
+  canvasWidth: number,
+  canvasHeight: number,
+  mirrorCamera: boolean,
+) {
+  const panelWidth = Math.floor((canvasWidth - SPLIT_GAP) / 2);
+
+  // White background (visible as gap)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // Left panel — camera / "NOW"
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, panelWidth, canvasHeight);
+  ctx.clip();
+  if (mirrorCamera) {
+    ctx.translate(panelWidth, 0);
+    ctx.scale(-1, 1);
+  }
+  drawCoverInto(ctx, cameraSource, 0, 0, panelWidth, canvasHeight);
+  ctx.restore();
+
+  // Right panel — overlay / "THEN"
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(panelWidth + SPLIT_GAP, 0, panelWidth, canvasHeight);
+  ctx.clip();
+  drawCoverInto(ctx, overlay, panelWidth + SPLIT_GAP, 0, panelWidth, canvasHeight);
+  ctx.restore();
+
+  // Labels
+  ctx.save();
+  ctx.font = `bold ${Math.round(canvasHeight * 0.032)}px system-ui, -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 2;
+  const labelY = canvasHeight - Math.round(canvasHeight * 0.035);
+  ctx.fillText('NOW', panelWidth / 2, labelY);
+  ctx.fillText('THEN', panelWidth + SPLIT_GAP + panelWidth / 2, labelY);
+  ctx.restore();
+}
+
+function drawSelfieCircle(
+  ctx: CanvasRenderingContext2D,
+  selfie: HTMLImageElement,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const radius = Math.round(canvasWidth * 0.085);
+  const cx = canvasWidth / 2;
+  const cy = Math.round(canvasHeight * 0.14);
+  const border = 5;
+
+  // White border + shadow
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + border, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 4;
+  ctx.fill();
+  ctx.restore();
+
+  // Clipped selfie
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.clip();
+  drawCoverInto(ctx, selfie, cx - radius, cy - radius, radius * 2, radius * 2);
+  ctx.restore();
+}
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -151,6 +233,9 @@ export default function TimeTravelCamera({
   const [hasAnnotations, setHasAnnotations] = useState(false);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [overlayDataUrl, setOverlayDataUrl] = useState<string | null>(null);
+  const [captureLayout, setCaptureLayout] = useState<CaptureLayout>('inset');
+  // For "Full Story" two-step capture: scene first, then selfie
+  const [pendingSceneDataUrl, setPendingSceneDataUrl] = useState<string | null>(null);
 
   // Pre-fetch the overlay image as a data URL so canvas operations bypass CORS.
   useEffect(() => {
@@ -363,12 +448,37 @@ export default function TimeTravelCamera({
     ctx.drawImage(canvas, 0, 0, width, height);
   };
 
-  const renderVideoFrame = async (includeOverlay: boolean, includeSelfieInset = facingMode === 'user') => {
+  const renderVideoFrame = async (layout: CaptureLayout = captureLayout, selfieUrl?: string | null) => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) {
       throw new Error('Camera is not ready yet');
     }
 
+    const overlaySource = overlayDataUrl ?? overlayImageUrl;
+    const mirrorCamera = facingMode === 'user';
+
+    // ── Side-by-side layouts ──
+    if ((layout === 'split' || layout === 'split_selfie') && overlaySource) {
+      const { width, height } = getOutputSize();
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas is not supported');
+
+      const overlay = await loadImage(overlaySource);
+      drawSideBySide(ctx, video, overlay, canvas.width, canvas.height, mirrorCamera);
+
+      if (layout === 'split_selfie' && selfieUrl) {
+        const selfieImg = await loadImage(selfieUrl);
+        drawSelfieCircle(ctx, selfieImg, canvas.width, canvas.height);
+      }
+
+      drawAnnotationsTo(ctx, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.9);
+    }
+
+    // ── Inset layout (default) ──
     const { width, height } = getOutputSize();
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -376,7 +486,7 @@ export default function TimeTravelCamera({
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is not supported');
 
-    if (facingMode === 'user') {
+    if (mirrorCamera) {
       ctx.save();
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -386,19 +496,41 @@ export default function TimeTravelCamera({
       drawCover(ctx, video, canvas.width, canvas.height);
     }
 
-    const overlaySource = overlayDataUrl ?? overlayImageUrl;
-    if ((includeOverlay || includeSelfieInset) && overlaySource) {
+    if (overlaySource) {
       const overlay = await loadImage(overlaySource);
       ctx.save();
-      ctx.globalAlpha = previewOpacity;
-      if (includeSelfieInset) {
+      if (includeOverlayInCapture) {
+        ctx.globalAlpha = previewOpacity;
+        drawCover(ctx, overlay, canvas.width, canvas.height);
+      } else {
         ctx.globalAlpha = 1;
         drawHistoricalInset(ctx, overlay, canvas.width, canvas.height, previewOpacity);
-      } else {
-        drawCover(ctx, overlay, canvas.width, canvas.height);
       }
       ctx.restore();
     }
+
+    drawAnnotationsTo(ctx, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.9);
+  };
+
+  /** Render a side-by-side using an already-captured scene image instead of the live video. */
+  const renderScenePlusSelfie = async (sceneUrl: string, selfieUrl: string) => {
+    const overlaySource = overlayDataUrl ?? overlayImageUrl;
+    if (!overlaySource) throw new Error('No historical reference image');
+
+    const { width, height } = getOutputSize();
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not supported');
+
+    const scene = await loadImage(sceneUrl);
+    const overlay = await loadImage(overlaySource);
+    drawSideBySide(ctx, scene, overlay, canvas.width, canvas.height, false);
+
+    const selfie = await loadImage(selfieUrl);
+    drawSelfieCircle(ctx, selfie, canvas.width, canvas.height);
 
     drawAnnotationsTo(ctx, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.9);
@@ -420,12 +552,57 @@ export default function TimeTravelCamera({
   const capture = async () => {
     setCapturing(true);
     try {
+      // ── "Full Story" two-step capture ──
+      if (captureLayout === 'split_selfie') {
+        if (!pendingSceneDataUrl) {
+          // Step 1: capture the scene, then switch to front camera for selfie
+          const sceneData = await renderVideoFrame('split');
+          setPendingSceneDataUrl(sceneData);
+          setCapturing(false);
+          // Switch to front camera for the selfie step
+          if (facingMode !== 'user') {
+            setFacingMode('user');
+            stopCamera();
+          }
+          return;
+        }
+        // Step 2: capture selfie, composite everything
+        const selfieCanvas = document.createElement('canvas');
+        const video = videoRef.current;
+        if (video && video.videoWidth && video.videoHeight) {
+          selfieCanvas.width = video.videoWidth;
+          selfieCanvas.height = video.videoHeight;
+          const sCtx = selfieCanvas.getContext('2d')!;
+          sCtx.save();
+          sCtx.translate(selfieCanvas.width, 0);
+          sCtx.scale(-1, 1);
+          sCtx.drawImage(video, 0, 0);
+          sCtx.restore();
+        }
+        const selfieDataUrl = selfieCanvas.toDataURL('image/jpeg', 0.9);
+        let dataUrl: string;
+        try {
+          dataUrl = await renderScenePlusSelfie(pendingSceneDataUrl, selfieDataUrl);
+        } catch {
+          dataUrl = pendingSceneDataUrl; // fallback: just the scene side-by-side
+        }
+        setCapturedDataUrl(dataUrl);
+        onCapture(dataUrl);
+        setPendingSceneDataUrl(null);
+        clearAnnotations();
+        setDrawToolsOpen(false);
+        stopCamera();
+        return;
+      }
+
+      // ── Single-step capture (inset or split) ──
       let dataUrl: string;
       try {
-        dataUrl = await renderVideoFrame(includeOverlayInCapture);
+        dataUrl = await renderVideoFrame(captureLayout);
       } catch (error) {
         if (!overlayImageUrl) throw error;
-        dataUrl = await renderVideoFrame(false, false);
+        // Fallback: render without overlay
+        dataUrl = await renderVideoFrame('inset');
         toast.warning('Saved photo without historical reference — source image could not be embedded');
       }
       setCapturedDataUrl(dataUrl);
@@ -442,8 +619,13 @@ export default function TimeTravelCamera({
 
   const retake = () => {
     setCapturedDataUrl(null);
+    setPendingSceneDataUrl(null);
     onCapture(null);
     clearAnnotations();
+    // Return to back camera if we were in selfie step
+    if (captureLayout === 'split_selfie' && facingMode === 'user') {
+      setFacingMode('environment');
+    }
     startCamera(true);
   };
 
@@ -543,6 +725,9 @@ export default function TimeTravelCamera({
     if (shouldPush) pushAnnotationHistory();
   };
 
+  const isSplitPreview = (captureLayout === 'split' || captureLayout === 'split_selfie') && overlayImageUrl && !capturedDataUrl;
+  const isSelfieStep = captureLayout === 'split_selfie' && !!pendingSceneDataUrl && !capturedDataUrl;
+
   const cameraFrame = (
     <div
       ref={frameRef}
@@ -554,7 +739,65 @@ export default function TimeTravelCamera({
           alt="Captured time-travel match"
           className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]')}
         />
+      ) : isSelfieStep ? (
+        /* ── Selfie step: show captured scene + live selfie ── */
+        <>
+          <div className={cn('relative w-full', immersive ? 'h-full' : 'aspect-[4/3]')}>
+            <img src={pendingSceneDataUrl!} alt="" className="w-full h-full object-cover" />
+            {/* Live selfie preview circle */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border-4 border-white shadow-2xl overflow-hidden">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
+            </div>
+            <div className="absolute bottom-3 left-0 right-0 text-center">
+              <span className="text-xs font-bold bg-black/60 text-white px-3 py-1 rounded-full backdrop-blur">
+                🤳 Now take a selfie!
+              </span>
+            </div>
+          </div>
+        </>
+      ) : isSplitPreview ? (
+        /* ── Split preview: video left, overlay right ── */
+        <>
+          <div className={cn('relative flex w-full', immersive ? 'h-full' : 'aspect-[4/3]')}>
+            <div className="w-1/2 h-full relative overflow-hidden">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className={cn('w-full h-full object-cover', facingMode === 'user' && 'scale-x-[-1]', cameraError && 'hidden')}
+              />
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white/90 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur">NOW</span>
+            </div>
+            <div className="w-[2px] bg-white shrink-0" />
+            <div className="w-1/2 h-full relative overflow-hidden">
+              <img src={overlayImageUrl} alt="" className="w-full h-full object-cover" />
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white/90 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur">THEN</span>
+            </div>
+          </div>
+          {(starting || cameraError) && (
+            <div className={cn('absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-5 text-white bg-black/70')}>
+              {starting ? (
+                <>
+                  <div className="w-8 h-8 rounded-full border-2 border-white/80 border-t-transparent animate-spin" />
+                  <p className="text-sm font-medium">Starting camera…</p>
+                </>
+              ) : (
+                <>
+                  <Camera className="w-9 h-9 text-white/70" />
+                  <p className="text-sm font-semibold">Camera unavailable</p>
+                  <p className="text-xs text-white/70">{cameraError}</p>
+                </>
+              )}
+            </div>
+          )}
+        </>
       ) : (
+        /* ── Inset (default) preview ── */
         <>
           <video
             ref={videoRef}
@@ -679,9 +922,36 @@ export default function TimeTravelCamera({
     </div>
   );
 
+  const modePicker = overlayImageUrl && !capturedDataUrl && !isSelfieStep && (
+    <div className={cn('flex items-center justify-center gap-1 rounded-full border p-1', immersive ? 'border-white/15 bg-black/45 backdrop-blur' : 'border-border bg-card')}>
+      {([
+        { value: 'inset' as const, label: 'Portrait', Icon: Camera },
+        { value: 'split' as const, label: 'Then & Now', Icon: Columns2 },
+        { value: 'split_selfie' as const, label: 'Full Story', Icon: UserCircle2 },
+      ]).map(({ value, label, Icon }) => (
+        <button
+          key={value}
+          onClick={() => { setCaptureLayout(value); setPendingSceneDataUrl(null); }}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors tap-highlight',
+            captureLayout === value
+              ? 'bg-primary text-primary-foreground'
+              : immersive ? 'text-white/80 hover:bg-white/10' : 'text-muted-foreground hover:bg-muted',
+          )}
+        >
+          <Icon className="w-3.5 h-3.5" />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   const controlsContent = (
     <>
-      {overlayImageUrl && !capturedDataUrl && showOpacityControls && (
+      {modePicker}
+
+      {/* Opacity slider — only for inset mode */}
+      {captureLayout === 'inset' && overlayImageUrl && !capturedDataUrl && showOpacityControls && (
         <div className={cn('rounded-full border px-3 py-2 flex items-center gap-2', immersive ? 'border-white/15 bg-black/45 backdrop-blur text-white' : 'border-border bg-card')}>
           <SlidersHorizontal className="w-4 h-4 text-white/80 shrink-0" />
           <input
@@ -729,46 +999,64 @@ export default function TimeTravelCamera({
             <button
               onClick={capture}
               disabled={capturing || starting || !!cameraError}
-              className="w-12 h-12 rounded-full bg-primary text-primary-foreground tap-highlight disabled:opacity-60 flex items-center justify-center"
-              aria-label="Capture photo"
+              className={cn(
+                'w-12 h-12 rounded-full tap-highlight disabled:opacity-60 flex items-center justify-center',
+                isSelfieStep ? 'bg-amber-500 text-white' : 'bg-primary text-primary-foreground',
+              )}
+              aria-label={isSelfieStep ? 'Take selfie' : 'Capture photo'}
             >
               <Camera className={cn('w-5 h-5', capturing && 'animate-pulse')} />
             </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
-              aria-label="Upload photo"
-            >
-              <ImagePlus className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => {
-                setDrawToolsOpen(v => !v);
-                setShowOpacityControls(false);
-                syncAnnotationCanvas();
-              }}
-              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', drawToolsOpen ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
-              aria-label="Open drawing tools"
-            >
-              <Pencil className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => {
-                setShowOpacityControls(v => !v);
-                setDrawToolsOpen(false);
-              }}
-              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', showOpacityControls ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
-              aria-label="Adjust old image opacity"
-            >
-              <SlidersHorizontal className="w-5 h-5" />
-            </button>
-            <button
-              onClick={switchCamera}
-              className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', facingMode === 'user' ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
-              aria-label="Switch camera"
-            >
-              <SwitchCamera className="w-5 h-5" />
-            </button>
+            {!isSelfieStep && (
+              <>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+                  aria-label="Upload photo"
+                >
+                  <ImagePlus className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setDrawToolsOpen(v => !v);
+                    setShowOpacityControls(false);
+                    syncAnnotationCanvas();
+                  }}
+                  className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', drawToolsOpen ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+                  aria-label="Open drawing tools"
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+                {captureLayout === 'inset' && (
+                  <button
+                    onClick={() => {
+                      setShowOpacityControls(v => !v);
+                      setDrawToolsOpen(false);
+                    }}
+                    className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', showOpacityControls ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+                    aria-label="Adjust old image opacity"
+                  >
+                    <SlidersHorizontal className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={switchCamera}
+                  className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', facingMode === 'user' ? 'border-primary bg-primary text-primary-foreground' : immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+                  aria-label="Switch camera"
+                >
+                  <SwitchCamera className="w-5 h-5" />
+                </button>
+              </>
+            )}
+            {isSelfieStep && (
+              <button
+                onClick={retake}
+                className={cn('w-12 h-12 rounded-full border tap-highlight flex items-center justify-center', immersive ? 'border-white/20 bg-black/45 text-white backdrop-blur' : 'border-border')}
+                aria-label="Start over"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            )}
           </>
         )}
       </div>

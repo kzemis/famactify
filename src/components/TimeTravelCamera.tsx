@@ -150,9 +150,9 @@ function drawSelfieCircle(
   canvasWidth: number,
   canvasHeight: number,
 ) {
-  const radius = Math.round(canvasWidth * 0.085);
+  const radius = Math.round(Math.min(canvasWidth * 0.105, canvasHeight * 0.095));
   const cx = canvasWidth / 2;
-  const cy = Math.round(canvasHeight * 0.14);
+  const cy = Math.round(canvasHeight * 0.36);
   const border = 5;
 
   // White border + shadow

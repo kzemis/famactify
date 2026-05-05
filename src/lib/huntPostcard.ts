@@ -56,7 +56,9 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: numb
     sx = (img.width - sw) / 2;
   } else {
     sh = img.width / targetAr;
-    sy = (img.height - sh) / 2;
+    const cropSlack = Math.max(0, img.height - sh);
+    const topWeightedCrop = img.height / img.width > 1.35 && targetAr > ar;
+    sy = topWeightedCrop ? cropSlack * 0.12 : cropSlack / 2;
   }
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   ctx.restore();

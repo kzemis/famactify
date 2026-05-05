@@ -78,6 +78,26 @@ export const raceService = {
     return mapRace(data);
   },
 
+  async getMyParticipant(raceId: string): Promise<{ participant: RaceParticipant | null; userId: string | null }> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return { participant: null, userId: null };
+
+    const { data, error } = await supabase
+      .from('hunt_race_participants')
+      .select('*')
+      .eq('race_id', raceId)
+      .eq('user_id', user.user.id)
+      .maybeSingle();
+    if (error) {
+      console.warn('[raceService.getMyParticipant]', error.message);
+      return { participant: null, userId: user.user.id };
+    }
+    return {
+      participant: data ? mapParticipant(data) : null,
+      userId: user.user.id,
+    };
+  },
+
   async joinRace(raceId: string, familyName: string, familyEmoji: string, totalStops: number): Promise<RaceParticipant> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Sign in to join a race');
@@ -132,6 +152,14 @@ export const raceService = {
   },
 
   async finishRace(raceId: string): Promise<void> {
+    const rpc = (supabase as any).rpc;
+    if (typeof rpc === 'function') {
+      const { data: finished, error: rpcError } = await rpc.call(supabase, 'finish_hunt_race_if_done', { p_race_id: raceId });
+      if (!rpcError && finished === true) return;
+      if (!rpcError && finished === false) throw new Error('Race still has families in progress');
+      console.warn('[raceService.finishRace] RPC fallback:', rpcError.message);
+    }
+
     const { error } = await supabase
       .from('hunt_races')
       .update({ status: 'finished', finished_at: new Date().toISOString() })

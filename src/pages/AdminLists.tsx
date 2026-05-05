@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
-import AppHeader from '@/components/AppHeader';
-import Footer from '@/components/Footer';
+import { Plus, Edit, Trash2, Eye, EyeOff, ListChecks } from 'lucide-react';
+import { AdminPageShell, adminActionClass, adminPillClass } from '@/components/admin/AdminPageShell';
 import { authService, curatedListsService, type CuratedList } from '@/services';
+import { cn } from '@/lib/utils';
+
+const LIST_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'published', label: 'Published' },
+  { key: 'draft', label: 'Drafts' },
+] as const;
+
+type ListTab = typeof LIST_TABS[number]['key'];
 
 // ---------------------------------------------------------------------------
 // Component
@@ -15,6 +20,7 @@ import { authService, curatedListsService, type CuratedList } from '@/services';
 export default function AdminLists() {
   const navigate = useNavigate();
   const [lists, setLists] = useState<CuratedList[]>([]);
+  const [tab, setTab] = useState<ListTab>('all');
   const [loading, setLoading] = useState(true);
 
   // Auth guard
@@ -68,106 +74,113 @@ export default function AdminLists() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
+  const filteredLists = lists.filter(list => {
+    if (tab === 'published') return list.is_published;
+    if (tab === 'draft') return !list.is_published;
+    return true;
+  });
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Admin — Curated Lists</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Manage all curated lists (published and drafts)
-            </p>
-          </div>
-          <Button onClick={() => navigate('/admin/lists/new')}>
-            <Plus className="w-4 h-4 mr-2" />
-            New List
-          </Button>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
-            ))}
-          </div>
-        ) : lists.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="mb-4">No lists yet.</p>
-            <Button onClick={() => navigate('/admin/lists/new')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create your first list
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {lists.map((list) => (
-              <Card key={list.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Publish indicator */}
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${list.is_published ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-sm">{list.title}</h3>
-                        <Badge variant={list.is_published ? 'default' : 'secondary'} className="text-xs">
-                          {list.is_published ? 'Published' : 'Draft'}
-                        </Badge>
-                        {list.author_type && (
-                          <Badge variant="outline" className="text-xs">{list.author_type}</Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        /{list.slug}
-                        {list.author_name ? ` · by ${list.author_name}` : ''}
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Publish toggle */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => togglePublish(list)}
-                        title={list.is_published ? 'Unpublish' : 'Publish'}
-                      >
-                        {list.is_published ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
-                      {/* Edit */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => navigate(`/admin/lists/${list.id}`)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      {/* Delete */}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteList(list.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
-
-      <Footer />
+  const filters = (
+    <div className="flex gap-1.5 border-b bg-background/70 px-4 py-3 overflow-x-auto">
+      {LIST_TABS.map(t => (
+        <button key={t.key} onClick={() => setTab(t.key)} className={adminPillClass(tab === t.key)}>
+          {t.label}
+        </button>
+      ))}
     </div>
+  );
+
+  return (
+    <AdminPageShell
+      title="Curated Lists"
+      subtitle="Manage published and draft list filters"
+      filters={filters}
+      actions={(
+        <>
+          <button onClick={() => navigate('/admin/hunts')} className={adminActionClass('secondary')}>
+            Hunts
+          </button>
+          <button onClick={() => navigate('/admin/lists/new')} className={adminActionClass('primary')}>
+            <Plus className="w-4 h-4" /> New
+          </button>
+        </>
+      )}
+    >
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 bg-muted rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : filteredLists.length === 0 ? (
+        <div className="text-center py-12 space-y-3">
+          <ListChecks className="w-10 h-10 mx-auto text-muted-foreground" />
+          <p className="font-semibold">{lists.length === 0 ? 'No lists yet' : `No ${LIST_TABS.find(t => t.key === tab)?.label.toLowerCase()} lists`}</p>
+          <p className="text-sm text-muted-foreground">Create curated lists as filters for the main Activities page.</p>
+          <button onClick={() => navigate('/admin/lists/new')} className={cn(adminActionClass('primary'), 'mx-auto')}>
+            <Plus className="w-4 h-4" /> Create list
+          </button>
+        </div>
+      ) : (
+        filteredLists.map((list) => (
+          <div key={list.id} className="rounded-2xl border bg-card p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-pink-100 flex items-center justify-center shrink-0">
+              <ListChecks className="w-5 h-5 text-primary" />
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/lists/${list.id}`)}
+              className="flex-1 min-w-0 text-left tap-highlight"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="font-semibold text-sm truncate">{list.title}</p>
+                <span className={cn(
+                  'text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0',
+                  list.is_published ? 'bg-emerald-100 text-emerald-800' : 'bg-muted text-foreground',
+                )}>
+                  {list.is_published ? 'Published' : 'Draft'}
+                </span>
+                {list.author_type && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 border border-border">
+                    {list.author_type}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                /{list.slug}
+                {list.author_name ? ` · by ${list.author_name}` : ''}
+              </p>
+            </button>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => togglePublish(list)}
+                title={list.is_published ? 'Unpublish' : 'Publish'}
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight"
+              >
+                {list.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/lists/${list.id}`)}
+                className="w-9 h-9 rounded-full border flex items-center justify-center hover:bg-muted tap-highlight"
+                aria-label={`Edit ${list.title}`}
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteList(list.id)}
+                className="w-9 h-9 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 tap-highlight"
+                aria-label={`Delete ${list.title}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </AdminPageShell>
   );
 }

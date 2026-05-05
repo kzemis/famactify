@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowUp, ArrowDown, Trash2, Plus, Search, MapPin } from 'lucide-react';
-import AppHeader from '@/components/AppHeader';
-import Footer from '@/components/Footer';
+import { ArrowUp, ArrowDown, Trash2, Plus, Search, MapPin } from 'lucide-react';
+import { AdminPageShell, adminActionClass } from '@/components/admin/AdminPageShell';
 import { authService, curatedListsService, type AuthorType, type CuratedActivitySearchResult, type EditableListItem } from '@/services';
 
 type AuthorTypeInput = AuthorType | '';
@@ -210,35 +209,29 @@ export default function AdminListEdit() {
   // ---------------------------------------------------------------------------
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <AppHeader />
-        <main className="container mx-auto px-4 py-8 max-w-4xl">
-          <div className="animate-pulse space-y-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-muted rounded" />)}
-          </div>
-        </main>
-        <Footer />
-      </div>
+      <AdminPageShell title={isNew ? 'New List' : 'Edit List'} backTo="/admin/lists" contentClassName="max-w-4xl mx-auto w-full py-4">
+        <div className="animate-pulse space-y-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-muted rounded-2xl" />)}
+        </div>
+      </AdminPageShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => navigate('/admin/lists')} className="-ml-2">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-bold">{isNew ? 'New List' : 'Edit List'}</h1>
-        </div>
-
+    <AdminPageShell
+      title={isNew ? 'New List' : 'Edit List'}
+      subtitle={title || 'Curated list builder'}
+      backTo="/admin/lists"
+      contentClassName="max-w-4xl mx-auto w-full py-4"
+      actions={(
+        <button onClick={save} disabled={saving} className={adminActionClass('primary')}>
+          {saving ? 'Saving…' : isNew ? 'Create' : 'Save'}
+        </button>
+      )}
+    >
         <div className="space-y-6">
           {/* ── List metadata form ── */}
-          <div className="p-6 border rounded-lg bg-card space-y-4">
+          <div className="p-6 border rounded-3xl bg-card space-y-4">
             <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">List details</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -323,7 +316,7 @@ export default function AdminListEdit() {
           </div>
 
           {/* ── Activity picker ── */}
-          <div className="p-6 border rounded-lg bg-card space-y-4">
+          <div className="p-6 border rounded-3xl bg-card space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Add activities</h2>
@@ -349,7 +342,7 @@ export default function AdminListEdit() {
             )}
 
             {searchResults.length > 0 && (
-              <div className="border rounded-lg overflow-hidden divide-y max-h-64 overflow-y-auto">
+              <div className="border rounded-2xl overflow-hidden divide-y max-h-64 overflow-y-auto">
                 {searchResults.map((activity) => (
                   <div
                     key={activity.id}
@@ -387,7 +380,7 @@ export default function AdminListEdit() {
           </div>
 
           {/* ── Current items ── */}
-          <div className="p-6 border rounded-lg bg-card space-y-4">
+          <div className="p-6 border rounded-3xl bg-card space-y-4">
             <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
               List items ({listItems.length})
             </h2>
@@ -468,9 +461,6 @@ export default function AdminListEdit() {
             </Button>
           </div>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+    </AdminPageShell>
   );
 }

@@ -73,6 +73,7 @@ export default function HuntEdit() {
   const [saving, setSaving] = useState(false);
   const [huntStatus, setHuntStatus] = useState<string>('draft');
   const [reviewNotes, setReviewNotes] = useState<string | null>(null);
+  const [editingSeedTemplate, setEditingSeedTemplate] = useState(false);
   const [hunt, setHunt] = useState<Partial<ScavengerHunt>>({
     slug: '',
     artifactKind: 'scavenger_hunt',
@@ -112,10 +113,12 @@ export default function HuntEdit() {
     (async () => {
       const h = await huntsService.getHuntById(params.id!);
       if (!h) { toast.error('Hunt not found'); navigate(mode === 'admin' ? '/admin/hunts' : '/org/hunts'); return; }
+      const isSeedTemplate = h.adminSource === 'seed';
       setHunt(h);
       setHuntStatus(h.status);
       setReviewNotes(h.reviewNotes);
-      setHuntId(h.id);
+      setEditingSeedTemplate(isSeedTemplate);
+      setHuntId(isSeedTemplate ? null : h.id);
       setLoading(false);
     })();
   }, [params.id, isNew, mode, navigate]);
@@ -297,6 +300,7 @@ export default function HuntEdit() {
     setSaving(true);
     try {
       let id = huntId;
+      const creatingEditableCopy = !id;
       if (!id) {
         id = await huntsService.createDraft({
           slug: hunt.slug!, title: hunt.title!, blurb: hunt.blurb!,
@@ -311,6 +315,7 @@ export default function HuntEdit() {
           generationNotes: hunt.generationNotes,
         });
         setHuntId(id);
+        setEditingSeedTemplate(false);
       } else {
         await huntsService.updateHunt(id, {
           slug: hunt.slug, title: hunt.title, blurb: hunt.blurb,
@@ -328,9 +333,9 @@ export default function HuntEdit() {
       await huntsService.replaceStops(id, hunt.stops ?? []);
       await huntsService.replaceSponsors(id, hunt.sponsors ?? []);
       if (draftStorageKey) sessionStorage.removeItem(draftStorageKey);
-      toast.success('Saved');
+      toast.success(editingSeedTemplate ? 'Editable hunt draft created from seed' : 'Saved');
       // Update URL if we just created
-      if (isNew) {
+      if (isNew || creatingEditableCopy) {
         const target = mode === 'admin' ? `/admin/hunts/${id}` : `/org/hunts/${id}`;
         navigate(target, { replace: true });
       }
@@ -443,6 +448,16 @@ export default function HuntEdit() {
           <div>
             <p className="font-semibold">Rejected — please address and resubmit:</p>
             <p className="mt-0.5">{reviewNotes}</p>
+          </div>
+        </div>
+      )}
+
+      {editingSeedTemplate && (
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-sky-50 border border-sky-200 text-sm text-sky-900 flex items-start gap-2">
+          <FileText className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold">Seed hunt template</p>
+            <p className="mt-0.5">This hunt lives in code. Your first save creates an editable database draft, so admin edits will not be blocked by the global region picker.</p>
           </div>
         </div>
       )}

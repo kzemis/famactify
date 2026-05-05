@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CheckCircle2, Image as ImageIcon, XCircle } from 'lucide-react';
+import { CheckCircle2, Image as ImageIcon, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '@/services';
 import { huntsService, type HuntPhotoReviewItem } from '@/services/huntsService';
+import { AdminPageShell, adminPillClass } from '@/components/admin/AdminPageShell';
 import { cn } from '@/lib/utils';
 
 type ReviewTab = 'pending' | 'all';
@@ -60,31 +61,22 @@ export default function AdminPhotoReviews() {
     }
   };
 
-  return (
-    <div className="min-h-[100dvh] bg-background pb-tab-bar">
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 flex items-center gap-2" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
-        <button onClick={() => navigate('/admin/hunts')} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight" aria-label="Back">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-muted-foreground">Admin</p>
-          <p className="text-sm font-bold truncate">Photo Review</p>
-        </div>
-      </div>
-
-      <div className="flex gap-1.5 px-4 pt-3 pb-2 overflow-x-auto">
+  const filters = (
+      <div className="flex gap-1.5 border-b bg-background/70 px-4 py-3 overflow-x-auto">
         {(['pending', 'all'] as ReviewTab[]).map(value => (
           <button
             key={value}
             onClick={() => setTab(value)}
-            className={cn('h-8 px-3 rounded-full text-xs font-medium capitalize shrink-0', tab === value ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground')}
+            className={cn(adminPillClass(tab === value), 'capitalize')}
           >
             {value}
           </button>
         ))}
       </div>
+  );
 
-      <div className="px-4 pt-2 space-y-3">
+  return (
+    <AdminPageShell title="Photo Review" backTo="/admin/hunts" filters={filters}>
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : items.length === 0 ? (
@@ -137,7 +129,6 @@ export default function AdminPhotoReviews() {
             );
           })
         )}
-      </div>
-    </div>
+    </AdminPageShell>
   );
 }

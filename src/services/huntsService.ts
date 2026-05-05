@@ -76,6 +76,11 @@ const OPTIONAL_HUNT_STOP_COLUMNS = [
   'prompt_metadata',
 ] as const;
 
+// Cache the column probe result so we don't hit Supabase 3× on every save.
+let _unavailableCache: Set<string> | null = null;
+let _unavailableCacheTs = 0;
+const COLUMN_CACHE_TTL = 5 * 60_000; // 5 min
+
 function missingSchemaColumnName(error: any): string | null {
   const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''} ${error?.code ?? ''}`;
   // PostgREST schema-cache format: Could not find the 'col' column …
@@ -103,6 +108,11 @@ function withoutColumns(rows: Record<string, any>[], columns: Set<string>): Reco
 }
 
 async function unavailableOptionalStopColumns(): Promise<Set<string>> {
+  // Return cached result if fresh
+  if (_unavailableCache && Date.now() - _unavailableCacheTs < COLUMN_CACHE_TTL) {
+    return new Set(_unavailableCache);
+  }
+
   const unavailable = new Set<string>();
 
   for (const columnName of OPTIONAL_HUNT_STOP_COLUMNS) {
@@ -133,7 +143,9 @@ async function unavailableOptionalStopColumns(): Promise<Set<string>> {
     throw error;
   }
 
-  return unavailable;
+  _unavailableCache = unavailable;
+  _unavailableCacheTs = Date.now();
+  return new Set(unavailable);
 }
 
 // ── Mappers (DB row ↔ ScavengerHunt) ─────────────────────────────────────────
@@ -459,6 +471,7 @@ export const huntsService = {
         && !unavailableColumns.has(missingColumn)
       ) {
         unavailableColumns.add(missingColumn);
+        _unavailableCache = null; // invalidate cache — schema changed
         rowsToInsert = withoutColumns(rows, unavailableColumns);
         continue;
       }

@@ -8,7 +8,7 @@ interface AdminRouteProps {
 /**
  * AdminRoute — wraps routes that require admin privileges.
  * - Loading: spinner
- * - Not signed in OR not admin: redirect to /home
+ * - Not signed in OR not admin: redirect to /activities
  *   (auth gating is also applied via the existing ProtectedRoute on the same path)
  */
 const AdminRoute = ({ children }: AdminRouteProps) => {
@@ -22,7 +22,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  if (!isAdmin) return <Navigate to="/home" replace />;
+  if (!isAdmin) return <Navigate to="/activities" replace />;
 
   return children;
 };

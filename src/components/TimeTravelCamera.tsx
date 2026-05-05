@@ -150,6 +150,37 @@ export default function TimeTravelCamera({
   const [emojiStamp, setEmojiStamp] = useState('⭐');
   const [hasAnnotations, setHasAnnotations] = useState(false);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [overlayDataUrl, setOverlayDataUrl] = useState<string | null>(null);
+
+  // Pre-fetch the overlay image as a data URL so canvas operations bypass CORS.
+  useEffect(() => {
+    if (!overlayImageUrl) return;
+    // If it's already a data URL, just use it directly.
+    if (overlayImageUrl.startsWith('data:')) { setOverlayDataUrl(overlayImageUrl); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch(overlayImageUrl);
+        const blob = await resp.blob();
+        const reader = new FileReader();
+        reader.onload = () => { if (!cancelled) setOverlayDataUrl(reader.result as string); };
+        reader.readAsDataURL(blob);
+      } catch {
+        // fetch CORS failed — try loading with img crossOrigin as fallback
+        try {
+          const img = await loadImage(overlayImageUrl);
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth; c.height = img.naturalHeight;
+          c.getContext('2d')!.drawImage(img, 0, 0);
+          if (!cancelled) setOverlayDataUrl(c.toDataURL('image/jpeg', 0.9));
+        } catch {
+          // Both approaches failed — overlay won't be embeddable in canvas
+          console.warn('[TimeTravelCamera] Could not pre-fetch overlay image for canvas embed');
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [overlayImageUrl]);
 
   const markAnnotations = (value: boolean) => {
     hasAnnotationsRef.current = value;
@@ -355,8 +386,9 @@ export default function TimeTravelCamera({
       drawCover(ctx, video, canvas.width, canvas.height);
     }
 
-    if ((includeOverlay || includeSelfieInset) && overlayImageUrl) {
-      const overlay = await loadImage(overlayImageUrl);
+    const overlaySource = overlayDataUrl ?? overlayImageUrl;
+    if ((includeOverlay || includeSelfieInset) && overlaySource) {
+      const overlay = await loadImage(overlaySource);
       ctx.save();
       ctx.globalAlpha = previewOpacity;
       if (includeSelfieInset) {

@@ -113,7 +113,7 @@ async function unavailableOptionalStopColumns(): Promise<Set<string>> {
 // ── Mappers (DB row ↔ ScavengerHunt) ─────────────────────────────────────────
 
 function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): ScavengerHunt {
-  return {
+  const hunt: ScavengerHunt = {
     id: row.id,
     slug: row.slug,
     artifactKind: row.artifact_kind ?? 'scavenger_hunt',
@@ -144,6 +144,19 @@ function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): Scavenge
       .map(mapStopRow),
     sponsors: sponsors.map(mapSponsorRow),
   };
+
+  if (hunt.stops.length === 0) {
+    const seedHunt = SEED_HUNTS.find(seed => seed.slug === hunt.slug);
+    if (seedHunt) {
+      return {
+        ...hunt,
+        stops: seedHunt.stops,
+        sponsors: hunt.sponsors.length > 0 ? hunt.sponsors : seedHunt.sponsors,
+      };
+    }
+  }
+
+  return hunt;
 }
 
 function mapStopRow(s: any): HuntStop {
@@ -365,14 +378,16 @@ export const huntsService = {
     if (error) throw error;
   },
 
-  /** Replace all stops for a hunt with the given list (delete + insert). */
+  /** Replace all stops for a hunt with the given list. */
   async replaceStops(huntId: string, stops: HuntStop[]): Promise<void> {
     const unavailableColumns = await unavailableOptionalStopColumns();
 
-    // Delete existing
-    const { error: delErr } = await supabase.from('hunt_stops').delete().eq('hunt_id', huntId);
-    if (delErr) throw delErr;
-    if (stops.length === 0) return;
+    if (stops.length === 0) {
+      const { error: deleteAllError } = await supabase.from('hunt_stops').delete().eq('hunt_id', huntId);
+      if (deleteAllError) throw deleteAllError;
+      return;
+    }
+
     const rows = stops.map((stop, index) => ({
       hunt_id: huntId,
       stop_order: index,
@@ -398,10 +413,20 @@ export const huntsService = {
 
     let rowsToInsert = withoutColumns(rows, unavailableColumns);
     for (let attempt = 0; attempt <= OPTIONAL_HUNT_STOP_COLUMNS.length; attempt += 1) {
-      const { error: insertError } = await supabase.from('hunt_stops').insert(rowsToInsert);
-      if (!insertError) return;
+      const { error: upsertError } = await supabase
+        .from('hunt_stops')
+        .upsert(rowsToInsert, { onConflict: 'hunt_id,stop_order' });
+      if (!upsertError) {
+        const { error: deleteExtraError } = await supabase
+          .from('hunt_stops')
+          .delete()
+          .eq('hunt_id', huntId)
+          .gte('stop_order', stops.length);
+        if (deleteExtraError) throw deleteExtraError;
+        return;
+      }
 
-      const missingColumn = missingSchemaColumnName(insertError);
+      const missingColumn = missingSchemaColumnName(upsertError);
       if (
         missingColumn
         && OPTIONAL_HUNT_STOP_COLUMNS.includes(missingColumn as typeof OPTIONAL_HUNT_STOP_COLUMNS[number])
@@ -412,7 +437,7 @@ export const huntsService = {
         continue;
       }
 
-      throw insertError;
+      throw upsertError;
     }
   },
 

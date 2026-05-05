@@ -31,8 +31,17 @@ export type HuntPhotoReviewItem = {
   reviewNotes?: string;
 };
 
+export type AdminHuntListItem = ScavengerHunt & {
+  status: string;
+  createdBy: string | null;
+  reviewNotes: string | null;
+  adminSource: 'db' | 'seed';
+  seedId?: string;
+};
+
 // ── localStorage fallback for guest attempts ─────────────────────────────────
 const ATTEMPTS_KEY = 'famactify-hunt-attempts';
+const SEED_ADMIN_ID_PREFIX = 'seed:';
 
 function loadLocalAttempts(): HuntAttempt[] {
   try {
@@ -49,6 +58,30 @@ function saveLocalAttempts(list: HuntAttempt[]) {
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function seedAdminId(slug: string): string {
+  return `${SEED_ADMIN_ID_PREFIX}${slug}`;
+}
+
+function findSeedHuntByEditableId(id: string): ScavengerHunt | null {
+  if (id.startsWith(SEED_ADMIN_ID_PREFIX)) {
+    const slug = id.slice(SEED_ADMIN_ID_PREFIX.length);
+    return SEED_HUNTS.find(h => h.slug === slug) ?? null;
+  }
+  return SEED_HUNTS.find(h => h.id === id || h.slug === id) ?? null;
+}
+
+function mapSeedAdminHunt(hunt: ScavengerHunt, preservePublicId = false): AdminHuntListItem {
+  return {
+    ...hunt,
+    id: preservePublicId ? hunt.id : seedAdminId(hunt.slug),
+    status: 'published',
+    createdBy: null,
+    reviewNotes: null,
+    adminSource: 'seed',
+    seedId: hunt.id,
+  };
 }
 
 function findLocalAttemptIndex(attemptId: string): { list: HuntAttempt[]; index: number } {
@@ -295,35 +328,62 @@ export const huntsService = {
   },
 
   /** Admin — list ALL hunts (any author, any status). RLS will filter to admin role in production. */
-  async listAllHunts(opts: { status?: string } = {}): Promise<(ScavengerHunt & { status: string; createdBy: string | null; reviewNotes: string | null })[]> {
+  async listAllHunts(opts: { status?: string; countryCode?: string; includeSeedHunts?: boolean } = {}): Promise<AdminHuntListItem[]> {
+    const includeSeeds = opts.includeSeedHunts !== false && (!opts.status || opts.status === 'published');
+    const seedHuntsForFilter = () => SEED_HUNTS
+      .filter(h => !opts.countryCode || h.countryCode === opts.countryCode)
+      .map(h => mapSeedAdminHunt(h));
+
     let query = supabase
       .from('hunts')
       .select('*, hunt_stops(*), hunt_sponsors(*)')
       .order('updated_at', { ascending: false });
     if (opts.status) query = query.eq('status', opts.status);
+    if (opts.countryCode) query = query.eq('country_code', opts.countryCode);
     const { data, error } = await query;
-    if (error) { console.error('[huntsService.listAllHunts]', error); return []; }
-    return (data ?? []).map((r: any) => ({
+    if (error) {
+      console.error('[huntsService.listAllHunts]', error);
+      return includeSeeds ? seedHuntsForFilter() : [];
+    }
+    const dbHunts: AdminHuntListItem[] = (data ?? []).map((r: any) => ({
       ...mapHuntRow(r, r.hunt_stops ?? [], r.hunt_sponsors ?? []),
       status: r.status,
       createdBy: r.created_by ?? null,
       reviewNotes: r.review_notes ?? null,
+      adminSource: 'db',
     }));
+    if (!includeSeeds) return dbHunts;
+
+    const dbSlugs = new Set(dbHunts.map(h => h.slug));
+    const seedHunts = seedHuntsForFilter()
+      .filter(h => !dbSlugs.has(h.slug));
+
+    return [...dbHunts, ...seedHunts];
   },
 
   /** Get hunt by id including draft/pending state — for builder UI. */
-  async getHuntById(id: string): Promise<(ScavengerHunt & { status: string; reviewNotes: string | null }) | null> {
+  async getHuntById(id: string): Promise<AdminHuntListItem | null> {
+    const seedByEditableId = findSeedHuntByEditableId(id);
+    if (id.startsWith(SEED_ADMIN_ID_PREFIX)) {
+      return seedByEditableId ? mapSeedAdminHunt(seedByEditableId) : null;
+    }
+    if (!isUuid(id)) {
+      return seedByEditableId ? mapSeedAdminHunt(seedByEditableId, true) : null;
+    }
+
     const { data, error } = await supabase
       .from('hunts')
       .select('*, hunt_stops(*), hunt_sponsors(*)')
       .eq('id', id)
       .maybeSingle();
     if (error) { console.error('[huntsService.getHuntById]', error); return null; }
-    if (!data) return null;
+    if (!data) return seedByEditableId ? mapSeedAdminHunt(seedByEditableId, true) : null;
     return {
       ...mapHuntRow(data, data.hunt_stops ?? [], data.hunt_sponsors ?? []),
       status: data.status,
       reviewNotes: data.review_notes ?? null,
+      createdBy: data.created_by ?? null,
+      adminSource: 'db',
     };
   },
 

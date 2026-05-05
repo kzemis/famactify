@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones, Loader2 } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
@@ -14,8 +14,22 @@ import { toast } from 'sonner';
 
 const ARRIVAL_RADIUS_M = 80; // GPS slack for "I'm here"
 
-export default function HuntPlay() {
-  const { slug } = useParams<{ slug: string }>();
+export interface HuntProgressSnapshot {
+  currentStopOrder: number;
+  totalStops: number;
+  score: number;
+  completed: boolean;
+}
+
+interface HuntPlayProps {
+  huntSlug?: string;
+  raceOverlay?: ReactNode;
+  onRaceProgress?: (snapshot: HuntProgressSnapshot) => void | Promise<void>;
+}
+
+export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: HuntPlayProps = {}) {
+  const { slug: routeSlug } = useParams<{ slug: string }>();
+  const activeSlug = huntSlug ?? routeSlug;
   const navigate = useNavigate();
   const { currentProfile } = useFamilyMode();
   const { language } = useLanguage();
@@ -48,9 +62,9 @@ export default function HuntPlay() {
 
   // Load hunt + attempt on mount
   useEffect(() => {
-    if (!slug) return;
+    if (!activeSlug) return;
     (async () => {
-      const h = await huntsService.getHunt(slug);
+      const h = await huntsService.getHunt(activeSlug);
       if (!h) { navigate('/hunts'); return; }
       setHunt(h);
       const a = await huntsService.startAttempt(h.id, profileId);
@@ -58,7 +72,7 @@ export default function HuntPlay() {
       // If completed, jump straight to summary
       if (a.completedAt) setPhase('finished');
     })();
-  }, [slug, profileId, navigate]);
+  }, [activeSlug, profileId, navigate]);
 
   // Stop any ongoing TTS when leaving the page.
   // Keep this before early returns so React sees the same hook order every render.
@@ -279,6 +293,19 @@ export default function HuntPlay() {
         ...advanced,
         results: advanced.results.filter(r => r.answer !== '__advance__'),
       };
+      const completedStopCount = Math.min(cleaned.currentStopOrder, hunt.stops.length);
+      const score = cleaned.results.filter(r => r.isCorrect && !r.skipped).length;
+      try {
+        await onRaceProgress?.({
+          currentStopOrder: completedStopCount,
+          totalStops: hunt.stops.length,
+          score,
+          completed: completedStopCount >= hunt.stops.length,
+        });
+      } catch (e) {
+        console.warn('[race progress sync]', e);
+        toast.error('Race progress could not sync — continuing hunt');
+      }
       setAttempt(cleaned);
       setTextAnswer('');
       setPhotoDataUrl(null);
@@ -369,6 +396,7 @@ export default function HuntPlay() {
     if (currentStop.prompt.kind === 'time_travel_photo') {
       return (
         <div className="fixed inset-0 z-[90] bg-black text-white overflow-hidden">
+          {raceOverlay}
           <TimeTravelCamera
             key={currentStop.id}
             immersive
@@ -419,6 +447,7 @@ export default function HuntPlay() {
 
     return (
       <div className="fixed inset-0 z-[90] bg-black text-white flex flex-col overflow-hidden">
+        {raceOverlay}
         <div
           className="shrink-0 px-4 pb-3 bg-black/70 backdrop-blur border-b border-white/10"
           style={{ paddingTop: 'calc(env(safe-area-inset-top) + 10px)' }}
@@ -512,6 +541,7 @@ export default function HuntPlay() {
     const audios = attempt.results.filter(r => r.audioDataUrl);
     return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-amber-50 via-pink-50 to-purple-50 pb-tab-bar">
+        {raceOverlay}
         <div className="px-6 pt-12 pb-6 text-center space-y-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 32px)' }}>
           <div className="inline-flex w-20 h-20 rounded-full bg-amber-400/30 items-center justify-center">
             <Trophy className="w-10 h-10 text-amber-600" />
@@ -632,6 +662,7 @@ export default function HuntPlay() {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col pb-tab-bar">
+      {raceOverlay}
       {/* Top bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
         <button onClick={() => navigate(`/hunts/${hunt.slug}`)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight" aria-label="Back to hunt">

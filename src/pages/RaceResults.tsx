@@ -1,6 +1,6 @@
 // Race Results — final rankings after a live multi-family race.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Crown, Medal, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,7 @@ export default function RaceResults() {
   const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
   const [participants, setParticipants] = useState<RaceParticipant[]>([]);
   const [loading, setLoading] = useState(true);
+  const finishingRaceRef = useRef(false);
 
   useEffect(() => {
     if (!raceId) return;
@@ -38,6 +39,25 @@ export default function RaceResults() {
     });
   }, [raceId]);
 
+  useEffect(() => {
+    if (!raceId || !race?.id) return;
+    const unsubscribe = raceService.subscribeToRace(raceId, setParticipants, setRace);
+    return unsubscribe;
+  }, [raceId, race?.id]);
+
+  useEffect(() => {
+    if (!race || race.status === 'finished' || participants.length === 0 || finishingRaceRef.current) return;
+    const allFinished = participants.every(participant => (
+      !!participant.finishedAt || participant.currentStop >= participant.totalStops
+    ));
+    if (!allFinished) return;
+    finishingRaceRef.current = true;
+    raceService.finishRace(race.id).catch(error => {
+      console.warn('[race results finish sync]', error);
+      finishingRaceRef.current = false;
+    });
+  }, [race, participants]);
+
   const sorted = [...participants].sort((a, b) => {
     // Finished first, then by score desc, then by finish time
     if (a.finishedAt && !b.finishedAt) return -1;
@@ -48,6 +68,10 @@ export default function RaceResults() {
   });
 
   const raceStartedAt = race?.startedAt ? new Date(race.startedAt).getTime() : 0;
+  const allParticipantsFinished = sorted.length > 0 && sorted.every(participant => (
+    !!participant.finishedAt || participant.currentStop >= participant.totalStops
+  ));
+  const raceComplete = race?.status === 'finished' || allParticipantsFinished;
 
   if (loading) {
     return (
@@ -68,8 +92,11 @@ export default function RaceResults() {
         {/* Trophy header */}
         <div className="text-center space-y-2">
           <Trophy className="w-16 h-16 mx-auto text-yellow-500" />
-          <h2 className="text-2xl font-bold">Race Complete!</h2>
+          <h2 className="text-2xl font-bold">{raceComplete ? 'Race Complete!' : 'Waiting for others…'}</h2>
           {hunt && <p className="text-muted-foreground text-sm">{hunt.title}</p>}
+          {!raceComplete && (
+            <p className="text-xs text-muted-foreground">Your finish is saved. Standings update as families arrive.</p>
+          )}
         </div>
 
         {/* Podium */}

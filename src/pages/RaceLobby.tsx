@@ -22,6 +22,7 @@ export default function RaceLobby() {
   const [race, setRace] = useState<HuntRace | null>(null);
   const [participants, setParticipants] = useState<RaceParticipant[]>([]);
   const [myParticipantId, setMyParticipantId] = useState<string | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -31,7 +32,7 @@ export default function RaceLobby() {
   const [familyEmoji, setFamilyEmoji] = useState(FAMILY_EMOJIS[Math.floor(Math.random() * FAMILY_EMOJIS.length)]);
   const [joining, setJoining] = useState(false);
 
-  const isCreator = race?.createdBy !== undefined; // simplified; real check uses auth uid
+  const isCreator = !!race && myUserId === race.createdBy;
 
   // Load hunt if slug provided (creator flow)
   useEffect(() => {
@@ -49,7 +50,10 @@ export default function RaceLobby() {
       setRace(r);
       // Auto-join as creator
       raceService.joinRace(r.id, familyName || 'Host Family', familyEmoji, hunt.stops.length)
-        .then(p => setMyParticipantId(p.id))
+        .then(p => {
+          setMyParticipantId(p.id);
+          setMyUserId(p.userId);
+        })
         .catch(() => {});
       setLoading(false);
     }).catch(e => {
@@ -86,19 +90,19 @@ export default function RaceLobby() {
       const r = await raceService.getRaceByCode(joinCode);
       if (!r) { toast.error('Race not found'); return; }
       if (r.status !== 'waiting_for_players') { toast.error('Race already started'); return; }
-      // Load hunt for stop count
-      const h = await huntsService.getHunt(slug ?? '');
+      const h = await huntsService.getHuntById(r.huntId).catch(() => null);
       const totalStops = h?.stops.length ?? 0;
       const p = await raceService.joinRace(r.id, familyName, familyEmoji, totalStops);
       setRace(r);
       setMyParticipantId(p.id);
-      setHunt(h);
+      setMyUserId(p.userId);
+      setHunt(h as ScavengerHunt | null);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setJoining(false);
     }
-  }, [joinCode, familyName, familyEmoji, slug]);
+  }, [joinCode, familyName, familyEmoji]);
 
   const handleStart = async () => {
     if (!race) return;
@@ -217,7 +221,7 @@ export default function RaceLobby() {
         </div>
 
         {/* Start button (creator only) */}
-        {race?.status === 'waiting_for_players' && participants.length >= 2 && (
+        {isCreator && race?.status === 'waiting_for_players' && participants.length >= 2 && (
           <button
             onClick={handleStart}
             className="w-full h-14 rounded-2xl bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-2 tap-highlight shadow-lg"
@@ -225,6 +229,10 @@ export default function RaceLobby() {
             <Play className="w-6 h-6" />
             Start Race!
           </button>
+        )}
+
+        {!isCreator && race?.status === 'waiting_for_players' && participants.length >= 2 && (
+          <p className="text-center text-sm text-muted-foreground">Waiting for the host family to start…</p>
         )}
 
         {participants.length < 2 && race && (

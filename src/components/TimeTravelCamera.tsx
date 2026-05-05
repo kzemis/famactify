@@ -185,12 +185,65 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function proxiedImageUrl(url: string): string | null {
+  if (!/^https?:\/\//i.test(url)) return null;
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+}
+
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return readBlobAsDataUrl(file);
+}
+
+async function fetchImageAsDataUrl(url: string): Promise<string> {
+  const response = await fetch(url, { mode: 'cors' });
+  if (!response.ok) throw new Error(`Image request failed: ${response.status}`);
+  return readBlobAsDataUrl(await response.blob());
+}
+
+function hasVideoFrame(video: HTMLVideoElement | null): video is HTMLVideoElement {
+  return !!video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0;
+}
+
+function waitForVideoFrame(video: HTMLVideoElement, timeoutMs = 2500): Promise<void> {
+  if (hasVideoFrame(video)) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    let rafId = 0;
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Camera is not ready yet'));
+    }, timeoutMs);
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      window.cancelAnimationFrame(rafId);
+      video.removeEventListener('loadedmetadata', check);
+      video.removeEventListener('canplay', check);
+      video.removeEventListener('playing', check);
+    };
+
+    const check = () => {
+      if (!hasVideoFrame(video)) {
+        rafId = window.requestAnimationFrame(check);
+        return;
+      }
+      cleanup();
+      resolve();
+    };
+
+    video.addEventListener('loadedmetadata', check);
+    video.addEventListener('canplay', check);
+    video.addEventListener('playing', check);
+    rafId = window.requestAnimationFrame(check);
   });
 }
 
@@ -249,29 +302,36 @@ export default function TimeTravelCamera({
 
   // Pre-fetch the overlay image as a data URL so canvas operations bypass CORS.
   useEffect(() => {
-    if (!overlayImageUrl) return;
+    if (!overlayImageUrl) {
+      setOverlayDataUrl(null);
+      return;
+    }
     // If it's already a data URL, just use it directly.
     if (overlayImageUrl.startsWith('data:')) { setOverlayDataUrl(overlayImageUrl); return; }
     let cancelled = false;
     (async () => {
-      try {
-        const resp = await fetch(overlayImageUrl);
-        const blob = await resp.blob();
-        const reader = new FileReader();
-        reader.onload = () => { if (!cancelled) setOverlayDataUrl(reader.result as string); };
-        reader.readAsDataURL(blob);
-      } catch {
-        // fetch CORS failed — try loading with img crossOrigin as fallback
+      setOverlayDataUrl(null);
+      const fetchSources = [overlayImageUrl, proxiedImageUrl(overlayImageUrl)].filter(Boolean) as string[];
+      for (const source of fetchSources) {
         try {
-          const img = await loadImage(overlayImageUrl);
+          const dataUrl = await fetchImageAsDataUrl(source);
+          if (!cancelled) setOverlayDataUrl(dataUrl);
+          return;
+        } catch { /* try the next source */ }
+      }
+
+      const imageSources = [overlayImageUrl, proxiedImageUrl(overlayImageUrl)].filter(Boolean) as string[];
+      try {
+        for (const source of imageSources) {
+          const img = await loadImage(source);
           const c = document.createElement('canvas');
           c.width = img.naturalWidth; c.height = img.naturalHeight;
           c.getContext('2d')!.drawImage(img, 0, 0);
           if (!cancelled) setOverlayDataUrl(c.toDataURL('image/jpeg', 0.9));
-        } catch {
-          // Both approaches failed — overlay won't be embeddable in canvas
-          console.warn('[TimeTravelCamera] Could not pre-fetch overlay image for canvas embed');
+          return;
         }
+      } catch {
+        console.warn('[TimeTravelCamera] Could not pre-fetch overlay image for canvas embed');
       }
     })();
     return () => { cancelled = true; };
@@ -419,6 +479,7 @@ export default function TimeTravelCamera({
         videoRef.current.srcObject = stream;
         try {
           await videoRef.current.play();
+          await waitForVideoFrame(videoRef.current).catch(() => {});
         } catch (playError: any) {
           if (cameraSessionRef.current !== sessionId || playError?.name === 'AbortError') return;
           throw playError;
@@ -464,17 +525,57 @@ export default function TimeTravelCamera({
     catch { console.warn('[TimeTravelCamera] Could not load image for canvas:', url.slice(0, 80)); return null; }
   };
 
-  const renderVideoFrame = async (layout: CaptureLayout = captureLayout, selfieUrl?: string | null) => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth || !video.videoHeight) {
-      throw new Error('Camera is not ready yet');
+  const loadOverlayForCanvas = async (): Promise<HTMLImageElement | null> => {
+    const sources = [
+      overlayDataUrl,
+      overlayImageUrl,
+      overlayImageUrl ? proxiedImageUrl(overlayImageUrl) : null,
+    ].filter(Boolean) as string[];
+
+    for (const source of Array.from(new Set(sources))) {
+      const image = await tryLoadImage(source);
+      if (image && image.naturalWidth > 0 && image.naturalHeight > 0) return image;
     }
 
-    const overlaySource = overlayDataUrl ?? overlayImageUrl;
+    return null;
+  };
+
+  const renderCameraOnlyFrame = async () => {
+    const video = videoRef.current;
+    if (!video) throw new Error('Camera is not ready yet');
+    await waitForVideoFrame(video);
+
+    const { width, height } = getOutputSize();
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not supported');
+
+    if (facingMode === 'user') {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      drawCover(ctx, video, canvas.width, canvas.height);
+      ctx.restore();
+    } else {
+      drawCover(ctx, video, canvas.width, canvas.height);
+    }
+
+    return canvas.toDataURL('image/jpeg', 0.9);
+  };
+
+  const renderVideoFrame = async (layout: CaptureLayout = captureLayout, selfieUrl?: string | null) => {
+    const video = videoRef.current;
+    if (!video) {
+      throw new Error('Camera is not ready yet');
+    }
+    await waitForVideoFrame(video);
+
     const mirrorCamera = facingMode === 'user';
 
     // ── Side-by-side layouts ──
-    if ((layout === 'split' || layout === 'split_selfie') && overlaySource) {
+    if (layout === 'split' || layout === 'split_selfie') {
       const { width, height } = getOutputSize();
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -482,11 +583,12 @@ export default function TimeTravelCamera({
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas is not supported');
 
-      const overlay = await tryLoadImage(overlaySource);
+      const overlay = await loadOverlayForCanvas();
       if (overlay) {
         drawSideBySide(ctx, video, overlay, canvas.width, canvas.height, mirrorCamera);
+      } else if (overlayImageUrl) {
+        throw new Error('Historical image is still loading — try again');
       } else {
-        // Overlay failed to load — save camera-only frame
         if (mirrorCamera) {
           ctx.save(); ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
           drawCover(ctx, video, canvas.width, canvas.height);
@@ -494,7 +596,6 @@ export default function TimeTravelCamera({
         } else {
           drawCover(ctx, video, canvas.width, canvas.height);
         }
-        toast.warning('Saved photo without historical reference — source image could not be embedded');
       }
 
       if (layout === 'split_selfie' && selfieUrl) {
@@ -524,8 +625,8 @@ export default function TimeTravelCamera({
       drawCover(ctx, video, canvas.width, canvas.height);
     }
 
-    if (overlaySource) {
-      const overlay = await tryLoadImage(overlaySource);
+    if (overlayImageUrl) {
+      const overlay = await loadOverlayForCanvas();
       if (overlay) {
         ctx.save();
         if (includeOverlayInCapture) {
@@ -536,6 +637,8 @@ export default function TimeTravelCamera({
           drawHistoricalInset(ctx, overlay, canvas.width, canvas.height, previewOpacity);
         }
         ctx.restore();
+      } else {
+        throw new Error('Historical image is still loading — try again');
       }
     }
 
@@ -545,8 +648,6 @@ export default function TimeTravelCamera({
 
   /** Render a side-by-side using an already-captured scene image instead of the live video. */
   const renderScenePlusSelfie = async (sceneUrl: string, selfieUrl: string) => {
-    const overlaySource = overlayDataUrl ?? overlayImageUrl;
-
     const { width, height } = getOutputSize();
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -557,15 +658,20 @@ export default function TimeTravelCamera({
     const scene = await tryLoadImage(sceneUrl);
     if (!scene) throw new Error('Could not load scene image');
 
-    const overlay = overlaySource ? await tryLoadImage(overlaySource) : null;
+    const overlay = await loadOverlayForCanvas();
     if (overlay) {
       drawSideBySide(ctx, scene, overlay, canvas.width, canvas.height, false);
+    } else if (overlayImageUrl) {
+      throw new Error('Historical image is still loading — try again');
     } else {
       drawCover(ctx, scene, canvas.width, canvas.height);
     }
 
     const selfie = await tryLoadImage(selfieUrl);
-    if (selfie) drawSelfieCircle(ctx, selfie, canvas.width, canvas.height);
+    if (!selfie || selfie.naturalWidth === 0 || selfie.naturalHeight === 0) {
+      throw new Error('Selfie camera is not ready yet');
+    }
+    drawSelfieCircle(ctx, selfie, canvas.width, canvas.height);
 
     drawAnnotationsTo(ctx, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.9);
@@ -591,7 +697,7 @@ export default function TimeTravelCamera({
       if (captureLayout === 'split_selfie') {
         if (!pendingSceneDataUrl) {
           // Step 1: capture the scene, then switch to front camera for selfie
-          const sceneData = await renderVideoFrame('split');
+          const sceneData = await renderCameraOnlyFrame();
           setPendingSceneDataUrl(sceneData);
           setCapturing(false);
           // Switch to front camera for the selfie step
@@ -605,23 +711,18 @@ export default function TimeTravelCamera({
         // Step 2: capture selfie, composite everything
         const selfieCanvas = document.createElement('canvas');
         const video = videoRef.current;
-        if (video && video.videoWidth && video.videoHeight) {
-          selfieCanvas.width = video.videoWidth;
-          selfieCanvas.height = video.videoHeight;
-          const sCtx = selfieCanvas.getContext('2d')!;
-          sCtx.save();
-          sCtx.translate(selfieCanvas.width, 0);
-          sCtx.scale(-1, 1);
-          sCtx.drawImage(video, 0, 0);
-          sCtx.restore();
-        }
+        if (!video) throw new Error('Selfie camera is not ready yet');
+        await waitForVideoFrame(video);
+        selfieCanvas.width = video.videoWidth;
+        selfieCanvas.height = video.videoHeight;
+        const sCtx = selfieCanvas.getContext('2d')!;
+        sCtx.save();
+        sCtx.translate(selfieCanvas.width, 0);
+        sCtx.scale(-1, 1);
+        sCtx.drawImage(video, 0, 0);
+        sCtx.restore();
         const selfieDataUrl = selfieCanvas.toDataURL('image/jpeg', 0.9);
-        let dataUrl: string;
-        try {
-          dataUrl = await renderScenePlusSelfie(pendingSceneDataUrl, selfieDataUrl);
-        } catch {
-          dataUrl = pendingSceneDataUrl; // fallback: just the scene side-by-side
-        }
+        const dataUrl = await renderScenePlusSelfie(pendingSceneDataUrl, selfieDataUrl);
         setCapturedDataUrl(dataUrl);
         onCapture(dataUrl);
         setPendingSceneDataUrl(null);
@@ -632,7 +733,6 @@ export default function TimeTravelCamera({
       }
 
       // ── Single-step capture (inset or split) ──
-      // renderVideoFrame handles overlay failures gracefully (non-fatal)
       const dataUrl = await renderVideoFrame(captureLayout);
       setCapturedDataUrl(dataUrl);
       onCapture(dataUrl);

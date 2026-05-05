@@ -71,8 +71,6 @@ function updateLocalAttempt(attemptId: string, updater: (attempt: HuntAttempt) =
 }
 
 const OPTIONAL_HUNT_STOP_COLUMNS = [
-  'clue_text_lv',
-  'reveal_fun_fact_lv',
   'prompt_metadata',
 ] as const;
 
@@ -220,12 +218,11 @@ function mapStopRow(s: any): HuntStop {
     lon: s.lon,
     address: s.address ?? undefined,
     clueText: s.clue_text,
-    clueTextLv: s.clue_text_lv ?? undefined,
     clueImage: s.clue_image ?? undefined,
     clueAudio: s.clue_audio ?? undefined,
     parentHint: s.parent_hint ?? undefined,
     prompt,
-    reveal: { funFact: s.reveal_fun_fact, funFactLv: s.reveal_fun_fact_lv ?? undefined, image: s.reveal_image ?? undefined },
+    reveal: { funFact: s.reveal_fun_fact, image: s.reveal_image ?? undefined },
   };
 }
 
@@ -434,7 +431,6 @@ export const huntsService = {
       lon: stop.lon,
       address: stop.address ?? null,
       clue_text: stop.clueText,
-      clue_text_lv: stop.clueTextLv ?? null,
       clue_image: stop.clueImage ?? null,
       clue_audio: stop.clueAudio ?? null,
       parent_hint: stop.parentHint ?? null,
@@ -445,7 +441,6 @@ export const huntsService = {
       prompt_photo_subject: stop.prompt.photoSubject ?? null,
       prompt_metadata: promptMetadata(stop.prompt),
       reveal_fun_fact: stop.reveal.funFact,
-      reveal_fun_fact_lv: stop.reveal.funFactLv ?? null,
       reveal_image: stop.reveal.image ?? null,
     }));
 

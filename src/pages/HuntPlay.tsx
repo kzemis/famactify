@@ -163,10 +163,15 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   const totalStops = hunt.stops.length;
   const hasLatvianCopy = !!(currentStop?.clueTextLv || currentStop?.reveal.funFactLv);
   const activeStopLanguage = stopLanguage === 'lv' && hasLatvianCopy ? 'lv' : 'en';
+  const hasStopCoordinates = !!currentStop
+    && typeof currentStop.lat === 'number'
+    && Number.isFinite(currentStop.lat)
+    && typeof currentStop.lon === 'number'
+    && Number.isFinite(currentStop.lon);
   const displayedClueText = currentStop
     ? activeStopLanguage === 'lv'
-      ? currentStop.clueTextLv || currentStop.clueText
-      : currentStop.clueText
+      ? currentStop.clueTextLv || currentStop.clueText || 'Head to this stop, then complete the action.'
+      : currentStop.clueText || 'Head to this stop, then complete the action.'
     : '';
   const displayedFunFact = currentStop
     ? activeStopLanguage === 'lv'
@@ -197,6 +202,10 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   };
 
   const handleLocate = () => {
+    if (!currentStop || !hasStopCoordinates) {
+      toast.message('This stop has no map pin yet — use manual check-in.');
+      return;
+    }
     if (!('geolocation' in navigator)) {
       toast.error('Geolocation not supported');
       return;
@@ -207,8 +216,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         const nextLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
         setUserLocation(nextLocation);
         setLocating(false);
-        if (!currentStop) return;
-        const distance = huntsService.distanceMeters(nextLocation, { lat: currentStop.lat, lon: currentStop.lon });
+        const distance = huntsService.distanceMeters(nextLocation, { lat: currentStop.lat as number, lon: currentStop.lon as number });
         if (distance <= ARRIVAL_RADIUS_M) {
           toast.success('GPS check-in complete');
           setPhase('prompt');
@@ -244,8 +252,8 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     setAudioGuidePlaying(false);
   };
 
-  const distanceToCurrent = userLocation && currentStop
-    ? huntsService.distanceMeters(userLocation, { lat: currentStop.lat, lon: currentStop.lon })
+  const distanceToCurrent = userLocation && currentStop && hasStopCoordinates
+    ? huntsService.distanceMeters(userLocation, { lat: currentStop.lat as number, lon: currentStop.lon as number })
     : null;
   const isAtStop = distanceToCurrent != null && distanceToCurrent <= ARRIVAL_RADIUS_M;
 
@@ -1007,16 +1015,18 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={handleLocate}
-                    disabled={locating}
-                    className="min-w-0 h-12 rounded-xl bg-muted text-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-70"
-                    aria-label="Auto check in with GPS"
-                  >
-                    {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Locate className="w-4 h-4" />}
-                    <span>{locating ? 'GPS…' : 'GPS'}</span>
-                  </button>
+                <div className={cn('grid gap-2', hasStopCoordinates ? 'grid-cols-3' : 'grid-cols-1')}>
+                  {hasStopCoordinates && (
+                    <button
+                      onClick={handleLocate}
+                      disabled={locating}
+                      className="min-w-0 h-12 rounded-xl bg-muted text-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-70"
+                      aria-label="Auto check in with GPS"
+                    >
+                      {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Locate className="w-4 h-4" />}
+                      <span>{locating ? 'GPS…' : 'GPS'}</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => setPhase('prompt')}
                     className="min-w-0 h-12 rounded-xl bg-primary text-primary-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
@@ -1025,17 +1035,21 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                     <MapPin className="w-4 h-4" />
                     <span>I'm here</span>
                   </button>
-                  <button
-                    onClick={() => setShowARGuide(true)}
-                    className="min-w-0 h-12 rounded-xl bg-black text-white text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
-                    aria-label="Open AR arrow guide"
-                  >
-                    <Navigation className="w-4 h-4" />
-                    <span>AR</span>
-                  </button>
+                  {hasStopCoordinates && (
+                    <button
+                      onClick={() => setShowARGuide(true)}
+                      className="min-w-0 h-12 rounded-xl bg-black text-white text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+                      aria-label="Open AR arrow guide"
+                    >
+                      <Navigation className="w-4 h-4" />
+                      <span>AR</span>
+                    </button>
+                  )}
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  GPS can auto-check in. "I'm here" skips GPS.
+                  {hasStopCoordinates
+                    ? 'GPS can auto-check in. "I\'m here" skips GPS.'
+                    : 'No map pin for this stop yet. Manual check-in is available.'}
                 </p>
               </div>
               {/* Parent hint — co-pilot mode */}
@@ -1053,9 +1067,12 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         {/* PROMPT phase */}
         {phase === 'prompt' && currentStop && (
           <div className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Question</p>
+            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5 space-y-1">
+              <p className="text-xs font-black uppercase tracking-widest text-primary">Action to do</p>
               <h2 className="text-xl font-bold leading-tight">{currentStop.prompt.question}</h2>
+              <p className="text-xs text-muted-foreground">
+                This is the task/question for this stop. Complete it, then the app reveals any extra story.
+              </p>
             </div>
 
             {/* Text input */}
@@ -1308,39 +1325,52 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-gradient-to-br from-primary/5 to-amber-50 border p-5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Did you know?</p>
-                  {hasLatvianCopy && (
-                    <div className="flex items-center rounded-full border bg-background p-0.5">
-                      {(['en', 'lv'] as const).map(lang => (
-                        <button
-                          key={lang}
-                          onClick={() => {
-                            window.speechSynthesis?.cancel();
-                            setSpeaking(false);
-                            setStopLanguage(lang);
-                          }}
-                          className={cn(
-                            'h-7 px-2 rounded-full text-[11px] font-bold tap-highlight',
-                            activeStopLanguage === lang ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
-                          )}
-                          aria-pressed={activeStopLanguage === lang}
-                        >
-                          {lang === 'lv' ? '🇱🇻 LV' : '🇺🇸 EN'}
-                        </button>
-                      ))}
+              <div className="rounded-3xl bg-sky-50 border border-sky-200 p-5 space-y-2">
+                {displayedFunFact.trim() ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-sky-700" />
+                      <p className="text-xs font-black uppercase tracking-widest text-sky-800 flex-1">Fun fact revealed</p>
+                      {hasLatvianCopy && (
+                        <div className="flex items-center rounded-full border bg-background p-0.5">
+                          {(['en', 'lv'] as const).map(lang => (
+                            <button
+                              key={lang}
+                              onClick={() => {
+                                window.speechSynthesis?.cancel();
+                                setSpeaking(false);
+                                setStopLanguage(lang);
+                              }}
+                              className={cn(
+                                'h-7 px-2 rounded-full text-[11px] font-bold tap-highlight',
+                                activeStopLanguage === lang ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                              )}
+                              aria-pressed={activeStopLanguage === lang}
+                            >
+                              {lang === 'lv' ? '🇱🇻 LV' : '🇺🇸 EN'}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => speak(displayedFunFact, activeStopLanguage)}
+                        className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
+                        aria-label={speaking ? 'Stop reading' : 'Read fact aloud'}
+                      >
+                        {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                      </button>
                     </div>
-                  )}
-                  <button
-                    onClick={() => speak(displayedFunFact, activeStopLanguage)}
-                    className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
-                    aria-label={speaking ? 'Stop reading' : 'Read fact aloud'}
-                  >
-                    {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                  </button>
-                </div>
-                <p className="text-base leading-relaxed">{displayedFunFact}</p>
+                    <p className="text-base leading-relaxed">{displayedFunFact}</p>
+                  </>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <BookOpen className="w-4 h-4 text-sky-700 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-sky-800">Stop complete</p>
+                      <p className="text-sm text-sky-900/80 mt-1">No extra fun fact for this stop — your memory is saved.</p>
+                    </div>
+                  </div>
+                )}
                 {/* Photo verification feedback */}
                 {lastResult?.photoDataUrl && lastResult.photoReviewStatus === 'pending' && (
                   <p className="text-[11px] text-amber-700 mt-2">📸 Photo saved — queued for a grown-up/admin check.</p>
@@ -1397,12 +1427,12 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         })()}
       </div>
 
-      {showARGuide && currentStop && (
+      {showARGuide && currentStop && hasStopCoordinates && (
         <ARClueOverlay
           target={{
             title: currentStop.title,
-            lat: currentStop.lat,
-            lon: currentStop.lon,
+            lat: currentStop.lat as number,
+            lon: currentStop.lon as number,
             address: currentStop.address,
           }}
           onClose={() => setShowARGuide(false)}

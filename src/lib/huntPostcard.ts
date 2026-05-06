@@ -64,6 +64,13 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: numb
   ctx.restore();
 }
 
+function drawContainedImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const scale = Math.min(w / img.width, h / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines = 2): number {
   const words = text.split(' ');
   let line = '';
@@ -98,10 +105,10 @@ function tierFor(scorePct: number): BadgeTier {
   return 'bronze';
 }
 
-const TIER_DISPLAY: Record<BadgeTier, { label: string; emoji: string; bg: string; fg: string }> = {
-  gold:   { label: 'GOLD',   emoji: '🏆', bg: '#fef3c7', fg: '#92400e' },
-  silver: { label: 'SILVER', emoji: '🥈', bg: '#e5e7eb', fg: '#374151' },
-  bronze: { label: 'BRONZE', emoji: '🥉', bg: '#fed7aa', fg: '#9a3412' },
+const TIER_DISPLAY: Record<BadgeTier, { label: string; bg: string; fg: string }> = {
+  gold:   { label: 'GOLD',   bg: '#fef3c7', fg: '#92400e' },
+  silver: { label: 'SILVER', bg: '#e5e7eb', fg: '#374151' },
+  bronze: { label: 'BRONZE', bg: '#fed7aa', fg: '#9a3412' },
 };
 
 function fmtDate(iso: string): string {
@@ -145,20 +152,13 @@ function drawMemoryCollage(
   top.addColorStop(1, 'rgba(17,24,39,0)');
   ctx.fillStyle = top;
   ctx.fillRect(0, 0, W, 540);
-
-  const bottom = ctx.createLinearGradient(0, H - 440, 0, H);
-  bottom.addColorStop(0, 'rgba(17,24,39,0)');
-  bottom.addColorStop(0.52, 'rgba(17,24,39,0.5)');
-  bottom.addColorStop(1, 'rgba(17,24,39,0.84)');
-  ctx.fillStyle = bottom;
-  ctx.fillRect(0, H - 460, W, 460);
   ctx.restore();
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null> {
-  const { hunt, attempt, profileName } = opts;
+  const { hunt, attempt } = opts;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -183,6 +183,14 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
     } catch { /* skip */ }
   }
 
+  const logoUrl = hunt.hostLogo || hunt.sponsors?.find(sponsor => sponsor.logo)?.logo;
+  let logoImg: HTMLImageElement | null = null;
+  if (logoUrl) {
+    try {
+      logoImg = await loadImage(logoUrl);
+    } catch { /* skip logo if it cannot be canvas-loaded */ }
+  }
+
   const totalStops = hunt.stops.length || attempt.results.length;
   const decided = attempt.results.filter(r => !r.skipped);
   const correct = decided.filter(r => r.isCorrect).length;
@@ -190,8 +198,7 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   const tier = tierFor(scorePct);
   const tierMeta = TIER_DISPLAY[tier];
   const dateStr = fmtDate(attempt.completedAt ?? attempt.startedAt);
-  const subtitle = [profileName, dateStr, hunt.city].filter(Boolean).join('  ·  ');
-  const url = `famactify.app/hunts/${hunt.slug}`;
+  const subtitle = [dateStr, hunt.city].filter(Boolean).join('  ·  ');
   const hasVisuals = imgs.length > 0;
 
   if (hasVisuals) {
@@ -229,22 +236,23 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.fillStyle = hasVisuals ? 'rgba(255,255,255,0.78)' : '#9ca3af';
   ctx.fillText('· Scavenger Hunt', margin + 155, 63);
 
-  ctx.save();
-  const emojiSize = 78;
-  const emojiX = W - margin - emojiSize;
-  const emojiY = 42;
-  roundedRectPath(ctx, emojiX, emojiY, emojiSize, emojiSize, 22);
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.shadowColor = 'rgba(0,0,0,0.28)';
-  ctx.shadowBlur = 16;
-  ctx.shadowOffsetY = 8;
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.font = '50px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(hunt.coverEmoji, emojiX + emojiSize / 2, emojiY + emojiSize / 2 + 3);
-  ctx.restore();
+  if (logoImg) {
+    ctx.save();
+    const logoSize = 84;
+    const logoX = W - margin - logoSize;
+    const logoY = 42;
+    roundedRectPath(ctx, logoX, logoY, logoSize, logoSize, 22);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.shadowColor = 'rgba(0,0,0,0.28)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 8;
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    roundedRectPath(ctx, logoX + 10, logoY + 10, logoSize - 20, logoSize - 20, 16);
+    ctx.clip();
+    drawContainedImage(ctx, logoImg, logoX + 10, logoY + 10, logoSize - 20, logoSize - 20);
+    ctx.restore();
+  }
 
   let textY = 132;
   ctx.textAlign = 'left';
@@ -253,7 +261,7 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.shadowBlur = hasVisuals ? 16 : 0;
   ctx.fillStyle = hasVisuals ? '#ffffff' : '#111827';
   ctx.font = '900 58px system-ui, sans-serif';
-  textY = wrapText(ctx, hunt.title, margin, textY, W - margin * 2 - 90, 64, 2);
+  textY = wrapText(ctx, hunt.title, margin, textY, W - margin * 2 - (logoImg ? 90 : 0), 64, 2);
   textY += 12;
   ctx.font = '600 27px system-ui, sans-serif';
   ctx.fillStyle = hasVisuals ? 'rgba(255,255,255,0.88)' : '#6b7280';
@@ -263,7 +271,7 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.shadowColor = 'transparent';
   const pillH = 58;
   ctx.font = 'bold 25px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
-  const pillLabel = `${tierMeta.emoji}  ${tierMeta.label}  ·  ${correct}/${totalStops} stops`;
+  const pillLabel = `${tierMeta.label}  ·  ${correct}/${totalStops} stops`;
   const pillW = Math.min(W - margin * 2, ctx.measureText(pillLabel).width + 48);
   roundedRectPath(ctx, margin, textY, pillW, pillH, pillH / 2);
   ctx.fillStyle = tierMeta.bg;
@@ -272,21 +280,6 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.textBaseline = 'middle';
   ctx.fillText(pillLabel, margin + 24, textY + pillH / 2);
 
-  // Bottom CTA, over the memory image.
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'left';
-  ctx.shadowColor = hasVisuals ? 'rgba(0,0,0,0.55)' : 'transparent';
-  ctx.shadowBlur = hasVisuals ? 12 : 0;
-  ctx.fillStyle = hasVisuals ? '#ffffff' : '#6b7280';
-  ctx.font = '700 24px system-ui, sans-serif';
-  ctx.fillText(`by ${hunt.hostName}`, margin, H - 190);
-  ctx.fillStyle = hasVisuals ? '#ffffff' : '#111827';
-  ctx.font = '900 34px system-ui, sans-serif';
-  ctx.fillText('Walk it yourself →', margin, H - 118);
-  ctx.fillStyle = '#f472b6';
-  ctx.font = '800 27px system-ui, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText(url, W - margin, H - 74);
   ctx.shadowColor = 'transparent';
 
   // ── Output blob ─────────────────────────────────────────────────────────

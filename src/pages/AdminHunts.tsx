@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { Plus, AlertCircle, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
 import { huntsService } from '@/services/huntsService';
 import { authService } from '@/services';
 import { AdminPageShell, adminActionClass, adminPillClass } from '@/components/admin/AdminPageShell';
@@ -31,6 +32,7 @@ export default function AdminHunts() {
   const [region, setRegion] = useState<RegionFilter>('all');
   const [hunts, setHunts] = useState<AdminHunt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -45,6 +47,24 @@ export default function AdminHunts() {
       setLoading(false);
     })();
   }, [tab, region, navigate]);
+
+  const deleteHunt = async (hunt: AdminHunt) => {
+    if (hunt.adminSource === 'seed') {
+      toast.message('Seed hunts live in code. Open and save it first to create an editable DB copy.');
+      return;
+    }
+    if (!window.confirm(`Delete "${hunt.title || 'this hunt'}"? This removes the hunt, stops, sponsors, and attempts. This cannot be undone.`)) return;
+    setDeletingId(hunt.id);
+    try {
+      await huntsService.deleteHunt(hunt.id);
+      setHunts(prev => prev.filter(item => item.id !== hunt.id));
+      toast.success('Hunt deleted');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete hunt');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filters = (
     <div className="space-y-2 border-b bg-background/70 px-4 py-3">
@@ -96,13 +116,17 @@ export default function AdminHunts() {
           const country = COUNTRIES[h.countryCode as CountryCode];
           const statusMeta = STATUS_TABS.find(t => t.key === h.status);
           return (
-            <button
+            <div
               key={h.id}
-              onClick={() => navigate(`/admin/hunts/${encodeURIComponent(h.id)}`)}
-              className="w-full text-left rounded-2xl border bg-card p-4 flex items-center gap-3 tap-highlight active:scale-[0.99] transition-transform"
+              className="w-full rounded-2xl border bg-card p-4 flex items-center gap-3"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-pink-100 flex items-center justify-center text-2xl shrink-0">{h.coverEmoji}</div>
-              <div className="flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/hunts/${encodeURIComponent(h.id)}`)}
+                className="flex items-center gap-3 flex-1 min-w-0 text-left tap-highlight active:scale-[0.99] transition-transform"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-pink-100 flex items-center justify-center text-2xl shrink-0">{h.coverEmoji}</div>
+                <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <p className="font-semibold text-sm truncate">{h.title || '(untitled)'}</p>
                   {tab === 'all' && statusMeta && statusMeta.key !== 'all' && (
@@ -129,8 +153,20 @@ export default function AdminHunts() {
                     <AlertCircle className="w-3 h-3 shrink-0" /> {h.reviewNotes}
                   </p>
                 )}
-              </div>
-            </button>
+                </div>
+              </button>
+              {h.adminSource === 'db' && (
+                <button
+                  type="button"
+                  onClick={() => deleteHunt(h)}
+                  disabled={deletingId === h.id}
+                  className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 tap-highlight shrink-0 disabled:opacity-60"
+                  aria-label={`Delete ${h.title || 'hunt'}`}
+                >
+                  {deletingId === h.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
           );
         })
       )}

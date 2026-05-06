@@ -177,12 +177,16 @@ export interface ExplorerProgression {
 // ── Race ─────────────────────────────────────────────────────────────────────
 
 export type RaceStatus = 'waiting_for_players' | 'racing' | 'finished';
+export type SessionMode = 'race' | 'duo';
+export type DuoRole = 'player' | 'parent_guide' | 'kid_solver';
 
 export interface HuntRace {
   id: string;
   huntId: string;
   joinCode: string;
   status: RaceStatus;
+  /** 'race' = competitive multi-family, 'duo' = collaborative parent+kid two-phone */
+  mode: SessionMode;
   createdBy: string;
   startedAt?: string;
   finishedAt?: string;
@@ -198,6 +202,8 @@ export interface RaceParticipant {
   currentStop: number;
   score: number;
   totalStops: number;
+  /** Duo mode: 'parent_guide' sees answers + advances; 'kid_solver' sees clue only */
+  role: DuoRole;
   finishedAt?: string;
   joinedAt: string;
 }

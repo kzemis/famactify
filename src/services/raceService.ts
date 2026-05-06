@@ -17,6 +17,7 @@ function mapRace(r: any): HuntRace {
     huntId: r.hunt_id,
     joinCode: r.join_code,
     status: r.status,
+    mode: r.mode ?? 'race',
     createdBy: r.created_by,
     startedAt: r.started_at ?? undefined,
     finishedAt: r.finished_at ?? undefined,
@@ -34,6 +35,7 @@ function mapParticipant(p: any): RaceParticipant {
     currentStop: p.current_stop,
     score: p.score,
     totalStops: p.total_stops,
+    role: p.role ?? 'player',
     finishedAt: p.finished_at ?? undefined,
     joinedAt: p.joined_at,
   };
@@ -164,6 +166,91 @@ export const raceService = {
       .from('hunt_races')
       .update({ status: 'finished', finished_at: new Date().toISOString() })
       .eq('id', raceId);
+    if (error) throw error;
+  },
+
+  // ── Duo mode (parent + kid, two phones, collaborative) ──────────────────
+
+  /** Parent creates a duo session — same as createRace but with mode='duo'. */
+  async createDuoSession(huntId: string): Promise<HuntRace> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Sign in to start a duo session');
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const joinCode = generateJoinCode();
+      const { data, error } = await supabase
+        .from('hunt_races')
+        .insert({
+          hunt_id: huntId,
+          join_code: joinCode,
+          created_by: user.user.id,
+          mode: 'duo',
+          // Duo sessions don't need a "waiting_for_players" lobby — parent starts immediately
+          // when kid joins. We still default to waiting_for_players so the lobby UI can show progress.
+        })
+        .select()
+        .single();
+      if (!error && data) return mapRace(data);
+      if (error && !error.message.includes('duplicate')) throw error;
+    }
+    throw new Error('Could not generate a unique join code');
+  },
+
+  /**
+   * Join an existing session by code. Defaults to 'kid_solver' role for duo sessions
+   * (the parent who created the session is auto-added as 'parent_guide').
+   */
+  async joinSession(
+    raceId: string,
+    familyName: string,
+    familyEmoji: string,
+    totalStops: number,
+    role: 'player' | 'parent_guide' | 'kid_solver' = 'player',
+  ): Promise<RaceParticipant> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Sign in to join');
+
+    const { data, error } = await supabase
+      .from('hunt_race_participants')
+      .insert({
+        race_id: raceId,
+        user_id: user.user.id,
+        family_name: familyName,
+        family_emoji: familyEmoji,
+        total_stops: totalStops,
+        role,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return mapParticipant(data);
+  },
+
+  /**
+   * Parent guide advances both phones to the next stop in a duo session.
+   * Updates current_stop on EVERY participant of this session in one query
+   * so kid's phone receives the change via Realtime.
+   */
+  async advanceDuoStop(raceId: string, newStop: number, totalStops: number): Promise<void> {
+    if (newStop >= totalStops) {
+      // Mark everyone finished
+      const { error } = await supabase
+        .from('hunt_race_participants')
+        .update({ current_stop: totalStops, finished_at: new Date().toISOString() })
+        .eq('race_id', raceId);
+      if (error) throw error;
+      // Mark session finished
+      const { error: rErr } = await supabase
+        .from('hunt_races')
+        .update({ status: 'finished', finished_at: new Date().toISOString() })
+        .eq('id', raceId);
+      if (rErr) throw rErr;
+      return;
+    }
+    const { error } = await supabase
+      .from('hunt_race_participants')
+      .update({ current_stop: newStop })
+      .eq('race_id', raceId);
     if (error) throw error;
   },
 

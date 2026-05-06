@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap, Smartphone } from 'lucide-react';
 import MapView from '@/components/LazyMapView';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import { huntsService, type HuntAttempt } from '@/services/huntsService';
@@ -274,6 +274,14 @@ export default function HuntDetail() {
               <Play className="w-4 h-4" /> {ctaLabel}
             </button>
           </div>
+          {flags.scv_duo_mode && (
+            <button
+              onClick={() => navigate(`/duo/host/${hunt.slug}`)}
+              className="w-full mt-2 h-11 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-800 font-semibold text-sm flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform"
+            >
+              <Smartphone className="w-4 h-4" /> Play with kid on a second phone
+            </button>
+          )}
           {flags.scv_live_races && (
             <button
               onClick={() => navigate(`/race/create/${hunt.slug}`)}

@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones, Loader2, Target } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones, Loader2, Target, Pause, Square, BookOpen } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import VoiceAnswerInput from '@/components/VoiceAnswerInput';
 import ARClueOverlay from '@/components/ARClueOverlay';
@@ -15,6 +15,13 @@ import { useHunt } from '@/hooks/useHunt';
 import { toast } from 'sonner';
 
 const ARRIVAL_RADIUS_M = 80; // GPS slack for "I'm here"
+
+function formatGuideTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${mins}:${secs}`;
+}
 
 export interface HuntProgressSnapshot {
   currentStopOrder: number;
@@ -61,7 +68,15 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   const [advancingStop, setAdvancingStop] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [audioGuideOpen, setAudioGuideOpen] = useState(false);
+  const [audioGuidePlaying, setAudioGuidePlaying] = useState(false);
+  const [audioGuideProgress, setAudioGuideProgress] = useState(0);
+  const [audioGuideDuration, setAudioGuideDuration] = useState(0);
+  const [audioGuideVolume, setAudioGuideVolume] = useState(1);
+  const [finishedSlide, setFinishedSlide] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioGuideRef = useRef<HTMLAudioElement>(null);
+  const finishedCarouselRef = useRef<HTMLDivElement>(null);
 
   // Load attempt after the cached hunt is available.
   useEffect(() => {
@@ -122,6 +137,19 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     return () => { if (postcardUrl) URL.revokeObjectURL(postcardUrl); };
   }, [postcardUrl]);
 
+  // Reset expanded clue audio when moving to another stop.
+  useEffect(() => {
+    const audio = audioGuideRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    setAudioGuideOpen(false);
+    setAudioGuidePlaying(false);
+    setAudioGuideProgress(0);
+    setAudioGuideDuration(0);
+  }, [attempt?.currentStopOrder, huntId]);
+
   if (huntLoading || !hunt || !attempt) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
@@ -133,7 +161,6 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   const isFinished = phase === 'finished' || attempt.currentStopOrder >= hunt.stops.length;
   const currentStop = isFinished ? null : hunt.stops[attempt.currentStopOrder];
   const totalStops = hunt.stops.length;
-  const progress = isFinished ? 1 : attempt.currentStopOrder / totalStops;
   const hasLatvianCopy = !!(currentStop?.clueTextLv || currentStop?.reveal.funFactLv);
   const activeStopLanguage = stopLanguage === 'lv' && hasLatvianCopy ? 'lv' : 'en';
   const displayedClueText = currentStop
@@ -177,12 +204,44 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        const nextLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        setUserLocation(nextLocation);
         setLocating(false);
+        if (!currentStop) return;
+        const distance = huntsService.distanceMeters(nextLocation, { lat: currentStop.lat, lon: currentStop.lon });
+        if (distance <= ARRIVAL_RADIUS_M) {
+          toast.success('GPS check-in complete');
+          setPhase('prompt');
+        } else {
+          toast.message(`${Math.round(distance)}m away — move closer or tap “I'm here”`);
+        }
       },
       (err) => { setLocating(false); toast.error(err.message || 'Could not get your location'); },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: false, timeout: 10000 },
     );
+  };
+
+  const toggleAudioGuide = async () => {
+    const audio = audioGuideRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      try {
+        await audio.play();
+      } catch {
+        toast.error('Audio could not start');
+      }
+    } else {
+      audio.pause();
+    }
+  };
+
+  const stopAudioGuide = () => {
+    const audio = audioGuideRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    setAudioGuideProgress(0);
+    setAudioGuidePlaying(false);
   };
 
   const distanceToCurrent = userLocation && currentStop
@@ -563,165 +622,188 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
 
   if (isFinished) {
     const correct = attempt.results.filter(r => r.isCorrect && !r.skipped).length;
-    const photos = attempt.results.filter(r => r.photoDataUrl).map(r => r.photoDataUrl!);
-    const drawings = attempt.results.filter(r => r.drawingDataUrl).map(r => r.drawingDataUrl!);
-    const audios = attempt.results.filter(r => r.audioDataUrl);
+    const goToFinishedSlide = (index: number) => {
+      setFinishedSlide(index);
+      const carousel = finishedCarouselRef.current;
+      if (!carousel) return;
+      carousel.scrollTo({ left: carousel.clientWidth * index, behavior: 'smooth' });
+    };
+
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-amber-50 via-pink-50 to-purple-50 pb-tab-bar">
+      <div className="min-h-[100dvh] bg-gradient-to-b from-amber-50 via-pink-50 to-purple-50 flex flex-col pb-tab-bar">
         {raceOverlay}
-        <div className="px-6 pt-12 pb-6 text-center space-y-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 32px)' }}>
-          <div className="inline-flex w-20 h-20 rounded-full bg-amber-400/30 items-center justify-center">
-            <Trophy className="w-10 h-10 text-amber-600" />
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">You did it!</h1>
-          <p className="text-sm text-muted-foreground">
-            {hunt.title} · {currentProfile?.name ?? 'Explorer'}
-          </p>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
-            ✓ {correct} of {totalStops} stops solved
-          </div>
-        </div>
-
-        {/* ── Hunt stamp collection ─────────────────────────────── */}
-        <div className="px-5 mt-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">
-            Stamps earned this hunt
-          </p>
-          <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
-            {hunt.stops.map((s, i) => {
-              const r         = attempt.results.find(res => res.stopId === s.id);
-              const solved    = !!r?.isCorrect && !r.skipped;
-              const skipped   = !!r?.skipped;
-              const dateStr   = r
-                ? new Date(r.answeredAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase()
-                : '—';
-              const rotations = [-3, 2, -4, 3, -1, 4, -2, 1];
-              const rot       = rotations[i % rotations.length];
-              const outerCls  = solved  ? 'border-emerald-500' : skipped ? 'border-muted-foreground/40' : 'border-amber-400';
-              const innerCls  = solved  ? 'bg-emerald-50 text-emerald-700' : skipped ? 'bg-muted/60 text-muted-foreground' : 'bg-amber-50 text-amber-700';
-
-              return (
-                <div
-                  key={s.id}
-                  className="shrink-0 flex flex-col items-center gap-1"
-                  style={{ transform: `rotate(${rot}deg)` }}
-                  title={s.title}
-                >
-                  <div className={cn(
-                    'w-[64px] h-[64px] rounded-full border-[3px] border-double flex flex-col items-center justify-center gap-0.5 shadow',
-                    outerCls, innerCls,
-                  )}>
-                    <span className="text-[22px] leading-none">{hunt.coverEmoji}</span>
-                    <span className="text-[6px] font-bold uppercase tracking-tight text-center leading-tight px-1">
-                      #{i + 1}
-                    </span>
-                    <span className="text-[5.5px] font-mono opacity-60 leading-none">{dateStr}</span>
-                  </div>
-                  <p className="text-[8px] font-semibold text-center leading-tight max-w-[68px] truncate px-0.5">{s.title}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Postcard preview — the shareable headline visual */}
-        <div className="px-5 mt-4">
-          {postcardLoading && !postcardUrl ? (
-            <div className="rounded-3xl bg-white/60 border shadow-sm aspect-[4/5] flex flex-col items-center justify-center gap-2 text-muted-foreground">
-              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              <p className="text-xs">Painting your postcard…</p>
-            </div>
-          ) : postcardUrl ? (
+        <div
+          className="shrink-0 px-4 pb-2 bg-background/75 backdrop-blur border-b border-white/50"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 10px)' }}
+        >
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleSharePostcard}
-              disabled={sharing}
-              aria-label="Share postcard"
-              className="block w-full rounded-3xl overflow-hidden shadow-xl border bg-white tap-highlight active:scale-[0.99] transition-transform disabled:opacity-90"
+              onClick={() => navigate(`/hunts/${hunt.slug}`)}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/70 border tap-highlight"
+              aria-label="Back to hunt"
             >
-              <img src={postcardUrl} alt="Hunt completion postcard" className="w-full h-auto block" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-          ) : null}
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Finished hunt</p>
+              <p className="text-sm font-black truncate">{hunt.title}</p>
+            </div>
+            <div className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-black">
+              {correct}/{totalStops}
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-center gap-2">
+            {[0, 1].map(index => (
+              <button
+                key={index}
+                onClick={() => goToFinishedSlide(index)}
+                className={cn(
+                  'h-1.5 rounded-full transition-all tap-highlight',
+                  finishedSlide === index ? 'w-8 bg-primary' : 'w-1.5 bg-muted-foreground/25',
+                )}
+                aria-label={index === 0 ? 'Show postcard slide' : 'Show passport slide'}
+                aria-pressed={finishedSlide === index}
+              />
+            ))}
+          </div>
         </div>
 
-        {(photos.length > 0 || drawings.length > 0) && (
-          <div className="px-5 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Memories</p>
-            <div className="grid grid-cols-2 gap-2">
-              {photos.map((p, i) => (
-                <img key={`p-${i}`} src={p} alt="" className="rounded-2xl w-full aspect-square object-cover shadow-sm" />
-              ))}
-              {drawings.map((d, i) => (
-                <div key={`d-${i}`} className="relative rounded-2xl w-full aspect-square overflow-hidden shadow-sm bg-white">
-                  <img src={d} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-pink-500/90 text-white flex items-center gap-1">
-                    <Pencil className="w-2.5 h-2.5" /> Drawing
-                  </span>
+        <div
+          ref={finishedCarouselRef}
+          onScroll={(event) => {
+            const { scrollLeft, clientWidth } = event.currentTarget;
+            if (clientWidth > 0) {
+              setFinishedSlide(Math.min(1, Math.max(0, Math.round(scrollLeft / clientWidth))));
+            }
+          }}
+          className="flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        >
+          <section className="w-full shrink-0 snap-start flex flex-col p-3 min-h-0">
+            <div className="flex-1 min-h-0 rounded-[2rem] bg-white/70 border border-white shadow-xl overflow-hidden flex items-center justify-center">
+              {postcardLoading && !postcardUrl ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                  <div className="w-9 h-9 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  <p className="text-xs font-semibold">Painting your postcard…</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {audios.length > 0 && (
-          <div className="px-5 space-y-2 mt-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sounds you captured</p>
-            <div className="space-y-2">
-              {audios.map((r, i) => (
-                <div key={`a-${i}`} className="flex items-center gap-3 px-3 py-2 rounded-2xl bg-white/80 border shadow-sm">
-                  <div className="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0">
-                    <Mic className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {((r.audioDurationMs ?? 0) / 1000).toFixed(1)}s
-                  </span>
-                  <audio src={r.audioDataUrl!} controls className="flex-1 h-8" />
+              ) : postcardUrl ? (
+                <img src={postcardUrl} alt="Hunt completion postcard" className="w-full h-full object-contain block bg-white" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                  Postcard unavailable
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
 
-        <div className="px-5 pt-6 space-y-3">
-          <button
-            onClick={handleSharePostcard}
-            disabled={sharing || postcardLoading || !postcardBlob}
-            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            <Share2 className="w-4 h-4" />
-            {sharing ? 'Sharing…' : postcardLoading ? 'Preparing postcard…' : 'Send postcard to grandparents'}
-          </button>
-          {postcardBlob && (
-            <button
-              onClick={handleDownloadPostcard}
-              className="w-full h-11 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4" /> Save image
-            </button>
-          )}
-          <button
-            onClick={() => navigate('/saved-trips')}
-            className="w-full h-11 rounded-2xl bg-muted text-foreground text-sm font-medium tap-highlight flex items-center justify-center gap-2"
-          >
-            View memories in Trips
-          </button>
-          <button
-            onClick={async () => {
-              if (window.confirm('Play this hunt again from the start?')) {
-                await huntsService.abandonAttempt(attempt.id);
-                navigate(`/hunts/${hunt.slug}/play`, { replace: true });
-                window.location.reload();
-              }
-            }}
-            className="w-full h-11 rounded-2xl border border-border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4" /> Play again
-          </button>
-          <button
-            onClick={() => navigate('/hunts')}
-            className="w-full h-11 rounded-2xl text-sm text-muted-foreground tap-highlight"
-          >
-            See more hunts
-          </button>
+            <div className="shrink-0 grid grid-cols-4 gap-2 pt-3">
+              <button
+                onClick={handleSharePostcard}
+                disabled={sharing || postcardLoading || !postcardBlob}
+                className="h-14 rounded-2xl bg-primary text-primary-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-60"
+              >
+                {sharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+                <span>Share</span>
+              </button>
+              <button
+                onClick={handleDownloadPostcard}
+                disabled={!postcardBlob}
+                className="h-14 rounded-2xl bg-white/80 border text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>Save</span>
+              </button>
+              <button
+                onClick={() => navigate('/saved-trips')}
+                className="h-14 rounded-2xl bg-white/80 border text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+              >
+                <History className="w-4 h-4" />
+                <span>Trips</span>
+              </button>
+              <button
+                onClick={() => goToFinishedSlide(1)}
+                className="h-14 rounded-2xl bg-white/80 border text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Stamps</span>
+              </button>
+            </div>
+          </section>
+
+          <section className="w-full shrink-0 snap-start flex flex-col p-4 min-h-0">
+            <div className="shrink-0 flex items-center justify-between gap-3 mb-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Explorer Passport</p>
+                <h2 className="text-xl font-black tracking-tight">Stamps earned</h2>
+              </div>
+              <div className="px-3 py-1.5 rounded-full bg-white/80 border text-xs font-black text-emerald-700">
+                {correct}/{totalStops}
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 rounded-[2rem] bg-white/75 border border-white shadow-xl p-3 overflow-y-auto">
+              <div className="grid grid-cols-4 gap-3">
+                {hunt.stops.map((s, i) => {
+                  const result = attempt.results.find(res => res.stopId === s.id);
+                  const solved = !!result?.isCorrect && !result.skipped;
+                  const skipped = !!result?.skipped;
+                  const dateStr = result
+                    ? new Date(result.answeredAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase()
+                    : '—';
+                  const rotations = [-3, 2, -4, 3, -1, 4, -2, 1];
+                  const outerCls = solved ? 'border-emerald-500' : skipped ? 'border-muted-foreground/40' : 'border-amber-400';
+                  const innerCls = solved ? 'bg-emerald-50 text-emerald-700' : skipped ? 'bg-muted/60 text-muted-foreground' : 'bg-amber-50 text-amber-700';
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="min-w-0 flex flex-col items-center gap-1"
+                      style={{ transform: `rotate(${rotations[i % rotations.length]}deg)` }}
+                      title={s.title}
+                    >
+                      <div className={cn(
+                        'w-[64px] h-[64px] rounded-full border-[3px] border-double flex flex-col items-center justify-center gap-0.5 shadow-sm',
+                        outerCls, innerCls,
+                      )}>
+                        <span className="text-[22px] leading-none">{hunt.coverEmoji}</span>
+                        <span className="text-[6px] font-bold uppercase tracking-tight text-center leading-tight px-1">#{i + 1}</span>
+                        <span className="text-[5.5px] font-mono opacity-60 leading-none">{dateStr}</span>
+                      </div>
+                      <p className="w-full text-[8px] font-semibold text-center leading-tight truncate">{s.title}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="shrink-0 grid grid-cols-3 gap-2 pt-3">
+              <button
+                onClick={() => navigate('/passport')}
+                className="h-14 rounded-2xl bg-primary text-primary-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Passport</span>
+              </button>
+              <button
+                onClick={async () => {
+                  if (window.confirm('Play this hunt again from the start?')) {
+                    await huntsService.abandonAttempt(attempt.id);
+                    navigate(`/hunts/${hunt.slug}/play`, { replace: true });
+                    window.location.reload();
+                  }
+                }}
+                className="h-14 rounded-2xl bg-white/80 border text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Again</span>
+              </button>
+              <button
+                onClick={() => navigate('/hunts')}
+                className="h-14 rounded-2xl bg-white/80 border text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+              >
+                <ChevronRight className="w-4 h-4" />
+                <span>Hunts</span>
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -760,7 +842,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                 isDone && correct  ? 'bg-emerald-500 text-white shadow-sm' :
                 isDone && skipped  ? 'bg-muted text-muted-foreground' :
                 isDone             ? 'bg-amber-400 text-white' :
-                isCurrent          ? 'bg-primary text-primary-foreground ring-2 ring-primary/40 animate-pulse' :
+                isCurrent          ? 'bg-primary text-primary-foreground ring-2 ring-primary/40' :
                                      'bg-muted/40 text-muted-foreground/40 border border-dashed border-border/50',
               )}
             >
@@ -778,113 +860,192 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         {phase === 'clue' && currentStop && (
           <>
             <div className="rounded-3xl bg-gradient-to-br from-primary/5 to-pink-50 border p-5 space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{currentStop.order + 1}</div>
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1">Clue</span>
-                {hasLatvianCopy && (
-                  <div className="flex items-center rounded-full border bg-background p-0.5">
-                    {(['en', 'lv'] as const).map(lang => (
-                      <button
-                        key={lang}
-                        onClick={() => {
-                          window.speechSynthesis?.cancel();
-                          setSpeaking(false);
-                          setStopLanguage(lang);
-                        }}
-                        className={cn(
-                          'h-7 px-2 rounded-full text-[11px] font-bold tap-highlight',
-                          activeStopLanguage === lang ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
-                        )}
-                        aria-pressed={activeStopLanguage === lang}
-                      >
-                        {lang === 'lv' ? '🇱🇻 LV' : '🇺🇸 EN'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button
-                  onClick={() => speak(displayedClueText, activeStopLanguage)}
-                  className={cn('w-8 h-8 rounded-full flex items-center justify-center tap-highlight', speaking ? 'bg-primary text-primary-foreground' : 'bg-background border border-border')}
-                  aria-label={speaking ? 'Stop reading' : 'Read clue aloud'}
-                >
-                  {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex-1 pt-2">Clue</span>
+                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                  {hasLatvianCopy && (
+                    <div className="flex items-center rounded-full border bg-background p-0.5">
+                      {(['en', 'lv'] as const).map(lang => (
+                        <button
+                          key={lang}
+                          onClick={() => {
+                            window.speechSynthesis?.cancel();
+                            setSpeaking(false);
+                            setStopLanguage(lang);
+                          }}
+                          className={cn(
+                            'h-7 px-2 rounded-full text-[11px] font-bold tap-highlight',
+                            activeStopLanguage === lang ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                          )}
+                          aria-pressed={activeStopLanguage === lang}
+                        >
+                          {lang === 'lv' ? '🇱🇻 LV' : '🇺🇸 EN'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {currentStop.clueAudio && (
+                    <button
+                      onClick={() => {
+                        if (audioGuideOpen) stopAudioGuide();
+                        setAudioGuideOpen(open => !open);
+                      }}
+                      className={cn(
+                        'w-9 h-9 rounded-full flex items-center justify-center tap-highlight border',
+                        audioGuideOpen ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border',
+                      )}
+                      aria-label="Audio guide controls"
+                      aria-pressed={audioGuideOpen}
+                    >
+                      <Headphones className="w-4 h-4" />
+                    </button>
+                  )}
+                  {currentStop.parentHint && (
+                    <button
+                      onClick={() => setShowParentHint(open => !open)}
+                      className={cn(
+                        'w-9 h-9 rounded-full flex items-center justify-center tap-highlight border',
+                        showParentHint ? 'bg-amber-500 text-white border-amber-500' : 'bg-background border-border text-amber-700',
+                      )}
+                      aria-label={showParentHint ? 'Hide grown-up hint' : 'Ask a grown-up'}
+                      aria-pressed={showParentHint}
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => speak(displayedClueText, activeStopLanguage)}
+                    className={cn('w-9 h-9 rounded-full flex items-center justify-center tap-highlight border', speaking ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border')}
+                    aria-label={speaking ? 'Stop reading' : 'Read clue aloud'}
+                  >
+                    {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <p className="text-base leading-relaxed">{displayedClueText}</p>
-              {currentStop.clueAudio && (
-                <div className="rounded-2xl bg-background/85 border border-border/70 p-3 space-y-2">
+              {currentStop.clueAudio && audioGuideOpen && (
+                <div className="rounded-2xl bg-background/90 border border-border/70 p-3 space-y-2">
+                  <audio
+                    ref={audioGuideRef}
+                    key={currentStop.clueAudio}
+                    src={currentStop.clueAudio}
+                    preload="metadata"
+                    onLoadedMetadata={(event) => {
+                      const duration = event.currentTarget.duration;
+                      setAudioGuideDuration(Number.isFinite(duration) ? duration : 0);
+                      event.currentTarget.volume = audioGuideVolume;
+                    }}
+                    onTimeUpdate={(event) => setAudioGuideProgress(event.currentTarget.currentTime || 0)}
+                    onPlay={() => setAudioGuidePlaying(true)}
+                    onPause={() => setAudioGuidePlaying(false)}
+                    onEnded={() => setAudioGuidePlaying(false)}
+                  />
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                      <Headphones className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold leading-tight">Venue audio guide</p>
-                      <p className="text-[11px] text-muted-foreground">Listen like a mini museum tour.</p>
+                    <button
+                      onClick={toggleAudioGuide}
+                      className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center tap-highlight shrink-0"
+                      aria-label={audioGuidePlaying ? 'Pause audio guide' : 'Play audio guide'}
+                    >
+                      {audioGuidePlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                    </button>
+                    <button
+                      onClick={stopAudioGuide}
+                      className="w-10 h-10 rounded-full bg-muted text-foreground flex items-center justify-center tap-highlight shrink-0"
+                      aria-label="Stop audio guide"
+                    >
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-muted-foreground">
+                        <span>{formatGuideTime(audioGuideProgress)}</span>
+                        <span>{formatGuideTime(audioGuideDuration)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={audioGuideDuration || 0}
+                        value={Math.min(audioGuideProgress, audioGuideDuration || audioGuideProgress)}
+                        onChange={(event) => {
+                          const nextTime = Number(event.target.value);
+                          setAudioGuideProgress(nextTime);
+                          if (audioGuideRef.current) audioGuideRef.current.currentTime = nextTime;
+                        }}
+                        className="w-full accent-primary"
+                        aria-label="Audio guide position"
+                      />
                     </div>
                   </div>
-                  <audio src={currentStop.clueAudio} controls className="w-full h-9" preload="metadata" />
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Volume2 className="w-4 h-4 shrink-0" />
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={audioGuideVolume}
+                      onChange={(event) => {
+                        const nextVolume = Number(event.target.value);
+                        setAudioGuideVolume(nextVolume);
+                        if (audioGuideRef.current) audioGuideRef.current.volume = nextVolume;
+                      }}
+                      className="w-full accent-primary"
+                      aria-label="Audio guide volume"
+                    />
+                  </div>
                 </div>
               )}
-              {currentStop.address && (
-                <div className="flex items-start gap-2 text-sm pt-2 border-t border-border/40">
+              <div className="rounded-2xl bg-background/85 border border-border/70 p-3 space-y-3">
+                <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <span className="text-muted-foreground">{currentStop.address}</span>
+                  <span className="text-sm text-muted-foreground flex-1 min-w-0">
+                    {currentStop.address || 'Find this stop'}
+                  </span>
+                  {distanceToCurrent != null && (
+                    <span className={cn('shrink-0 text-[11px] font-bold rounded-full px-2 py-1', isAtStop ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>
+                      {isAtStop ? 'Close' : `${Math.round(distanceToCurrent)}m`}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={handleLocate}
+                    disabled={locating}
+                    className="min-w-0 h-12 rounded-xl bg-muted text-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-70"
+                    aria-label="Auto check in with GPS"
+                  >
+                    {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Locate className="w-4 h-4" />}
+                    <span>{locating ? 'GPS…' : 'GPS'}</span>
+                  </button>
+                  <button
+                    onClick={() => setPhase('prompt')}
+                    className="min-w-0 h-12 rounded-xl bg-primary text-primary-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+                    aria-label="Manual check in"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    <span>I'm here</span>
+                  </button>
+                  <button
+                    onClick={() => setShowARGuide(true)}
+                    className="min-w-0 h-12 rounded-xl bg-black text-white text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
+                    aria-label="Open AR arrow guide"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    <span>AR</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  GPS can auto-check in. "I'm here" skips GPS.
+                </p>
+              </div>
+              {/* Parent hint — co-pilot mode */}
+              {currentStop.parentHint && showParentHint && (
+                <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">🤝 Grown-up's hint</p>
+                  <p className="text-sm text-amber-900 leading-relaxed">{currentStop.parentHint}</p>
+                  <button onClick={() => setShowParentHint(false)} className="text-[11px] font-medium text-amber-700 underline">Hide</button>
                 </div>
               )}
-              <button
-                onClick={() => setShowARGuide(true)}
-                className="w-full h-11 rounded-2xl bg-black text-white text-sm font-semibold tap-highlight flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Navigation className="w-4 h-4" /> Open AR arrow guide
-              </button>
-              {/* Parent hint — co-pilot mode */}
-              {currentStop.parentHint && (
-                showParentHint ? (
-                  <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">🤝 Grown-up's hint — read it aloud or paraphrase</p>
-                    <p className="text-sm text-amber-900 leading-relaxed">{currentStop.parentHint}</p>
-                    <button onClick={() => setShowParentHint(false)} className="text-[11px] font-medium text-amber-700 underline">Hide</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowParentHint(true)}
-                    className="w-full h-10 rounded-xl border border-amber-300 text-amber-800 bg-amber-50/50 text-sm font-medium tap-highlight flex items-center justify-center gap-2"
-                  >
-                    <HelpCircle className="w-4 h-4" /> Ask a grown-up
-                  </button>
-                )
-              )}
-            </div>
-
-            {/* GPS check */}
-            <div className="rounded-2xl border bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">Are you there yet?</p>
-                {distanceToCurrent != null && (
-                  <span className={cn('text-xs font-medium', isAtStop ? 'text-emerald-600' : 'text-muted-foreground')}>
-                    {isAtStop ? '✓ You\'re close enough' : `${Math.round(distanceToCurrent)}m away`}
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleLocate}
-                  disabled={locating}
-                  className="flex-1 h-11 rounded-xl bg-muted text-foreground text-sm font-medium tap-highlight flex items-center justify-center gap-2"
-                >
-                  <Locate className="w-4 h-4" />
-                  {locating ? 'Locating…' : userLocation ? 'Update location' : 'Check my location'}
-                </button>
-                <button
-                  onClick={() => setPhase('prompt')}
-                  className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center gap-2"
-                >
-                  I'm here <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                You can also tap "I'm here" without GPS — we trust you.
-              </p>
             </div>
           </>
         )}

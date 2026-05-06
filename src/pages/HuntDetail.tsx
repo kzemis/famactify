@@ -8,7 +8,7 @@ import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { flags } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
-const SLIDE_LABELS = ['About', 'Map', 'Stops'] as const;
+const SLIDE_LABEL: Record<string, string> = { about: 'About', map: 'Map', stops: 'Stops', credits: 'Sources' };
 
 export default function HuntDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -75,7 +75,14 @@ export default function HuntDetail() {
     }));
 
   const hours = Math.round(hunt.durationMinutes / 60 * 10) / 10;
-  const slideCount = huntPath.length > 0 ? 3 : 2; // skip map slide when no coords
+  // Build ordered slide keys so indicator dots + count stay in sync
+  const slideKeys = [
+    'about',
+    ...(huntPath.length > 0 ? ['map'] : []),
+    'stops',
+    ...(hunt.credits ? ['credits'] : []),
+  ] as const;
+  const slideCount = slideKeys.length;
 
   return (
     <div className="min-h-[100dvh] bg-background pb-tab-bar flex flex-col">
@@ -173,6 +180,23 @@ export default function HuntDetail() {
                 </div>
               </div>
             </CarouselItem>
+
+            {/* Slide 4: Sources / Credits (only when present) */}
+            {hunt.credits && (
+              <CarouselItem className="pl-0 basis-full">
+                <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] bg-gradient-to-br from-slate-50 via-background to-sky-50/40 overflow-hidden">
+                  <div className="absolute inset-0 overflow-y-auto px-5 pt-14 pb-10 no-scrollbar flex flex-col gap-3">
+                    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Source facts &amp; credits</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{hunt.credits}</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background/90 backdrop-blur shadow-md border text-[11px] font-bold uppercase tracking-widest pointer-events-none" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}>
+                    Sources
+                  </div>
+                </div>
+              </CarouselItem>
+            )}
           </CarouselContent>
         </Carousel>
 
@@ -195,33 +219,25 @@ export default function HuntDetail() {
 
         {/* Slide indicator pills (clickable) */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
-          {Array.from({ length: slideCount }).map((_, i) => {
-            // map active index back to label index when map slide is hidden
-            const labelIdx = huntPath.length > 0 ? i : (i === 0 ? 0 : 2);
+          {slideKeys.map((key, i) => {
             const isActive = activeSlide === i;
             return (
               <button
-                key={i}
+                key={key}
                 onClick={() => carouselApi?.scrollTo(i)}
                 className={cn(
                   'h-2 rounded-full transition-all duration-200 tap-highlight',
                   isActive ? 'w-7 bg-white shadow-md' : 'w-2 bg-white/55 hover:bg-white/85',
                 )}
-                aria-label={`Go to ${SLIDE_LABELS[labelIdx]} slide`}
+                aria-label={`Go to ${SLIDE_LABEL[key]} slide`}
               />
             );
           })}
         </div>
       </div>
 
-      {/* Credits + CTA — fixed at bottom, scroll within their own region if long */}
+      {/* CTA buttons */}
       <div className="flex-1 flex flex-col">
-        {hunt.credits && (
-          <div className="px-5 pt-3">
-            <p className="text-[11px] text-muted-foreground italic leading-snug">{hunt.credits}</p>
-          </div>
-        )}
-
         <div className="px-5 pt-3 pb-4 mt-auto sticky bottom-0 bg-background/95 backdrop-blur border-t" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
           <div className="flex gap-2">
             {isInProgress && (

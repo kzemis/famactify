@@ -19,8 +19,10 @@ type HuntCreatorMode = 'human' | 'ai_assisted' | 'ai_generated';
 
 const PROMPT_KINDS: { value: HuntPromptKind; label: string; helper: string }[] = [
   { value: 'text',            label: '📝 Text',         helper: 'Player types an answer (case-insensitive contains-match against your list).' },
+  { value: 'voice_answer',    label: '🗣️ Voice answer', helper: 'Kid speaks; speech-to-text matched against your acceptable-answers list. Lowers keyboard barrier for 4–7 year olds.' },
   { value: 'multiple_choice', label: '🔘 Multiple choice', helper: 'Player picks one of the options. Mark which is correct.' },
   { value: 'photo',           label: '📷 Photo',        helper: 'Player takes a photo of the subject — always accepted.' },
+  { value: 'spot_photo',      label: '🔍 Spot photo',   helper: 'You upload a reference photo. Player finds it on location. Photo deliverable optional.' },
   { value: 'audio',           label: '🎙️ Sound',         helper: 'Player records a short sound clip (sea lions, parrots, fountain). Always accepted.' },
   { value: 'drawing',         label: '✏️ Drawing',       helper: 'Player draws on an in-app canvas. Always accepted.' },
   { value: 'time_travel_photo', label: '🕰️ Time-travel', helper: 'Player lines up a source image over the live camera, then captures today + then.' },
@@ -101,6 +103,7 @@ export default function HuntEdit() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingFor, setUploadingFor] = useState<number | null>(null); // sponsor index being uploaded for
   const [uploadingStepAudioFor, setUploadingStepAudioFor] = useState<number | null>(null);
+  const [uploadingReferenceFor, setUploadingReferenceFor] = useState<number | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(isNew && startsFromAi);
   const [aiPlace, setAiPlace] = useState('');
@@ -222,6 +225,12 @@ export default function HuntEdit() {
       }
       if (s.prompt.kind === 'time_travel_photo' && !s.prompt.timeTravelImageUrl?.trim()) {
         return `Stop ${i + 1}: time-travel photo needs a historical/source image URL`;
+      }
+      if (s.prompt.kind === 'spot_photo' && !s.prompt.referenceImage?.trim()) {
+        return `Stop ${i + 1}: spot photo needs a reference image (the thing the kid should find)`;
+      }
+      if (s.prompt.kind === 'voice_answer' && !s.prompt.correctAnswers?.length) {
+        return `Stop ${i + 1}: voice answer needs at least one acceptable answer`;
       }
     }
     if ((hunt.createdVia === 'ai_assisted' || hunt.createdVia === 'ai_generated') && !(hunt.sourceLinks?.length) && !hunt.credits?.trim()) {
@@ -419,6 +428,19 @@ export default function HuntEdit() {
       toast.error(e.message || 'Audio upload failed');
     } finally {
       setUploadingStepAudioFor(null);
+    }
+  };
+
+  const handleReferenceImageUpload = async (idx: number, file: File) => {
+    setUploadingReferenceFor(idx);
+    try {
+      const url = await huntsService.uploadAsset(file, 'reference-photos');
+      updateStop(idx, stop => ({ ...stop, prompt: { ...stop.prompt, referenceImage: url } }));
+      toast.success('Reference photo uploaded');
+    } catch (e: any) {
+      toast.error(e.message || 'Reference photo upload failed');
+    } finally {
+      setUploadingReferenceFor(null);
     }
   };
 
@@ -777,8 +799,9 @@ export default function HuntEdit() {
                           kind: p.value,
                           question: x.prompt.question,
                           options: p.value === 'multiple_choice' ? (x.prompt.options ?? []) : undefined,
-                          correctAnswers: p.value === 'text' || p.value === 'multiple_choice' ? (x.prompt.correctAnswers ?? []) : undefined,
-                          photoSubject:    p.value === 'photo'   ? x.prompt.photoSubject   : undefined,
+                          correctAnswers: p.value === 'text' || p.value === 'multiple_choice' || p.value === 'voice_answer' ? (x.prompt.correctAnswers ?? []) : undefined,
+                          photoSubject:    (p.value === 'photo' || p.value === 'spot_photo') ? x.prompt.photoSubject   : undefined,
+                          referenceImage:  p.value === 'spot_photo' ? x.prompt.referenceImage : undefined,
                           audioSubject:    p.value === 'audio'   ? x.prompt.audioSubject   : undefined,
                           audioMaxSeconds: p.value === 'audio'   ? (x.prompt.audioMaxSeconds ?? 5) : undefined,
                           drawingSubject:  p.value === 'drawing' ? x.prompt.drawingSubject : undefined,
@@ -806,6 +829,21 @@ export default function HuntEdit() {
                   </Field>
                 )}
 
+                {s.prompt.kind === 'voice_answer' && (
+                  <>
+                    <Field label="Acceptable answers (comma-separated, case-insensitive)" required>
+                      <Input
+                        value={(s.prompt.correctAnswers ?? []).join(', ')}
+                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))}
+                        placeholder="three, 3, three stars"
+                      />
+                    </Field>
+                    <p className="text-[10px] text-muted-foreground leading-snug px-0.5">
+                      💡 Speech-to-text varies — include common variations (e.g. <code>3</code>, <code>three</code>, <code>tree</code> for "three"). Match is case-insensitive contains. Kids can also tap "Type instead" if mic isn't available.
+                    </p>
+                  </>
+                )}
+
                 {s.prompt.kind === 'multiple_choice' && (
                   <>
                     <Field label="Options (one per line)" required>
@@ -830,6 +868,75 @@ export default function HuntEdit() {
                   <Field label="What should the photo show?">
                     <Input value={s.prompt.photoSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))} placeholder="A piglet at Little Farm" />
                   </Field>
+                )}
+
+                {s.prompt.kind === 'spot_photo' && (
+                  <>
+                    <Field label="Reference photo — what kid should find" required>
+                      {s.prompt.referenceImage ? (
+                        <div className="relative rounded-xl overflow-hidden border bg-muted">
+                          <img
+                            src={s.prompt.referenceImage}
+                            alt="Reference"
+                            className="w-full aspect-[4/3] object-cover"
+                            onError={() => toast.error("Couldn't load reference image preview")}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, referenceImage: undefined } }))}
+                            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center tap-highlight"
+                            aria-label="Remove reference photo"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 aspect-[4/3] flex flex-col items-center justify-center gap-1 text-muted-foreground text-xs">
+                          <Upload className="w-5 h-5" />
+                          <span>No reference photo yet</span>
+                        </div>
+                      )}
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          value={s.prompt.referenceImage ?? ''}
+                          onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, referenceImage: e.target.value } }))}
+                          placeholder="https://… (or upload below)"
+                          className="flex-1"
+                        />
+                        <label
+                          className={cn(
+                            'cursor-pointer h-10 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 tap-highlight whitespace-nowrap',
+                            uploadingReferenceFor === i && 'opacity-60 pointer-events-none',
+                          )}
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          {uploadingReferenceFor === i
+                            ? 'Uploading…'
+                            : s.prompt.referenceImage ? 'Replace' : 'Upload'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) handleReferenceImageUpload(i, file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-snug mt-1">
+                        Kid sees this as "Find this!" on location. Use a clear, single-subject photo (e.g. a specific statue, plaque, mural detail).
+                      </p>
+                    </Field>
+                    <Field label="Helper hint (optional)">
+                      <Input
+                        value={s.prompt.photoSubject ?? ''}
+                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))}
+                        placeholder="Look near the entrance fountain"
+                      />
+                    </Field>
+                  </>
                 )}
 
                 {s.prompt.kind === 'audio' && (

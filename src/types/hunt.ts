@@ -7,6 +7,8 @@ export type HuntPromptKind =
   | 'text'             // typed answer, case-insensitive contains-match
   | 'multiple_choice'  // pick one
   | 'photo'            // submit a photo of the subject
+  | 'spot_photo'       // admin uploads a reference photo; kid finds & optionally photographs it
+  | 'voice_answer'     // kid speaks; speech-to-text matched against correctAnswers (keyboard fallback)
   | 'observation'      // no answer required, just acknowledge
   | 'audio'            // record a short sound clip (default 5s)
   | 'drawing'          // draw on an in-app canvas
@@ -21,6 +23,8 @@ export interface HuntPrompt {
   correctAnswers?: string[];
   /** for photo — what should the photo contain */
   photoSubject?: string;
+  /** for spot_photo — admin-uploaded reference photo URL ("find this!") */
+  referenceImage?: string;
   /** for audio — what to listen for; informative only */
   audioSubject?: string;
   /** for audio — max recording length in seconds (default 5; clamped 2..15) */

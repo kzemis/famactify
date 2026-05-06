@@ -1,7 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones, Loader2 } from 'lucide-react';
+import { ChevronLeft, MapPin, Locate, ChevronRight, Camera, SkipForward, Trophy, RotateCcw, Share2, Volume2, VolumeX, HelpCircle, Mic, Pencil, Play, Download, History, Navigation, Headphones, Loader2, Target } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
+import VoiceAnswerInput from '@/components/VoiceAnswerInput';
 import ARClueOverlay from '@/components/ARClueOverlay';
 import DrawingPad from '@/components/DrawingPad';
 import TimeTravelCamera from '@/components/TimeTravelCamera';
@@ -202,6 +203,12 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
       if (!a) { toast.error('Type an answer first'); return; }
       result.answer = textAnswer.trim();
       result.isCorrect = (currentStop.prompt.correctAnswers ?? []).some(c => a.includes(c.toLowerCase()));
+    } else if (currentStop.prompt.kind === 'voice_answer') {
+      const a = textAnswer.trim().toLowerCase();
+      if (!a) { toast.error('Speak or type an answer first'); return; }
+      result.answer = textAnswer.trim();
+      // Same contains-match against correctAnswers — speech-to-text often has minor variations
+      result.isCorrect = (currentStop.prompt.correctAnswers ?? []).some(c => a.includes(c.toLowerCase()));
     } else if (currentStop.prompt.kind === 'multiple_choice') {
       if (!textAnswer) { toast.error('Pick one'); return; }
       result.answer = textAnswer;
@@ -243,6 +250,17 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
       result.answer = '(time-travel-photo)';
       result.photoDataUrl = timeTravelPhotoDataUrl;
       result.isCorrect = true; // time-travel photos are memory captures, not quizzes
+    } else if (currentStop.prompt.kind === 'spot_photo') {
+      // Photo is OPTIONAL — kid can confirm "Found it!" without taking one
+      result.answer = photoDataUrl ? '(spot-photo)' : '(spotted)';
+      result.isCorrect = true;
+      if (photoDataUrl) {
+        result.photoDataUrl = photoDataUrl;
+        // Future: ML matching against currentStop.prompt.referenceImage
+        result.photoNeedsReview = true;
+        result.photoReviewStatus = 'pending';
+        result.photoReviewNotes = 'Awaiting reference-photo match check.';
+      }
     } else {
       // observation — just acknowledge
       result.answer = '✓';
@@ -555,6 +573,48 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
           </div>
         </div>
 
+        {/* ── Hunt stamp collection ─────────────────────────────── */}
+        <div className="px-5 mt-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">
+            Stamps earned this hunt
+          </p>
+          <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+            {hunt.stops.map((s, i) => {
+              const r         = attempt.results.find(res => res.stopId === s.id);
+              const solved    = !!r?.isCorrect && !r.skipped;
+              const skipped   = !!r?.skipped;
+              const dateStr   = r
+                ? new Date(r.answeredAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase()
+                : '—';
+              const rotations = [-3, 2, -4, 3, -1, 4, -2, 1];
+              const rot       = rotations[i % rotations.length];
+              const outerCls  = solved  ? 'border-emerald-500' : skipped ? 'border-muted-foreground/40' : 'border-amber-400';
+              const innerCls  = solved  ? 'bg-emerald-50 text-emerald-700' : skipped ? 'bg-muted/60 text-muted-foreground' : 'bg-amber-50 text-amber-700';
+
+              return (
+                <div
+                  key={s.id}
+                  className="shrink-0 flex flex-col items-center gap-1"
+                  style={{ transform: `rotate(${rot}deg)` }}
+                  title={s.title}
+                >
+                  <div className={cn(
+                    'w-[64px] h-[64px] rounded-full border-[3px] border-double flex flex-col items-center justify-center gap-0.5 shadow',
+                    outerCls, innerCls,
+                  )}>
+                    <span className="text-[22px] leading-none">{hunt.coverEmoji}</span>
+                    <span className="text-[6px] font-bold uppercase tracking-tight text-center leading-tight px-1">
+                      #{i + 1}
+                    </span>
+                    <span className="text-[5.5px] font-mono opacity-60 leading-none">{dateStr}</span>
+                  </div>
+                  <p className="text-[8px] font-semibold text-center leading-tight max-w-[68px] truncate px-0.5">{s.title}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Postcard preview — the shareable headline visual */}
         <div className="px-5 mt-4">
           {postcardLoading && !postcardUrl ? (
@@ -674,9 +734,34 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="h-1 bg-muted">
-        <div className="h-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} />
+      {/* Stamp-dot progress row — one dot per stop */}
+      <div className="bg-background/95 backdrop-blur border-b border-border/20 flex items-center gap-1.5 overflow-x-auto no-scrollbar px-4 py-2">
+        {hunt.stops.map((s, i) => {
+          const isDone    = i < attempt.currentStopOrder;
+          const isCurrent = i === attempt.currentStopOrder && !isFinished;
+          const result    = isDone ? attempt.results.find(r => r.stopId === s.id) : null;
+          const correct   = !!result?.isCorrect && !result.skipped;
+          const skipped   = !!result?.skipped;
+          return (
+            <div
+              key={s.id}
+              title={s.title}
+              className={cn(
+                'shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-300 select-none',
+                isDone && correct  ? 'bg-emerald-500 text-white shadow-sm' :
+                isDone && skipped  ? 'bg-muted text-muted-foreground' :
+                isDone             ? 'bg-amber-400 text-white' :
+                isCurrent          ? 'bg-primary text-primary-foreground ring-2 ring-primary/40 animate-pulse' :
+                                     'bg-muted/40 text-muted-foreground/40 border border-dashed border-border/50',
+              )}
+            >
+              {isDone ? (skipped ? '·' : '✓') : i + 1}
+            </div>
+          );
+        })}
+        <span className="shrink-0 ml-auto pl-2 text-[10px] font-semibold text-muted-foreground whitespace-nowrap">
+          {attempt.currentStopOrder}/{totalStops}
+        </span>
       </div>
 
       <div className="flex-1 px-5 py-5 space-y-4">
@@ -815,6 +900,15 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
               />
             )}
 
+            {/* Voice answer — speech-to-text matched against correctAnswers */}
+            {currentStop.prompt.kind === 'voice_answer' && (
+              <VoiceAnswerInput
+                language={activeStopLanguage}
+                initialTranscript={textAnswer}
+                onTranscript={setTextAnswer}
+              />
+            )}
+
             {/* Multiple choice */}
             {currentStop.prompt.kind === 'multiple_choice' && (
               <div className="space-y-2">
@@ -861,6 +955,77 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                     )}
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Spot photo — admin-supplied reference + optional capture */}
+            {currentStop.prompt.kind === 'spot_photo' && (
+              <div className="space-y-3">
+                {/* Reference image — "Find this!" */}
+                {currentStop.prompt.referenceImage ? (
+                  <div className="rounded-2xl overflow-hidden border-2 border-amber-300 bg-amber-50/30 shadow-sm">
+                    <div className="px-3 pt-2.5 pb-2 bg-amber-100/80 border-b border-amber-200 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-amber-700 shrink-0" />
+                      <p className="text-xs font-bold uppercase tracking-widest text-amber-800 flex-1">Find this!</p>
+                      <span className="text-[10px] text-amber-700/80 font-medium">Reference</span>
+                    </div>
+                    <img
+                      src={currentStop.prompt.referenceImage}
+                      alt="Find this thing"
+                      className="w-full aspect-[4/3] object-cover"
+                    />
+                    {currentStop.prompt.photoSubject && (
+                      <p className="px-3 py-2 text-xs text-muted-foreground border-t border-amber-200 bg-amber-50/40">
+                        💡 {currentStop.prompt.photoSubject}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+                    {currentStop.prompt.photoSubject ?? 'Find what the clue describes.'}
+                  </div>
+                )}
+
+                {/* Optional photo capture */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoPick}
+                  className="hidden"
+                />
+                {photoDataUrl ? (
+                  <div className="relative rounded-2xl overflow-hidden">
+                    <img src={photoDataUrl} alt="Your photo" className="w-full aspect-[4/3] object-cover" />
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow">
+                      Your photo ✓
+                    </span>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-2 right-2 px-3 py-1.5 rounded-full bg-background/90 text-xs font-medium shadow-md"
+                    >
+                      Retake
+                    </button>
+                    <button
+                      onClick={() => setPhotoDataUrl(null)}
+                      className="absolute bottom-2 left-2 px-3 py-1.5 rounded-full bg-background/90 text-xs font-medium shadow-md"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-14 rounded-2xl border-2 border-dashed border-border flex items-center justify-center gap-2 tap-highlight"
+                  >
+                    <Camera className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Take a photo (optional)</span>
+                  </button>
+                )}
+                <p className="text-[11px] text-muted-foreground leading-snug px-1">
+                  Photo is optional — tap "Found it!" below once you've spotted it. If you take one, we'll save it as a memory and check it later.
+                </p>
               </div>
             )}
 
@@ -912,7 +1077,15 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
               </button>
               <button onClick={submitAnswer} disabled={verifyingPhoto || submittingAnswer || skippingStop} className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tap-highlight flex items-center justify-center gap-1.5 disabled:opacity-60">
                 {(verifyingPhoto || submittingAnswer) && <Loader2 className="w-4 h-4 animate-spin" />}
-                {verifyingPhoto ? 'Checking photo…' : submittingAnswer ? 'Saving…' : currentStop.prompt.kind === 'observation' ? 'Done' : 'Submit'}
+                {verifyingPhoto
+                  ? 'Checking photo…'
+                  : submittingAnswer
+                    ? 'Saving…'
+                    : currentStop.prompt.kind === 'observation'
+                      ? 'Done'
+                      : currentStop.prompt.kind === 'spot_photo'
+                        ? (photoDataUrl ? 'Found it! Save photo' : 'Found it!')
+                        : 'Submit'}
                 {!verifyingPhoto && !submittingAnswer && <ChevronRight className="w-4 h-4" />}
               </button>
             </div>
@@ -924,20 +1097,43 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
           const lastResult = attempt.results.find(r => r.stopId === currentStop.id);
           const wasSkipped = lastResult?.skipped;
           const wasCorrect = lastResult?.isCorrect && !wasSkipped;
+          const stampDate  = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase();
+
+          // Tier colours matching the Passport page
+          const stampStyle = wasCorrect
+            ? { outer: 'border-emerald-500', inner: 'bg-emerald-50 text-emerald-800', label: 'Solved! ✓',   bg: 'bg-emerald-50/60 border-emerald-200' }
+            : wasSkipped
+            ? { outer: 'border-muted-foreground/40', inner: 'bg-muted/60 text-muted-foreground', label: 'Skipped', bg: 'bg-muted/30 border-border' }
+            : { outer: 'border-amber-500', inner: 'bg-amber-50 text-amber-800', label: 'Explored!',   bg: 'bg-amber-50/60 border-amber-200' };
+
           return (
             <div className="space-y-4">
-              <div className={cn(
-                'rounded-2xl p-4 flex items-start gap-3',
-                wasSkipped ? 'bg-muted text-muted-foreground' : wasCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800',
-              )}>
-                <span className="text-2xl shrink-0">{wasSkipped ? '⏭️' : wasCorrect ? '✓' : '🤔'}</span>
-                <div>
-                  <p className="font-semibold text-sm">
-                    {wasSkipped ? 'Skipped' : wasCorrect ? 'Correct!' : 'Not quite — but here\'s the answer'}
-                  </p>
+
+              {/* ── Stop stamp ──────────────────────────────────────────── */}
+              <div className={cn('rounded-2xl border p-4 flex items-center gap-4', stampStyle.bg)}>
+                {/* Rubber stamp visual */}
+                <div
+                  className={cn(
+                    'shrink-0 w-[72px] h-[72px] rounded-full border-[3px] border-double flex flex-col items-center justify-center gap-0.5 shadow-md',
+                    stampStyle.outer, stampStyle.inner,
+                  )}
+                  style={{ transform: 'rotate(-4deg)' }}
+                >
+                  <span className="text-[28px] leading-none">{hunt.coverEmoji}</span>
+                  <span className="text-[6.5px] font-bold uppercase tracking-tight text-center leading-tight px-1">
+                    Stop {currentStop.order + 1}/{totalStops}
+                  </span>
+                  <span className="text-[6px] font-mono opacity-70 leading-none">{stampDate}</span>
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">Stop stamp earned</p>
+                  <p className="font-black text-base leading-tight truncate">{currentStop.title}</p>
+                  <p className="text-sm font-semibold mt-0.5">{stampStyle.label}</p>
                   {!wasSkipped && lastResult?.answer
                     && !['✓', '(photo)', '(audio)', '(drawing)', '(time-travel-photo)'].includes(lastResult.answer) && (
-                    <p className="text-xs mt-0.5">Your answer: {lastResult.answer}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Your answer: {lastResult.answer}</p>
                   )}
                 </div>
               </div>

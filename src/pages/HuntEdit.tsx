@@ -342,8 +342,16 @@ export default function HuntEdit() {
           generationNotes: hunt.generationNotes,
         });
       }
-      await huntsService.replaceStops(id, hunt.stops ?? []);
-      await huntsService.replaceSponsors(id, hunt.sponsors ?? []);
+      // Stops and sponsors are independent — fire in parallel (was sequential, ~2× faster).
+      // Skip the sponsors DELETE entirely if there's nothing to delete and nothing to add (typical case).
+      const newSponsors = hunt.sponsors ?? [];
+      const skipSponsors = newSponsors.length === 0 && creatingEditableCopy;
+      await Promise.all([
+        huntsService.replaceStops(id, hunt.stops ?? []),
+        skipSponsors
+          ? Promise.resolve()
+          : huntsService.replaceSponsors(id, newSponsors, { skipIfEmpty: creatingEditableCopy }),
+      ]);
       if (draftStorageKey) sessionStorage.removeItem(draftStorageKey);
       toast.success(editingSeedTemplate ? 'Editable hunt draft created from seed' : 'Saved');
       // Update URL if we just created

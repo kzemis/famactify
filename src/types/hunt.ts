@@ -71,12 +71,18 @@ export interface HuntSponsor {
   url?: string;
 }
 
+export type HuntVisibility = 'public' | 'family_private';
+
 export interface ScavengerHunt {
   id: string;
   slug: string;
   artifactKind?: 'scavenger_hunt';
   artifactVersion?: number;
   createdVia?: 'human' | 'ai_assisted' | 'ai_generated';
+  /** 'public' for catalog hunts, 'family_private' for parent-created home chores */
+  visibility?: HuntVisibility;
+  /** Auth user id of creator (for family_private ownership lookups) */
+  createdBy?: string;
   title: string;
   blurb: string;
   /** Cover illustration URL or emoji-fallback */

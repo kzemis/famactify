@@ -103,10 +103,12 @@ function updateLocalAttempt(attemptId: string, updater: (attempt: HuntAttempt) =
   return updated;
 }
 
-const OPTIONAL_HUNT_STOP_COLUMNS = [
-  'prompt_metadata',
-  'prompt_reference_image',
-] as const;
+// All hunt_stops columns are now part of the baseline schema (migrations 20260503_120000
+// through 20260505_140000 are required). The probe is kept as an empty array so the
+// graceful-degrade machinery still compiles, but it no longer adds a SELECT round-trip
+// to every save. Re-add a column name here only if you ship a brand-new optional column
+// before its migration has been run on production.
+const OPTIONAL_HUNT_STOP_COLUMNS = [] as const;
 
 // Cache the column probe result so we don't hit Supabase 3× on every save.
 let _unavailableCache: Set<string> | null = null;
@@ -208,6 +210,8 @@ function mapHuntRow(row: any, stops: any[] = [], sponsors: any[] = []): Scavenge
     sourceLinks: row.source_links ?? undefined,
     aiPrompt: row.ai_prompt ?? undefined,
     generationNotes: row.generation_notes ?? undefined,
+    visibility: (row.visibility as 'public' | 'family_private' | undefined) ?? 'public',
+    createdBy: row.created_by ?? undefined,
     publishedAt: row.published_at ?? row.created_at,
     stops: stops
       .sort((a, b) => a.stop_order - b.stop_order)
@@ -282,34 +286,74 @@ export const huntsService = {
   /** Public — list published hunts. Merges DB rows with seed data by slug. */
   async listHunts(opts: { countryCode?: string } = {}): Promise<ScavengerHunt[]> {
     const seedHunts = SEED_HUNTS.filter(h => !opts.countryCode || h.countryCode === opts.countryCode);
+
+    // Single query: public published rows OR own family-private rows.
+    // PostgREST `.or()` with `and(...)` clauses is one round-trip vs the previous two.
+    const { data: user } = await supabase.auth.getUser();
+    const uid = user.user?.id;
     let query = supabase
       .from('hunts')
       .select('*, hunt_stops(*), hunt_sponsors(*)')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false });
+      .order('created_at', { ascending: false });
+
+    if (uid) {
+      query = query.or(
+        `and(status.eq.published,visibility.eq.public),and(visibility.eq.family_private,created_by.eq.${uid})`,
+      );
+    } else {
+      query = query.eq('status', 'published').eq('visibility', 'public');
+    }
     if (opts.countryCode) query = query.eq('country_code', opts.countryCode);
+
     const { data, error } = await query;
     if (error) {
       console.warn('[huntsService.listHunts] DB error, falling back to seed:', error.message);
       return seedHunts;
     }
-    const dbHunts = (data ?? []).map((row: any) => mapHuntRow(row, row.hunt_stops ?? [], row.hunt_sponsors ?? []));
-    const dbSlugs = new Set(dbHunts.map(h => h.slug));
-    const missingSeedHunts = seedHunts.filter(h => !dbSlugs.has(h.slug));
-    return [...dbHunts, ...missingSeedHunts];
+
+    const allHunts = (data ?? []).map((row: any) => mapHuntRow(row, row.hunt_stops ?? [], row.hunt_sponsors ?? []));
+    // Sort family-private (chores) first so kids see them up top
+    const myChores  = allHunts.filter(h => h.visibility === 'family_private' && h.createdBy === uid);
+    const publicDb  = allHunts.filter(h => h.visibility !== 'family_private');
+    const dbSlugs   = new Set(allHunts.map(h => h.slug));
+    const seedFill  = seedHunts.filter(h => !dbSlugs.has(h.slug));
+
+    return [...myChores, ...publicDb, ...seedFill];
   },
 
-  /** Public — get hunt by slug. Falls back to seed if not found in DB. */
-  async getHunt(slug: string): Promise<ScavengerHunt | null> {
+  /** Parent — list current user's home-chore (family_private) hunts only. */
+  async listMyHomeChores(): Promise<ScavengerHunt[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return [];
     const { data, error } = await supabase
       .from('hunts')
       .select('*, hunt_stops(*), hunt_sponsors(*)')
+      .eq('created_by', user.user.id)
+      .eq('visibility', 'family_private')
+      .order('created_at', { ascending: false });
+    if (error) { console.warn('[huntsService.listMyHomeChores]', error); return []; }
+    return (data ?? []).map((r: any) => mapHuntRow(r, r.hunt_stops ?? [], r.hunt_sponsors ?? []));
+  },
+
+  /** Public — get hunt by slug. Falls back to seed if not found in DB.
+   *  Allows author to load their own family-private hunts (RLS author-read policy).
+   *  Single round-trip via `.or()` (was 2 sequential queries). */
+  async getHunt(slug: string): Promise<ScavengerHunt | null> {
+    const { data: user } = await supabase.auth.getUser();
+    const uid = user.user?.id;
+    let query = supabase
+      .from('hunts')
+      .select('*, hunt_stops(*), hunt_sponsors(*)')
       .eq('slug', slug)
-      .eq('status', 'published')
-      .maybeSingle();
-    if (error) {
-      console.warn('[huntsService.getHunt] DB error, falling back to seed:', error.message);
+      .limit(1);
+    if (uid) {
+      query = query.or(
+        `and(status.eq.published,visibility.eq.public),created_by.eq.${uid}`,
+      );
+    } else {
+      query = query.eq('status', 'published').eq('visibility', 'public');
     }
+    const { data } = await query.maybeSingle();
     if (data) return mapHuntRow(data, data.hunt_stops ?? [], data.hunt_sponsors ?? []);
     return SEED_HUNTS.find(h => h.slug === slug) ?? null;
   },
@@ -410,39 +454,58 @@ export const huntsService = {
     aiPrompt?: string;
     generationNotes?: string;
     orgId?: string | null;
+    /** 'family_private' for parent-created home chores (skips review, auto-published). */
+    visibility?: 'public' | 'family_private';
   }): Promise<string> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Sign in to create hunts');
-    const { data, error } = await supabase
+    const isPrivate = input.visibility === 'family_private';
+    const insertRow: Record<string, any> = {
+      slug: input.slug,
+      title: input.title,
+      blurb: input.blurb,
+      host_name: input.hostName,
+      city: input.city,
+      country_code: input.countryCode ?? 'US',
+      cover_emoji: input.coverEmoji ?? '🔍',
+      cover_image: input.coverImage ?? null,
+      primary_theme: input.primaryTheme ?? 'history',
+      age_min: input.ageMin ?? 6,
+      age_max: input.ageMax ?? 14,
+      duration_minutes: input.durationMinutes ?? 120,
+      difficulty: input.difficulty ?? 'easy',
+      credits: input.credits ?? null,
+      artifact_kind: 'scavenger_hunt',
+      artifact_version: 1,
+      created_via: input.createdVia ?? 'human',
+      source_links: input.sourceLinks ?? [],
+      ai_prompt: input.aiPrompt ?? null,
+      generation_notes: input.generationNotes ?? null,
+      // Family-private (home chores) skip admin review and go straight to published
+      status: isPrivate ? 'published' : 'draft',
+      visibility: input.visibility ?? 'public',
+      published_at: isPrivate ? new Date().toISOString() : null,
+      created_by: user.user.id,
+      org_id: input.orgId ?? null,
+    };
+
+    // Graceful degrade: if migration hasn't run, drop visibility column from insert
+    let { data, error } = await supabase
       .from('hunts')
-      .insert({
-        slug: input.slug,
-        title: input.title,
-        blurb: input.blurb,
-        host_name: input.hostName,
-        city: input.city,
-        country_code: input.countryCode ?? 'US',
-        cover_emoji: input.coverEmoji ?? '🔍',
-        cover_image: input.coverImage ?? null,
-        primary_theme: input.primaryTheme ?? 'history',
-        age_min: input.ageMin ?? 6,
-        age_max: input.ageMax ?? 14,
-        duration_minutes: input.durationMinutes ?? 120,
-        difficulty: input.difficulty ?? 'easy',
-        credits: input.credits ?? null,
-        artifact_kind: 'scavenger_hunt',
-        artifact_version: 1,
-        created_via: input.createdVia ?? 'human',
-        source_links: input.sourceLinks ?? [],
-        ai_prompt: input.aiPrompt ?? null,
-        generation_notes: input.generationNotes ?? null,
-        status: 'draft',
-        created_by: user.user.id,
-        org_id: input.orgId ?? null,
-      })
+      .insert(insertRow)
       .select('id')
       .single();
-    if (error) throw error;
+    if (error && missingSchemaColumnName(error) === 'visibility') {
+      const { visibility: _v, ...rowWithout } = insertRow;
+      const retry = await supabase
+        .from('hunts')
+        .insert(rowWithout)
+        .select('id')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+    if (error || !data) throw error ?? new Error('Insert failed');
     return data.id;
   },
 
@@ -467,6 +530,9 @@ export const huntsService = {
       sourceLinks: 'source_links',
       aiPrompt: 'ai_prompt',
       generationNotes: 'generation_notes',
+      visibility: 'visibility',
+      status: 'status',
+      publishedAt: 'published_at',
     };
     const dbPatch: Record<string, any> = {};
     for (const k of Object.keys(patch)) {
@@ -541,7 +607,11 @@ export const huntsService = {
   },
 
   /** Replace all sponsors. */
-  async replaceSponsors(huntId: string, sponsors: HuntSponsor[]): Promise<void> {
+  async replaceSponsors(huntId: string, sponsors: HuntSponsor[], opts: { skipIfEmpty?: boolean } = {}): Promise<void> {
+    // When caller knows there are no existing sponsors and supplies an empty list,
+    // skip the DELETE round-trip entirely (typical chore-hunt save path).
+    if (opts.skipIfEmpty && sponsors.length === 0) return;
+
     const { error: delErr } = await supabase.from('hunt_sponsors').delete().eq('hunt_id', huntId);
     if (delErr) throw delErr;
     if (sponsors.length === 0) return;

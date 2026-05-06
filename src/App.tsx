@@ -67,6 +67,8 @@ const ChoreEdit         = lazy(() => import("./pages/ChoreEdit"));
 const RaceLobby         = lazy(() => import("./pages/RaceLobby"));
 const RacePlay          = lazy(() => import("./pages/RacePlay"));
 const RaceResults       = lazy(() => import("./pages/RaceResults"));
+const DuoLobby          = lazy(() => import("./pages/DuoLobby"));
+const DuoPlay           = lazy(() => import("./pages/DuoPlay"));
 
 const queryClient = new QueryClient();
 
@@ -161,6 +163,10 @@ const App = () => (
           <Route path="/race/join" element={<ProtectedRoute><RaceLobby /></ProtectedRoute>} />
           <Route path="/race/:raceId/play" element={<ProtectedRoute><RacePlay /></ProtectedRoute>} />
           <Route path="/race/:raceId/results" element={<ProtectedRoute><RaceResults /></ProtectedRoute>} />
+          {/* Two-phone parent+kid duo mode */}
+          <Route path="/duo/host/:slug" element={<ProtectedRoute><DuoLobby /></ProtectedRoute>} />
+          <Route path="/duo/join" element={<ProtectedRoute><DuoLobby /></ProtectedRoute>} />
+          <Route path="/duo/:sessionId/play" element={<ProtectedRoute><DuoPlay /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

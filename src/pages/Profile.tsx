@@ -216,6 +216,17 @@ const Profile = () => {
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
               <div className="border-t" />
+              <button onClick={() => navigate('/duo/join')} className="w-full flex items-center gap-3 px-4 py-4 tap-highlight active:bg-muted/50 transition-colors">
+                <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <span className="text-lg leading-none">📱</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold">Join two-phone hunt</p>
+                  <p className="text-xs text-muted-foreground">Type the 6-letter code from your parent's phone</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <div className="border-t" />
               <button onClick={() => setActiveSection('badges')} className="w-full flex items-center gap-3 px-4 py-4 tap-highlight active:bg-muted/50 transition-colors">
                 <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                   <span className="text-lg leading-none">🎖️</span>

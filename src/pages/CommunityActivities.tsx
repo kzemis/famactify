@@ -16,13 +16,14 @@ import { cn } from '@/lib/utils';
 import { cleanDisplayText } from '@/lib/text';
 import { formatPriceRange, formatDistance, getDistanceOptions, formatDate, formatTime } from '@/lib/formatters';
 import { readKidProposals, uniqueActionableKidProposals, writeKidProposals, type KidProposal } from '@/lib/kidProposals';
-import MapView from '@/components/MapView';
+import MapView from '@/components/LazyMapView';
 import { ShareSheet, type ShareSheetTripData } from '@/components/ShareSheet';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { activitiesService, authService, tripsService, curatedListsService, profileService, ACTIVITY_PAGE_SIZE as PAGE_SIZE, type ActivityFilters, type ActivitySpot, type CuratedList, type SlimActivity } from '@/services';
 import MoodSuggest, { type MoodFilters } from '@/components/MoodSuggest';
+import RegionPill from '@/components/RegionPill';
 import type { User } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
@@ -472,7 +473,7 @@ function getNavigationUrls(place: { name?: string; location_lat?: number | null;
 // ---------------------------------------------------------------------------
 export default function CommunityActivities() {
   const { t } = useLanguage();
-  const { countryCode, regionConfig } = useCountry();
+  const { country, countryCode, regionConfig } = useCountry();
   const navigate = useNavigate();
   const { search } = useLocation();
   const { isKid, isLittleExplorer, mode, currentProfile, profiles } = useFamilyMode();
@@ -1592,19 +1593,20 @@ export default function CommunityActivities() {
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
         {/* Row 1: Brand — tappable logo navigates home */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
           {isLittleExplorer ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-2xl">🌟</span>
-              <span className="text-xl font-black text-orange-500">Hi {currentProfile?.name ?? 'Explorer'}!</span>
+              <span className="text-xl font-black text-orange-500 truncate">Hi {currentProfile?.name ?? 'Explorer'}!</span>
             </div>
           ) : mode === 'kid' ? (
-            <span className="text-xl font-bold">{currentProfile?.emoji ?? '🧒'} My Day</span>
+            <span className="text-xl font-bold truncate">{currentProfile?.emoji ?? '🧒'} My Day</span>
           ) : (
-            <button onClick={() => navigate('/')} className="text-xl font-black text-primary tracking-tight tap-highlight">
+            <button onClick={() => navigate('/')} className="text-xl font-black text-primary tracking-tight tap-highlight truncate">
               FamActify
             </button>
           )}
+          <RegionPill className="bg-primary/10 border-primary/20 text-foreground" />
         </div>
 
         {/* Row 2: Search + Map + Filter (one compact row) */}
@@ -1675,6 +1677,7 @@ export default function CommunityActivities() {
         <div className="px-4 py-2 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             {totalCount} {totalCount === 1 ? 'activity' : 'activities'}
+            {` in ${country.name}`}
             {activeFilterCount > 0 && ' · filtered'}
           </span>
           {activeFilterCount > 0 && (

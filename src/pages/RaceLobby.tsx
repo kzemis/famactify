@@ -3,20 +3,24 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Copy, Check, Play, Users, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { raceService } from '@/services/raceService';
 import { huntsService } from '@/services/huntsService';
+import { huntQueryKey, useHunt } from '@/hooks/useHunt';
 import type { HuntRace, RaceParticipant, ScavengerHunt } from '@/types/hunt';
 
 const FAMILY_EMOJIS = ['👨‍👩‍👧', '👨‍👩‍👦', '👩‍👧‍👦', '👨‍👧', '👩‍👦', '👨‍👩‍👧‍👦', '🦸‍♂️', '🦸‍♀️', '🐻', '🦊', '🦁', '🐯'];
 
 export default function RaceLobby() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const joinCodeParam = searchParams.get('code');
+  const { data: cachedHunt = null, isFetched: huntFetched } = useHunt(slug);
 
   const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
   const [race, setRace] = useState<HuntRace | null>(null);
@@ -37,11 +41,14 @@ export default function RaceLobby() {
   // Load hunt if slug provided (creator flow)
   useEffect(() => {
     if (!slug) return;
-    huntsService.getHunt(slug).then(h => {
-      if (h) setHunt(h);
-      else toast.error('Hunt not found');
-    });
-  }, [slug]);
+    if (!huntFetched) return;
+    if (cachedHunt) {
+      setHunt(cachedHunt);
+    } else {
+      toast.error('Hunt not found');
+      setLoading(false);
+    }
+  }, [slug, huntFetched, cachedHunt]);
 
   // Create race automatically for creator flow
   useEffect(() => {
@@ -91,6 +98,7 @@ export default function RaceLobby() {
       if (!r) { toast.error('Race not found'); return; }
       if (r.status !== 'waiting_for_players') { toast.error('Race already started'); return; }
       const h = await huntsService.getHuntById(r.huntId).catch(() => null);
+      if (h?.slug) queryClient.setQueryData(huntQueryKey(h.slug), h as ScavengerHunt);
       const totalStops = h?.stops.length ?? 0;
       const p = await raceService.joinRace(r.id, familyName, familyEmoji, totalStops);
       setRace(r);
@@ -102,7 +110,7 @@ export default function RaceLobby() {
     } finally {
       setJoining(false);
     }
-  }, [joinCode, familyName, familyEmoji]);
+  }, [joinCode, familyName, familyEmoji, queryClient]);
 
   const handleStart = async () => {
     if (!race) return;

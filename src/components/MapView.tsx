@@ -11,7 +11,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-interface Place {
+export interface Place {
   id: string;
   name: string;
   lat: number;
@@ -29,14 +29,14 @@ interface Place {
   urlmoreinfo_status?: string | null;
 }
 
-interface PathItem {
+export interface PathItem {
   id: string;
   lat: number;
   lon: number;
   name?: string;  // shown as label beneath the numbered pin
 }
 
-interface MapViewProps {
+export interface MapViewProps {
   places: Place[];
   center?: { lat: number; lon: number };
   path?: PathItem[];

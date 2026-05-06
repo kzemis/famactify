@@ -6,7 +6,7 @@ import { Calendar, MapPin, DollarSign, Clock, Loader2, AlertCircle } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
-import MapView from "@/components/MapView";
+import MapView from "@/components/LazyMapView";
 
 interface SharedTripData {
   id: string;

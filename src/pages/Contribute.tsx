@@ -31,7 +31,7 @@ import {
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useCountry } from '@/i18n/CountryContext';
 import MapPicker from '@/components/MapPicker';
-import MapView from '@/components/MapView';
+import MapView from '@/components/LazyMapView';
 
 const ACTIVITY_TYPES = [
   'caffe/restaurant',

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap } from 'lucide-react';
-import MapView from '@/components/MapView';
+import MapView from '@/components/LazyMapView';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
-import { huntsService, type ScavengerHunt, type HuntAttempt } from '@/services/huntsService';
+import { huntsService, type HuntAttempt } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { flags } from '@/lib/flags';
 import { cn } from '@/lib/utils';
+import { useHunt } from '@/hooks/useHunt';
 
 const SLIDE_LABEL: Record<string, string> = { about: 'About', map: 'Map', stops: 'Stops', credits: 'Sources' };
 
@@ -16,21 +18,16 @@ export default function HuntDetail() {
   const { currentProfile } = useFamilyMode();
   const profileId = currentProfile?.id ?? 'parent-default';
 
-  const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
-  const [latestAttempt, setLatestAttempt] = useState<HuntAttempt | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: hunt = null, isLoading: huntLoading } = useHunt(slug);
+  const { data: latestAttempt = null, isLoading: attemptLoading } = useQuery<HuntAttempt | null>({
+    queryKey: ['hunt-latest-attempt', hunt?.id ?? '', profileId],
+    queryFn: () => huntsService.findLatestAttempt(hunt!.id, profileId),
+    enabled: !!hunt?.id,
+    staleTime: 30_000,
+  });
   const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
   const [activeSlide, setActiveSlide] = useState(0);
-
-  useEffect(() => {
-    if (!slug) return;
-    (async () => {
-      const h = await huntsService.getHunt(slug);
-      setHunt(h);
-      if (h) setLatestAttempt(await huntsService.findLatestAttempt(h.id, profileId));
-      setLoading(false);
-    })();
-  }, [slug, profileId]);
+  const [mapSlideActivated, setMapSlideActivated] = useState(false);
 
   // Track active slide for indicator dots
   useEffect(() => {
@@ -41,7 +38,11 @@ export default function HuntDetail() {
     return () => { carouselApi.off('select', onSelect); };
   }, [carouselApi]);
 
-  if (loading) {
+  useEffect(() => {
+    if (activeSlide >= 1) setMapSlideActivated(true);
+  }, [activeSlide]);
+
+  if (huntLoading || (!!hunt?.id && attemptLoading)) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -83,6 +84,7 @@ export default function HuntDetail() {
     ...(hunt.credits ? ['credits'] : []),
   ] as const;
   const slideCount = slideKeys.length;
+  const shouldMountMap = mapSlideActivated || activeSlide >= 1;
 
   return (
     <div className="min-h-[100dvh] bg-background pb-tab-bar flex flex-col">
@@ -140,7 +142,14 @@ export default function HuntDetail() {
             {huntPath.length > 0 && (
               <CarouselItem className="pl-0 basis-full">
                 <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] bg-muted overflow-hidden">
-                  <MapView places={[]} path={huntPath} className="absolute inset-0" />
+                  {shouldMountMap ? (
+                    <MapView places={[]} path={huntPath} className="absolute inset-0" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <MapPin className="w-8 h-8" />
+                      <p className="text-sm font-semibold">Swipe here to load the route map</p>
+                    </div>
+                  )}
                   {/* Map header label (so users know what slide they're on) */}
                   <div className="absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background/90 backdrop-blur shadow-md border text-[11px] font-bold uppercase tracking-widest pointer-events-none" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}>
                     Route map

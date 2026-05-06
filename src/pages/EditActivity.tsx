@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { Camera, Upload, X } from 'lucide-react';
 import MapPicker from '@/components/MapPicker';
-import MapView from '@/components/MapView';
+import MapView from '@/components/LazyMapView';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const PRIMARY_CATEGORIES = ['Sport', 'Education', 'Culture', 'Nature', 'Social', 'Fun'];

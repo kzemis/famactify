@@ -1,7 +1,7 @@
 // ChoreEdit — minimal parent-facing builder for "home chore" hunts.
 // Streamlined fields (no GPS, no AI, no sources) → saves as visibility=family_private + status=published.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, Save, House, Camera, Mic, CheckSquare } from 'lucide-react';
 import { huntsService } from '@/services/huntsService';
@@ -30,6 +30,7 @@ interface ChoreStopDraft {
 
 function emptyStop(order: number): ChoreStopDraft {
   return {
+    id: crypto.randomUUID(),
     title: order === 0 ? 'Make your bed' : `Chore ${order + 1}`,
     promptKind: 'observation',
     question: 'Did you do this chore?',
@@ -54,12 +55,14 @@ export default function ChoreEdit() {
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving]   = useState(false);
+  const [optimisticSaving, setOptimisticSaving] = useState(false);
   const [huntId, setHuntId]   = useState<string | null>(null);
 
   const [title, setTitle]           = useState('Sunday tidy-up');
   const [blurb, setBlurb]           = useState('Quick chore quest around the house — earn a stamp for each one!');
   const [coverEmoji, setCoverEmoji] = useState('🏠');
   const [stops, setStops]           = useState<ChoreStopDraft[]>([emptyStop(0)]);
+  const originalStopsRef = useRef<HuntStop[]>([]);
 
   // Load existing chore-hunt if editing
   useEffect(() => {
@@ -68,6 +71,7 @@ export default function ChoreEdit() {
       const h = await huntsService.getHunt(routeSlug);
       if (!h) { toast.error('Chore hunt not found'); navigate('/chores'); return; }
       setHuntId(h.id);
+      originalStopsRef.current = h.stops ?? [];
       setTitle(h.title);
       setBlurb(h.blurb);
       setCoverEmoji(h.coverEmoji);
@@ -107,9 +111,15 @@ export default function ChoreEdit() {
   };
 
   const handleSave = async () => {
+    if (saving || optimisticSaving) return;
     const err = validate();
     if (err) { toast.error(err); return; }
-    setSaving(true);
+    if (isEditing && huntId) {
+      setOptimisticSaving(true);
+      toast.success('Saved ✓', { description: 'Syncing in the background…' });
+    } else {
+      setSaving(true);
+    }
     try {
       // Build HuntStop list
       const huntStops: HuntStop[] = stops.map((s, i) => ({
@@ -159,14 +169,19 @@ export default function ChoreEdit() {
           durationMinutes: Math.max(5, stops.length * 5),
         });
       }
-      await huntsService.replaceStops(id, huntStops);
-      toast.success(isEditing ? 'Chore hunt saved' : 'Chore hunt created!');
+      await huntsService.saveStopsDiff(id, originalStopsRef.current, huntStops);
+      originalStopsRef.current = huntStops.map((stop, order) => ({ ...stop, order }));
+      if (!isEditing) toast.success('Chore hunt created!');
       navigate('/chores');
     } catch (e: any) {
       console.error('[ChoreEdit] save', e);
-      toast.error(e?.message || 'Save failed');
+      toast.error(
+        isEditing ? 'Save failed — please retry.' : (e?.message || 'Save failed'),
+        isEditing ? { description: e?.message } : undefined,
+      );
     } finally {
       setSaving(false);
+      setOptimisticSaving(false);
     }
   };
 
@@ -244,7 +259,7 @@ export default function ChoreEdit() {
           {stops.map((s, i) => {
             const KindIcon = (SIMPLE_KINDS.find(k => k.value === s.promptKind)?.icon ?? CheckSquare);
             return (
-              <div key={i} className="rounded-2xl border bg-card overflow-hidden">
+              <div key={s.id ?? i} className="rounded-2xl border bg-card overflow-hidden">
                 <button
                   onClick={() => toggleStop(i)}
                   className="w-full flex items-center gap-3 px-3 py-3 text-left tap-highlight"
@@ -380,11 +395,11 @@ export default function ChoreEdit() {
         </div>
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || optimisticSaving}
           className="h-12 px-6 rounded-2xl bg-primary text-primary-foreground font-bold tap-highlight active:scale-[0.98] transition-transform shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <Save className="w-4 h-4" />
-          {saving ? 'Saving…' : isEditing ? 'Save changes' : 'Create hunt'}
+          {optimisticSaving ? 'Saved ✓' : saving ? 'Creating…' : isEditing ? 'Save changes' : 'Create hunt'}
         </button>
       </div>
     </div>

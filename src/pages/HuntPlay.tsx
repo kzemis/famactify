@@ -7,10 +7,11 @@ import ARClueOverlay from '@/components/ARClueOverlay';
 import DrawingPad from '@/components/DrawingPad';
 import TimeTravelCamera from '@/components/TimeTravelCamera';
 import { renderHuntPostcard } from '@/lib/huntPostcard';
-import { huntsService, type ScavengerHunt, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
+import { huntsService, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
+import { useHunt } from '@/hooks/useHunt';
 import { toast } from 'sonner';
 
 const ARRIVAL_RADIUS_M = 80; // GPS slack for "I'm here"
@@ -36,7 +37,8 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   const { language } = useLanguage();
   const profileId = currentProfile?.id ?? 'parent-default';
 
-  const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
+  const { data: hunt = null, isLoading: huntLoading, isFetched: huntFetched } = useHunt(activeSlug);
+  const huntId = hunt?.id;
   const [attempt, setAttempt] = useState<HuntAttempt | null>(null);
   const [phase, setPhase] = useState<'clue' | 'prompt' | 'reveal' | 'finished'>('clue');
   const [textAnswer, setTextAnswer] = useState('');
@@ -61,19 +63,26 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   const [locating, setLocating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load hunt + attempt on mount
+  // Load attempt after the cached hunt is available.
   useEffect(() => {
-    if (!activeSlug) return;
+    if (!activeSlug || huntLoading) return;
+    if (huntFetched && !huntId) {
+      navigate('/hunts', { replace: true });
+      return;
+    }
+    if (!huntId) return;
+    let cancelled = false;
+    setAttempt(null);
+    setPhase('clue');
     (async () => {
-      const h = await huntsService.getHunt(activeSlug);
-      if (!h) { navigate('/hunts'); return; }
-      setHunt(h);
-      const a = await huntsService.startAttempt(h.id, profileId);
+      const a = await huntsService.startAttempt(huntId, profileId);
+      if (cancelled) return;
       setAttempt(a);
       // If completed, jump straight to summary
       if (a.completedAt) setPhase('finished');
     })();
-  }, [activeSlug, profileId, navigate]);
+    return () => { cancelled = true; };
+  }, [activeSlug, huntId, huntFetched, huntLoading, profileId, navigate]);
 
   // Stop any ongoing TTS when leaving the page.
   // Keep this before early returns so React sees the same hook order every render.
@@ -113,7 +122,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     return () => { if (postcardUrl) URL.revokeObjectURL(postcardUrl); };
   }, [postcardUrl]);
 
-  if (!hunt || !attempt) {
+  if (huntLoading || !hunt || !attempt) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />

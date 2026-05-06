@@ -105,6 +105,7 @@ function updateLocalAttempt(attemptId: string, updater: (attempt: HuntAttempt) =
 
 const OPTIONAL_HUNT_STOP_COLUMNS = [
   'prompt_metadata',
+  'prompt_reference_image',
 ] as const;
 
 // Cache the column probe result so we don't hit Supabase 3× on every save.
@@ -236,6 +237,7 @@ function mapStopRow(s: any): HuntStop {
     options: s.prompt_options ?? undefined,
     correctAnswers: s.prompt_correct ?? undefined,
     photoSubject: s.prompt_photo_subject ?? undefined,
+    referenceImage: s.prompt_reference_image ?? undefined,
     audioSubject: metadata.audioSubject ?? undefined,
     audioMaxSeconds: metadata.audioMaxSeconds ?? undefined,
     drawingSubject: metadata.drawingSubject ?? undefined,
@@ -501,6 +503,7 @@ export const huntsService = {
       prompt_options: stop.prompt.options ?? null,
       prompt_correct: stop.prompt.correctAnswers ?? null,
       prompt_photo_subject: stop.prompt.photoSubject ?? null,
+      prompt_reference_image: stop.prompt.referenceImage ?? null,
       prompt_metadata: promptMetadata(stop.prompt),
       reveal_fun_fact: stop.reveal.funFact,
       reveal_image: stop.reveal.image ?? null,

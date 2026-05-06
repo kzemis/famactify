@@ -253,15 +253,15 @@ function mapStopRow(s: any): HuntStop {
     id: s.id,
     order: s.stop_order,
     title: s.title,
-    lat: s.lat,
-    lon: s.lon,
+    lat: typeof s.lat === 'number' ? s.lat : null,
+    lon: typeof s.lon === 'number' ? s.lon : null,
     address: s.address ?? undefined,
-    clueText: s.clue_text,
+    clueText: s.clue_text ?? '',
     clueImage: s.clue_image ?? undefined,
     clueAudio: s.clue_audio ?? undefined,
     parentHint: s.parent_hint ?? undefined,
     prompt,
-    reveal: { funFact: s.reveal_fun_fact, image: s.reveal_image ?? undefined },
+    reveal: { funFact: s.reveal_fun_fact ?? '', image: s.reveal_image ?? undefined },
   };
 }
 
@@ -283,10 +283,10 @@ function buildStopRow(
     hunt_id: huntId,
     stop_order: index,
     title: stop.title,
-    lat: stop.lat,
-    lon: stop.lon,
+    lat: typeof stop.lat === 'number' && Number.isFinite(stop.lat) ? stop.lat : null,
+    lon: typeof stop.lon === 'number' && Number.isFinite(stop.lon) ? stop.lon : null,
     address: stop.address ?? null,
-    clue_text: stop.clueText,
+    clue_text: stop.clueText?.trim() ? stop.clueText : null,
     clue_image: stop.clueImage ?? null,
     clue_audio: stop.clueAudio ?? null,
     parent_hint: stop.parentHint ?? null,
@@ -297,7 +297,7 @@ function buildStopRow(
     prompt_photo_subject: stop.prompt.photoSubject ?? null,
     prompt_reference_image: stop.prompt.referenceImage ?? null,
     prompt_metadata: promptMetadata(stop.prompt),
-    reveal_fun_fact: stop.reveal.funFact,
+    reveal_fun_fact: stop.reveal.funFact?.trim() ? stop.reveal.funFact : null,
     reveal_image: stop.reveal.image ?? null,
   };
   if (opts.includeId && isUuid(stop.id)) row.id = stop.id;
@@ -765,7 +765,7 @@ export const huntsService = {
     if (error) throw error;
   },
 
-  /** Author deletes own draft hunt. */
+  /** Delete a database-backed hunt. Admin RLS allows any hunt; author RLS allows own drafts. */
   async deleteHunt(id: string): Promise<void> {
     const { error } = await supabase.from('hunts').delete().eq('id', id);
     if (error) throw error;

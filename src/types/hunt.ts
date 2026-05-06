@@ -43,9 +43,9 @@ export interface HuntStop {
   id: string;
   order: number;
   title: string;
-  /** Lat/lon for "I'm here" geofence + map pin */
-  lat: number;
-  lon: number;
+  /** Optional lat/lon for GPS geofence, map pin, and AR guide */
+  lat: number | null;
+  lon: number | null;
   address?: string;
   /** Clue copy shown to player BEFORE they arrive */
   clueText: string;

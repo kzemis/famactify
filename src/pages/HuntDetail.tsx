@@ -67,7 +67,13 @@ export default function HuntDetail() {
   const ctaLabel = isInProgress ? 'Continue hunt' : isCompleted ? 'Play again' : 'Start hunt';
   const huntPath = [...hunt.stops]
     .sort((a, b) => a.order - b.order)
-    .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lon) && !(Math.abs(s.lat) < 0.0001 && Math.abs(s.lon) < 0.0001))
+    .filter((s): s is typeof s & { lat: number; lon: number } => (
+      typeof s.lat === 'number'
+      && typeof s.lon === 'number'
+      && Number.isFinite(s.lat)
+      && Number.isFinite(s.lon)
+      && !(Math.abs(s.lat) < 0.0001 && Math.abs(s.lon) < 0.0001)
+    ))
     .map((s, i) => ({
       id: s.id,
       lat: s.lat,

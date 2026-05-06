@@ -4,11 +4,12 @@
  */
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X, Bot, FileText, Sparkles, Workflow, Headphones } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X, Bot, FileText, Sparkles, Workflow, Headphones, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import MapPicker from '@/components/MapPicker';
 import { huntsService } from '@/services/huntsService';
 import type { ScavengerHunt, HuntStop, HuntPromptKind, HuntSponsor } from '@/types/hunt';
 import { authService } from '@/services';
@@ -29,18 +30,34 @@ const PROMPT_KINDS: { value: HuntPromptKind; label: string; helper: string }[] =
   { value: 'observation',     label: '👀 Observation',  helper: 'No answer required. Player just acknowledges they did the thing.' },
 ];
 
+const DEFAULT_MAP_CENTERS: Record<string, { lat: number; lon: number }> = {
+  US: { lat: 37.7749, lon: -122.4194 },
+  LV: { lat: 56.9496, lon: 24.1052 },
+};
+
 function emptyStop(order: number): HuntStop {
   return {
     id: crypto.randomUUID(),
     order,
     title: '',
-    lat: 0,
-    lon: 0,
+    lat: null,
+    lon: null,
     address: '',
     clueText: '',
     prompt: { kind: 'text', question: '', correctAnswers: [] },
     reveal: { funFact: '' },
   };
+}
+
+function defaultMapCenter(countryCode?: string | null) {
+  return DEFAULT_MAP_CENTERS[(countryCode || '').toUpperCase()] ?? DEFAULT_MAP_CENTERS.US;
+}
+
+function parseOptionalCoordinate(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function slugify(value: string): string {
@@ -255,9 +272,7 @@ export default function HuntEdit() {
     if (!(hunt.stops?.length)) return 'Add at least one stop';
     for (const [i, s] of (hunt.stops ?? []).entries()) {
       if (!s.title.trim()) return `Stop ${i + 1}: title required`;
-      if (!s.clueText.trim()) return `Stop ${i + 1}: clue required`;
       if (!s.prompt.question.trim()) return `Stop ${i + 1}: question required`;
-      if (!s.reveal.funFact.trim()) return `Stop ${i + 1}: reveal / fun fact required`;
       if (s.prompt.kind === 'multiple_choice' && (!s.prompt.options?.length || !s.prompt.correctAnswers?.length)) {
         return `Stop ${i + 1}: multiple choice needs options and a correct answer`;
       }
@@ -297,8 +312,8 @@ export default function HuntEdit() {
         id: crypto.randomUUID(),
         order: i,
         title,
-        lat: 0,
-        lon: 0,
+        lat: null,
+        lon: null,
         address: '',
         clueText: `Find “${title}” at ${place}. Use venue signs, maps, or staff-approved route notes to guide families safely.`,
         parentHint: 'AI-assisted draft: verify the route, coordinates, safety, accessibility, and source-backed fact before submitting for review.',
@@ -579,6 +594,7 @@ export default function HuntEdit() {
   }
 
   const backTo = mode === 'admin' ? '/admin/hunts' : '/org/hunts';
+  const mapCenter = defaultMapCenter(hunt.countryCode);
   const statusBadge = (() => {
     const map: Record<string, { label: string; cls: string }> = {
       draft:          { label: 'Draft',          cls: 'bg-muted text-foreground' },
@@ -852,6 +868,7 @@ export default function HuntEdit() {
               removeStop={removeStop}
               handleStepAudioUpload={handleStepAudioUpload}
               handleReferenceImageUpload={handleReferenceImageUpload}
+              defaultMapCenter={mapCenter}
             />
           ))}
 
@@ -963,6 +980,7 @@ type StopEditorProps = {
   removeStop: (idx: number) => void;
   handleStepAudioUpload: (idx: number, file: File) => void;
   handleReferenceImageUpload: (idx: number, file: File) => void;
+  defaultMapCenter: { lat: number; lon: number };
 };
 
 const StopEditor = memo(function StopEditor({
@@ -976,7 +994,12 @@ const StopEditor = memo(function StopEditor({
   removeStop,
   handleStepAudioUpload,
   handleReferenceImageUpload,
+  defaultMapCenter,
 }: StopEditorProps) {
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const hasCoordinates = typeof s.lat === 'number' && Number.isFinite(s.lat)
+    && typeof s.lon === 'number' && Number.isFinite(s.lon);
+
   return (
     <div className="rounded-2xl border bg-card p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -989,12 +1012,46 @@ const StopEditor = memo(function StopEditor({
 
       <Field label="Title" required><Input value={s.title} onChange={e => updateStop(i, x => ({ ...x, title: e.target.value }))} placeholder="Tilden Little Farm" /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Latitude" required><Input type="number" step="any" value={s.lat} onChange={e => updateStop(i, x => ({ ...x, lat: parseFloat(e.target.value || '0') }))} placeholder="37.75046" /></Field>
-        <Field label="Longitude" required><Input type="number" step="any" value={s.lon} onChange={e => updateStop(i, x => ({ ...x, lon: parseFloat(e.target.value || '0') }))} placeholder="-122.44053" /></Field>
+        <Field label="Latitude (optional)"><Input type="number" step="any" value={s.lat ?? ''} onChange={e => updateStop(i, x => ({ ...x, lat: parseOptionalCoordinate(e.target.value) }))} placeholder="37.75046" /></Field>
+        <Field label="Longitude (optional)"><Input type="number" step="any" value={s.lon ?? ''} onChange={e => updateStop(i, x => ({ ...x, lon: parseOptionalCoordinate(e.target.value) }))} placeholder="-122.44053" /></Field>
+      </div>
+      <div className="rounded-xl border bg-muted/30 p-3 flex items-center gap-3">
+        <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold">
+            {hasCoordinates ? `${s.lat!.toFixed(6)}, ${s.lon!.toFixed(6)}` : 'No map pin yet'}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Optional. GPS check-in and AR guide appear only when a pin is set.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMapPickerOpen(true)}
+          className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold tap-highlight shrink-0"
+        >
+          {hasCoordinates ? 'Move pin' : 'Pick pin'}
+        </button>
       </div>
       <Field label="Address (optional)"><Input value={s.address ?? ''} onChange={e => updateStop(i, x => ({ ...x, address: e.target.value }))} /></Field>
-      <Field label="Clue (shown to player)" required>
-        <Textarea value={s.clueText} rows={3} onChange={e => updateStop(i, x => ({ ...x, clueText: e.target.value }))} />
+      <MapPicker
+        open={mapPickerOpen}
+        onOpenChange={setMapPickerOpen}
+        lat={s.lat}
+        lon={s.lon}
+        defaultCenter={defaultMapCenter}
+        nameForMarker={s.title || `Stop ${i + 1}`}
+        title={`Pick map pin for stop ${i + 1}`}
+        description="Click the exact place on the map. Latitude/longitude will be filled automatically."
+        onPick={(lat, lon, address) => updateStop(i, x => ({
+          ...x,
+          lat,
+          lon,
+          address: address || x.address,
+        }))}
+      />
+      <Field label="Clue (optional — shown before action)">
+        <Textarea value={s.clueText} rows={3} onChange={e => updateStop(i, x => ({ ...x, clueText: e.target.value }))} placeholder="Optional: a pre-arrival clue, orientation note, or story hook." />
       </Field>
       <Field label="Audio guide / soundtrack (optional)">
         <div className="space-y-2">
@@ -1078,7 +1135,7 @@ const StopEditor = memo(function StopEditor({
             </button>
           ))}
         </div>
-        <Field label="Question" required><Input value={s.prompt.question} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, question: e.target.value } }))} placeholder="What should the kid do or answer here?" /></Field>
+        <Field label="Action / question" required><Input value={s.prompt.question} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, question: e.target.value } }))} placeholder="What should the kid do or answer here?" /></Field>
 
         {s.prompt.kind === 'text' && (
           <Field label="Acceptable answers (comma-separated, case-insensitive)">
@@ -1253,9 +1310,9 @@ const StopEditor = memo(function StopEditor({
       </div>
 
       <div className="space-y-2 border-t pt-3">
-        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Reveal — fun fact</p>
-        <Field label="Fun fact" required>
-          <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} placeholder="A source-backed fact revealed after the stop." />
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Reveal</p>
+        <Field label="Fun fact (optional)">
+          <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} placeholder="Optional source-backed fact shown after the action." />
         </Field>
       </div>
     </div>

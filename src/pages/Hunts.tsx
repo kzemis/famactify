@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Clock, Users } from 'lucide-react';
+import { MapPin, Clock, Users } from 'lucide-react';
 import { huntsService, type ScavengerHunt } from '@/services/huntsService';
 import { useCountry } from '@/i18n/CountryContext';
+import RegionPill from '@/components/RegionPill';
 
 const DIFFICULTY_LABEL: Record<string, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -28,10 +29,13 @@ export default function Hunts() {
     <div className="min-h-[100dvh] bg-background">
       {/* Top bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl">🔍</span>
-          <h1 className="text-lg font-bold">Scavenger Hunts</h1>
-          <span className="text-xs text-muted-foreground">· {hunts.length}</span>
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span className="text-2xl">🔍</span>
+            <h1 className="text-lg font-bold truncate">Scavenger Hunts</h1>
+            <span className="text-xs text-muted-foreground">· {hunts.length}</span>
+          </div>
+          <RegionPill compact />
         </div>
       </div>
 
@@ -53,7 +57,7 @@ export default function Hunts() {
         ) : (
           <>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Place-based mini-adventures: clue → location → answer. Explore real places through playful challenges.
+              Showing {country.name}. Place-based mini-adventures: clue → location → answer.
             </p>
             {hunts.map(h => (
               <button

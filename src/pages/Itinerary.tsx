@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar, MapPin, Clock, DollarSign, Share2, Trash2, Plus, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
-import MapView from "@/components/MapView";
+import MapView from "@/components/LazyMapView";
 import {
   DndContext,
   closestCenter,

@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import MapView from '@/components/MapView';
+import MapView from '@/components/LazyMapView';
 import { getFunctionsBaseUrl } from '@/lib/utils';
 
 interface MapPickerProps {

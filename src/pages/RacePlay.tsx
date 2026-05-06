@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Users, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import RaceLeaderboard from '@/components/race/RaceLeaderboard';
 import { huntsService } from '@/services/huntsService';
 import { raceService } from '@/services/raceService';
+import { huntQueryKey } from '@/hooks/useHunt';
 import type { HuntRace, RaceParticipant, ScavengerHunt } from '@/types/hunt';
 import HuntPlay, { type HuntProgressSnapshot } from './HuntPlay';
 
@@ -16,6 +18,7 @@ function mergeParticipant(participants: RaceParticipant[], updated: RaceParticip
 
 export default function RacePlay() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { raceId } = useParams<{ raceId: string }>();
   const [race, setRace] = useState<HuntRace | null>(null);
   const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
@@ -70,6 +73,7 @@ export default function RacePlay() {
         }
         if (cancelled) return;
         setRace(raceRecord);
+        queryClient.setQueryData(huntQueryKey(huntRecord.slug), huntRecord as ScavengerHunt);
         setHunt(huntRecord as ScavengerHunt);
         setParticipants(participantRows);
         setMyParticipant(myRaceParticipant.participant);
@@ -82,7 +86,7 @@ export default function RacePlay() {
       }
     })();
     return () => { cancelled = true; };
-  }, [raceId, navigate]);
+  }, [raceId, navigate, queryClient]);
 
   useEffect(() => {
     if (!race?.id) return;

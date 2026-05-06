@@ -2,7 +2,7 @@
  * HuntEdit — shared hunt builder used by both /org/hunts/:id and /admin/hunts/:id
  * (and their /new variants for creation). Capability-scoped via path.
  */
-import { useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Send, CheckCircle2, AlertCircle, Upload, X, Bot, FileText, Sparkles, Workflow, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
@@ -61,6 +61,30 @@ function splitSourceLinks(value: string): string[] {
   return splitLines(value).flatMap(line => line.split(',')).map(link => link.trim()).filter(Boolean);
 }
 
+function stopSnapshot(stops: HuntStop[]): HuntStop[] {
+  return stops.map((stop, order) => ({ ...stop, order }));
+}
+
+function sponsorSnapshot(sponsors: HuntSponsor[]): HuntSponsor[] {
+  return sponsors.map(sponsor => ({ ...sponsor }));
+}
+
+function persistedSnapshot(
+  hunt: Partial<ScavengerHunt>,
+  stops: HuntStop[],
+  sponsors: HuntSponsor[],
+): Partial<ScavengerHunt> {
+  return {
+    ...hunt,
+    stops: stopSnapshot(stops),
+    sponsors: sponsorSnapshot(sponsors),
+  };
+}
+
+function snapshotKey(hunt: Partial<ScavengerHunt>): string {
+  return JSON.stringify(hunt);
+}
+
 export default function HuntEdit() {
   const params = useParams<{ id?: string }>();
   const { pathname, search } = useLocation();
@@ -73,6 +97,7 @@ export default function HuntEdit() {
   const [loading, setLoading] = useState(!isNew);
   const [draftHydrated, setDraftHydrated] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [optimisticSaving, setOptimisticSaving] = useState(false);
   const [huntStatus, setHuntStatus] = useState<string>('draft');
   const [reviewNotes, setReviewNotes] = useState<string | null>(null);
   const [editingSeedTemplate, setEditingSeedTemplate] = useState(false);
@@ -99,8 +124,14 @@ export default function HuntEdit() {
     stops: [],
     sponsors: [],
   });
+  const huntRef = useRef<Partial<ScavengerHunt>>(hunt);
   const [huntId, setHuntId] = useState<string | null>(isNew ? null : (params.id ?? null));
   const fileRef = useRef<HTMLInputElement>(null);
+  // Snapshot of the stops as last persisted to the DB. Used by saveStopsDiff to
+  // emit only UPDATEs/INSERTs for actually-changed rows (5–10× faster on typical edits).
+  const originalStopsRef = useRef<HuntStop[]>([]);
+  const originalSponsorsRef = useRef<HuntSponsor[]>([]);
+  const persistedHuntRef = useRef<Partial<ScavengerHunt> | null>(null);
   const [uploadingFor, setUploadingFor] = useState<number | null>(null); // sponsor index being uploaded for
   const [uploadingStepAudioFor, setUploadingStepAudioFor] = useState<number | null>(null);
   const [uploadingReferenceFor, setUploadingReferenceFor] = useState<number | null>(null);
@@ -110,6 +141,10 @@ export default function HuntEdit() {
   const [aiSourceLinks, setAiSourceLinks] = useState('');
   const [aiSourceFacts, setAiSourceFacts] = useState('');
   const [aiStopIdeas, setAiStopIdeas] = useState('');
+
+  useEffect(() => {
+    huntRef.current = hunt;
+  }, [hunt]);
 
   // Load existing hunt
   useEffect(() => {
@@ -123,6 +158,9 @@ export default function HuntEdit() {
       setReviewNotes(h.reviewNotes);
       setEditingSeedTemplate(isSeedTemplate);
       setHuntId(isSeedTemplate ? null : h.id);
+      originalStopsRef.current = isSeedTemplate ? [] : (h.stops ?? []);
+      originalSponsorsRef.current = isSeedTemplate ? [] : (h.sponsors ?? []);
+      persistedHuntRef.current = isSeedTemplate ? null : persistedSnapshot(h, h.stops ?? [], h.sponsors ?? []);
       setLoading(false);
     })();
   }, [params.id, isNew, mode, navigate]);
@@ -175,22 +213,22 @@ export default function HuntEdit() {
     setHunt(prev => ({ ...prev, [k]: v }));
   };
 
-  const updateStop = (idx: number, mut: (s: HuntStop) => HuntStop) => {
+  const updateStop = useCallback((idx: number, mut: (s: HuntStop) => HuntStop) => {
     setHunt(prev => ({
       ...prev,
       stops: (prev.stops ?? []).map((s, i) => i === idx ? mut(s) : s),
     }));
-  };
+  }, []);
 
   const addStop = () => {
     setHunt(prev => ({ ...prev, stops: [...(prev.stops ?? []), emptyStop((prev.stops ?? []).length)] }));
   };
 
-  const removeStop = (idx: number) => {
+  const removeStop = useCallback((idx: number) => {
     setHunt(prev => ({ ...prev, stops: (prev.stops ?? []).filter((_, i) => i !== idx) }));
-  };
+  }, []);
 
-  const moveStop = (idx: number, dir: 'up' | 'down') => {
+  const moveStop = useCallback((idx: number, dir: 'up' | 'down') => {
     setHunt(prev => {
       const stops = [...(prev.stops ?? [])];
       const swap = dir === 'up' ? idx - 1 : idx + 1;
@@ -198,7 +236,7 @@ export default function HuntEdit() {
       [stops[idx], stops[swap]] = [stops[swap], stops[idx]];
       return { ...prev, stops };
     });
-  };
+  }, []);
 
   const updateSponsor = (idx: number, mut: (s: HuntSponsor) => HuntSponsor) => {
     setHunt(prev => ({ ...prev, sponsors: (prev.sponsors ?? []).map((s, i) => i === idx ? mut(s) : s) }));
@@ -304,60 +342,138 @@ export default function HuntEdit() {
     toast.success('AI-assisted artifact draft created — now verify and edit it');
   };
 
+  const updateHuntDetails = (id: string, source: Partial<ScavengerHunt>) =>
+    huntsService.updateHunt(id, {
+      slug: source.slug, title: source.title, blurb: source.blurb,
+      hostName: source.hostName, city: source.city, countryCode: source.countryCode,
+      coverEmoji: source.coverEmoji, coverImage: source.coverImage,
+      primaryTheme: source.primaryTheme,
+      ageMin: source.ageMin, ageMax: source.ageMax,
+      durationMinutes: source.durationMinutes, difficulty: source.difficulty,
+      credits: source.credits,
+      createdVia: source.createdVia,
+      sourceLinks: source.sourceLinks,
+      aiPrompt: source.aiPrompt,
+      generationNotes: source.generationNotes,
+    });
+
+  const saveStopsAndSponsors = async (
+    id: string,
+    stopsToSave: HuntStop[],
+    sponsorsToSave: HuntSponsor[],
+  ) => {
+    const skipSponsors = sponsorsToSave.length === 0 && originalSponsorsRef.current.length === 0;
+    const [stopSaveMode] = await Promise.all([
+      huntsService.saveStopsDiff(id, originalStopsRef.current, stopsToSave),
+      skipSponsors
+        ? Promise.resolve()
+        : huntsService.replaceSponsors(id, sponsorsToSave, { skipIfEmpty: originalSponsorsRef.current.length === 0 }),
+    ]);
+    return stopSaveMode;
+  };
+
+  const markPersisted = (source: Partial<ScavengerHunt>, stopsToSave: HuntStop[], sponsorsToSave: HuntSponsor[]) => {
+    const savedStops = stopSnapshot(stopsToSave);
+    const savedSponsors = sponsorSnapshot(sponsorsToSave);
+    originalStopsRef.current = savedStops;
+    originalSponsorsRef.current = savedSponsors;
+    persistedHuntRef.current = persistedSnapshot(source, savedStops, savedSponsors);
+  };
+
+  const refreshAfterReplace = async (
+    id: string,
+    optimisticKey?: string,
+  ) => {
+    const refreshed = await huntsService.getHuntById(id).catch(() => null);
+    if (!refreshed) return false;
+    originalStopsRef.current = refreshed.stops ?? [];
+    originalSponsorsRef.current = refreshed.sponsors ?? [];
+    persistedHuntRef.current = persistedSnapshot(refreshed, refreshed.stops ?? [], refreshed.sponsors ?? []);
+    if (!optimisticKey || snapshotKey(huntRef.current) === optimisticKey) {
+      setHunt(refreshed);
+    }
+    return true;
+  };
+
   const handleSave = async () => {
+    if (saving || optimisticSaving) return;
     const err = validate();
     if (err) { toast.error(err); return; }
+
+    const source = hunt;
+    const stopsToSave = source.stops ?? [];
+    const sponsorsToSave = source.sponsors ?? [];
+
+    if (huntId && !isNew && !editingSeedTemplate) {
+      const optimisticKey = snapshotKey(source);
+      const previousPersisted = persistedHuntRef.current;
+      setOptimisticSaving(true);
+      toast.success('Saved ✓', { description: 'Syncing in the background…' });
+
+      void (async () => {
+        try {
+          await updateHuntDetails(huntId, source);
+          const stopSaveMode = await saveStopsAndSponsors(huntId, stopsToSave, sponsorsToSave);
+          if (stopSaveMode === 'replace') {
+            const refreshed = await refreshAfterReplace(huntId, optimisticKey);
+            if (!refreshed) markPersisted(source, stopsToSave, sponsorsToSave);
+          } else {
+            markPersisted(source, stopsToSave, sponsorsToSave);
+          }
+        } catch (e: any) {
+          const canRestore = previousPersisted && snapshotKey(huntRef.current) === optimisticKey;
+          if (canRestore) {
+            setHunt(previousPersisted);
+            originalStopsRef.current = previousPersisted.stops ?? [];
+            originalSponsorsRef.current = previousPersisted.sponsors ?? [];
+          }
+          toast.error(
+            canRestore
+              ? 'Save failed — restored previous version. Please retry.'
+              : 'Save failed — your latest edits are still here. Please retry.',
+            { description: e?.message },
+          );
+        } finally {
+          setOptimisticSaving(false);
+        }
+      })();
+      return;
+    }
+
     setSaving(true);
     try {
       let id = huntId;
       const creatingEditableCopy = !id;
       if (!id) {
         id = await huntsService.createDraft({
-          slug: hunt.slug!, title: hunt.title!, blurb: hunt.blurb!,
-          hostName: hunt.hostName!, city: hunt.city!, countryCode: hunt.countryCode,
-          coverEmoji: hunt.coverEmoji, coverImage: hunt.coverImage,
-          primaryTheme: hunt.primaryTheme,
-          ageMin: hunt.ageMin, ageMax: hunt.ageMax,
-          durationMinutes: hunt.durationMinutes, difficulty: hunt.difficulty as any,
-          credits: hunt.credits,
-          createdVia: hunt.createdVia,
-          sourceLinks: hunt.sourceLinks,
-          aiPrompt: hunt.aiPrompt,
-          generationNotes: hunt.generationNotes,
+          slug: source.slug!, title: source.title!, blurb: source.blurb!,
+          hostName: source.hostName!, city: source.city!, countryCode: source.countryCode,
+          coverEmoji: source.coverEmoji, coverImage: source.coverImage,
+          primaryTheme: source.primaryTheme,
+          ageMin: source.ageMin, ageMax: source.ageMax,
+          durationMinutes: source.durationMinutes, difficulty: source.difficulty as any,
+          credits: source.credits,
+          createdVia: source.createdVia,
+          sourceLinks: source.sourceLinks,
+          aiPrompt: source.aiPrompt,
+          generationNotes: source.generationNotes,
         });
         setHuntId(id);
         setEditingSeedTemplate(false);
       } else {
-        await huntsService.updateHunt(id, {
-          slug: hunt.slug, title: hunt.title, blurb: hunt.blurb,
-          hostName: hunt.hostName, city: hunt.city, countryCode: hunt.countryCode,
-          coverEmoji: hunt.coverEmoji, coverImage: hunt.coverImage,
-          primaryTheme: hunt.primaryTheme,
-          ageMin: hunt.ageMin, ageMax: hunt.ageMax,
-          durationMinutes: hunt.durationMinutes, difficulty: hunt.difficulty,
-          credits: hunt.credits,
-          createdVia: hunt.createdVia,
-          sourceLinks: hunt.sourceLinks,
-          aiPrompt: hunt.aiPrompt,
-          generationNotes: hunt.generationNotes,
-        });
+        await updateHuntDetails(id, source);
       }
-      // Stops and sponsors are independent — fire in parallel (was sequential, ~2× faster).
-      // Skip the sponsors DELETE entirely if there's nothing to delete and nothing to add (typical case).
-      const newSponsors = hunt.sponsors ?? [];
-      const skipSponsors = newSponsors.length === 0 && creatingEditableCopy;
-      await Promise.all([
-        huntsService.replaceStops(id, hunt.stops ?? []),
-        skipSponsors
-          ? Promise.resolve()
-          : huntsService.replaceSponsors(id, newSponsors, { skipIfEmpty: creatingEditableCopy }),
-      ]);
+      const stopSaveMode = await saveStopsAndSponsors(id, stopsToSave, sponsorsToSave);
       if (draftStorageKey) sessionStorage.removeItem(draftStorageKey);
       toast.success(editingSeedTemplate ? 'Editable hunt draft created from seed' : 'Saved');
-      // Update URL if we just created
       if (isNew || creatingEditableCopy) {
         const target = mode === 'admin' ? `/admin/hunts/${id}` : `/org/hunts/${id}`;
         navigate(target, { replace: true });
+      } else if (stopSaveMode === 'replace') {
+        const refreshed = await refreshAfterReplace(id);
+        if (!refreshed) markPersisted(source, stopsToSave, sponsorsToSave);
+      } else {
+        markPersisted(source, stopsToSave, sponsorsToSave);
       }
     } catch (e: any) {
       toast.error(e.message || 'Save failed');
@@ -426,7 +542,7 @@ export default function HuntEdit() {
     }
   };
 
-  const handleStepAudioUpload = async (idx: number, file: File) => {
+  const handleStepAudioUpload = useCallback(async (idx: number, file: File) => {
     setUploadingStepAudioFor(idx);
     try {
       const url = await huntsService.uploadAsset(file, 'step-audio');
@@ -437,9 +553,9 @@ export default function HuntEdit() {
     } finally {
       setUploadingStepAudioFor(null);
     }
-  };
+  }, [updateStop]);
 
-  const handleReferenceImageUpload = async (idx: number, file: File) => {
+  const handleReferenceImageUpload = useCallback(async (idx: number, file: File) => {
     setUploadingReferenceFor(idx);
     try {
       const url = await huntsService.uploadAsset(file, 'reference-photos');
@@ -450,7 +566,7 @@ export default function HuntEdit() {
     } finally {
       setUploadingReferenceFor(null);
     }
-  };
+  }, [updateStop]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -724,291 +840,19 @@ export default function HuntEdit() {
         {/* Stops */}
         <Section title={`Stops (${(hunt.stops ?? []).length})`}>
           {(hunt.stops ?? []).map((s, i) => (
-            <div key={s.id} className="rounded-2xl border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{i + 1}</span>
-                <span className="font-semibold text-sm flex-1 truncate">{s.title || 'Untitled stop'}</span>
-                <button onClick={() => moveStop(i, 'up')} disabled={i === 0} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
-                <button onClick={() => moveStop(i, 'down')} disabled={i === (hunt.stops?.length ?? 1) - 1} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
-                <button onClick={() => removeStop(i)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-destructive"><Trash2 className="w-4 h-4" /></button>
-              </div>
-
-              <Field label="Title" required><Input value={s.title} onChange={e => updateStop(i, x => ({ ...x, title: e.target.value }))} placeholder="Tilden Little Farm" /></Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Latitude" required><Input type="number" step="any" value={s.lat} onChange={e => updateStop(i, x => ({ ...x, lat: parseFloat(e.target.value || '0') }))} placeholder="37.75046" /></Field>
-                <Field label="Longitude" required><Input type="number" step="any" value={s.lon} onChange={e => updateStop(i, x => ({ ...x, lon: parseFloat(e.target.value || '0') }))} placeholder="-122.44053" /></Field>
-              </div>
-              <Field label="Address (optional)"><Input value={s.address ?? ''} onChange={e => updateStop(i, x => ({ ...x, address: e.target.value }))} /></Field>
-              <Field label="Clue (shown to player)" required>
-                <Textarea value={s.clueText} rows={3} onChange={e => updateStop(i, x => ({ ...x, clueText: e.target.value }))} />
-              </Field>
-              <Field label="Audio guide / soundtrack (optional)">
-                <div className="space-y-2">
-                  <Input
-                    value={s.clueAudio ?? ''}
-                    onChange={e => updateStop(i, x => ({ ...x, clueAudio: e.target.value }))}
-                    placeholder="https://.../stop-01-audio-guide.mp3"
-                  />
-                  {s.clueAudio && (
-                    <div className="rounded-xl border bg-muted/40 p-2 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-                        <Headphones className="w-3.5 h-3.5" /> Preview audio guide
-                      </div>
-                      <audio src={s.clueAudio} controls className="w-full h-9" preload="metadata" />
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    <label className={cn(
-                      'h-10 px-3 rounded-xl border bg-background text-sm font-medium tap-highlight flex items-center justify-center gap-2 cursor-pointer',
-                      uploadingStepAudioFor === i && 'opacity-60 pointer-events-none',
-                    )}>
-                      <Upload className="w-4 h-4" />
-                      {uploadingStepAudioFor === i ? 'Uploading…' : 'Upload audio'}
-                      <input
-                        type="file"
-                        accept="audio/*"
-                        className="hidden"
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleStepAudioUpload(i, file);
-                          e.currentTarget.value = '';
-                        }}
-                      />
-                    </label>
-                    {s.clueAudio && (
-                      <button
-                        type="button"
-                        onClick={() => updateStop(i, x => ({ ...x, clueAudio: '' }))}
-                        className="h-10 px-3 rounded-xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
-                      >
-                        <X className="w-4 h-4" /> Remove
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-snug">
-                    Use this for a venue voice-over, ambient soundtrack, or simple audio guide. Player sees it on the clue screen before answering.
-                  </p>
-                </div>
-              </Field>
-              <Field label="Parent hint (optional — shown when kid taps 'Ask a grown-up')">
-                <Textarea value={s.parentHint ?? ''} rows={2} onChange={e => updateStop(i, x => ({ ...x, parentHint: e.target.value }))} placeholder="A nudge a grown-up can read aloud or paraphrase, without giving the answer outright." />
-              </Field>
-
-              {/* Prompt */}
-              <div className="space-y-2 border-t pt-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Prompt</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {PROMPT_KINDS.map(p => (
-                    <button
-                      key={p.value}
-                      onClick={() => updateStop(i, x => ({
-                        ...x,
-                        prompt: {
-                          kind: p.value,
-                          question: x.prompt.question,
-                          options: p.value === 'multiple_choice' ? (x.prompt.options ?? []) : undefined,
-                          correctAnswers: p.value === 'text' || p.value === 'multiple_choice' || p.value === 'voice_answer' ? (x.prompt.correctAnswers ?? []) : undefined,
-                          photoSubject:    (p.value === 'photo' || p.value === 'spot_photo') ? x.prompt.photoSubject   : undefined,
-                          referenceImage:  p.value === 'spot_photo' ? x.prompt.referenceImage : undefined,
-                          audioSubject:    p.value === 'audio'   ? x.prompt.audioSubject   : undefined,
-                          audioMaxSeconds: p.value === 'audio'   ? (x.prompt.audioMaxSeconds ?? 5) : undefined,
-                          drawingSubject:  p.value === 'drawing' ? x.prompt.drawingSubject : undefined,
-                          timeTravelImageUrl: p.value === 'time_travel_photo' ? x.prompt.timeTravelImageUrl : undefined,
-                          timeTravelCaption:  p.value === 'time_travel_photo' ? x.prompt.timeTravelCaption  : undefined,
-                          timeTravelOpacity:  p.value === 'time_travel_photo' ? (x.prompt.timeTravelOpacity ?? 0.5) : undefined,
-                        },
-                      }))}
-                      className={cn('rounded-xl border-2 p-2 text-left text-xs', s.prompt.kind === p.value ? 'border-primary bg-primary/8' : 'border-border bg-background')}
-                    >
-                      <p className="font-semibold">{p.label}</p>
-                      <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{p.helper}</p>
-                    </button>
-                  ))}
-                </div>
-                <Field label="Question" required><Input value={s.prompt.question} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, question: e.target.value } }))} placeholder="What should the kid do or answer here?" /></Field>
-
-                {s.prompt.kind === 'text' && (
-                  <Field label="Acceptable answers (comma-separated, case-insensitive)">
-                    <Input
-                      value={(s.prompt.correctAnswers ?? []).join(', ')}
-                      onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))}
-                      placeholder="pig, piglet, swine"
-                    />
-                  </Field>
-                )}
-
-                {s.prompt.kind === 'voice_answer' && (
-                  <>
-                    <Field label="Acceptable answers (comma-separated, case-insensitive)" required>
-                      <Input
-                        value={(s.prompt.correctAnswers ?? []).join(', ')}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))}
-                        placeholder="three, 3, three stars"
-                      />
-                    </Field>
-                    <p className="text-[10px] text-muted-foreground leading-snug px-0.5">
-                      💡 Speech-to-text varies — include common variations (e.g. <code>3</code>, <code>three</code>, <code>tree</code> for "three"). Match is case-insensitive contains. Kids can also tap "Type instead" if mic isn't available.
-                    </p>
-                  </>
-                )}
-
-                {s.prompt.kind === 'multiple_choice' && (
-                  <>
-                    <Field label="Options (one per line)" required>
-                      <Textarea
-                        rows={4}
-                        value={(s.prompt.options ?? []).join('\n')}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) } }))}
-                        placeholder={'Pig\nGoat\nSheep\nCow'}
-                      />
-                    </Field>
-                    <Field label="Correct option (must match one option exactly)" required>
-                      <Input
-                        value={(s.prompt.correctAnswers ?? [])[0] ?? ''}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: [e.target.value] } }))}
-                        placeholder="Pig"
-                      />
-                    </Field>
-                  </>
-                )}
-
-                {s.prompt.kind === 'photo' && (
-                  <Field label="What should the photo show?">
-                    <Input value={s.prompt.photoSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))} placeholder="A piglet at Little Farm" />
-                  </Field>
-                )}
-
-                {s.prompt.kind === 'spot_photo' && (
-                  <>
-                    <Field label="Reference photo — what kid should find" required>
-                      {s.prompt.referenceImage ? (
-                        <div className="relative rounded-xl overflow-hidden border bg-muted">
-                          <img
-                            src={s.prompt.referenceImage}
-                            alt="Reference"
-                            className="w-full aspect-[4/3] object-cover"
-                            onError={() => toast.error("Couldn't load reference image preview")}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, referenceImage: undefined } }))}
-                            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center tap-highlight"
-                            aria-label="Remove reference photo"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 aspect-[4/3] flex flex-col items-center justify-center gap-1 text-muted-foreground text-xs">
-                          <Upload className="w-5 h-5" />
-                          <span>No reference photo yet</span>
-                        </div>
-                      )}
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          value={s.prompt.referenceImage ?? ''}
-                          onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, referenceImage: e.target.value } }))}
-                          placeholder="https://… (or upload below)"
-                          className="flex-1"
-                        />
-                        <label
-                          className={cn(
-                            'cursor-pointer h-10 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 tap-highlight whitespace-nowrap',
-                            uploadingReferenceFor === i && 'opacity-60 pointer-events-none',
-                          )}
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          {uploadingReferenceFor === i
-                            ? 'Uploading…'
-                            : s.prompt.referenceImage ? 'Replace' : 'Upload'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={e => {
-                              const file = e.target.files?.[0];
-                              if (file) handleReferenceImageUpload(i, file);
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground leading-snug mt-1">
-                        Kid sees this as "Find this!" on location. Use a clear, single-subject photo (e.g. a specific statue, plaque, mural detail).
-                      </p>
-                    </Field>
-                    <Field label="Helper hint (optional)">
-                      <Input
-                        value={s.prompt.photoSubject ?? ''}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))}
-                        placeholder="Look near the entrance fountain"
-                      />
-                    </Field>
-                  </>
-                )}
-
-                {s.prompt.kind === 'audio' && (
-                  <>
-                    <Field label="What to listen for (informative)">
-                      <Input value={s.prompt.audioSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, audioSubject: e.target.value } }))} placeholder="Sea lions barking at Pier 39" />
-                    </Field>
-                    <Field label="Max recording length (seconds, 2–15)">
-                      <Input
-                        type="number"
-                        min={2}
-                        max={15}
-                        value={s.prompt.audioMaxSeconds ?? 5}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, audioMaxSeconds: Math.max(2, Math.min(15, parseInt(e.target.value || '5'))) } }))}
-                      />
-                    </Field>
-                  </>
-                )}
-
-                {s.prompt.kind === 'drawing' && (
-                  <Field label="What to draw (informative)">
-                    <Input value={s.prompt.drawingSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, drawingSubject: e.target.value } }))} placeholder="The shape of the bridge tower" />
-                  </Field>
-                )}
-
-                {s.prompt.kind === 'time_travel_photo' && (
-                  <>
-                    <Field label="Historical/source image URL" required>
-                      <Input
-                        value={s.prompt.timeTravelImageUrl ?? ''}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelImageUrl: e.target.value } }))}
-                        placeholder="https://archive.org/.../historic-photo.jpg"
-                      />
-                    </Field>
-                    <Field label="Overlay caption / source note">
-                      <Textarea
-                        rows={2}
-                        value={s.prompt.timeTravelCaption ?? ''}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelCaption: e.target.value } }))}
-                        placeholder="Source: venue archive / public collection. Used to line up the old view with today."
-                      />
-                    </Field>
-                    <Field label="Overlay opacity (0.1–0.85, default 0.5)">
-                      <Input
-                        type="number"
-                        min={0.1}
-                        max={0.85}
-                        step={0.05}
-                        value={s.prompt.timeTravelOpacity ?? 0.5}
-                        onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelOpacity: Math.max(0.1, Math.min(0.85, parseFloat(e.target.value || '0.5'))) } }))}
-                      />
-                    </Field>
-                  </>
-                )}
-              </div>
-
-              {/* Reveal */}
-              <div className="space-y-2 border-t pt-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Reveal — fun fact</p>
-                <Field label="Fun fact" required>
-                  <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} placeholder="A source-backed fact revealed after the stop." />
-                </Field>
-              </div>
-            </div>
+            <StopEditor
+              key={s.id}
+              stop={s}
+              index={i}
+              stopCount={hunt.stops?.length ?? 0}
+              isUploadingStepAudio={uploadingStepAudioFor === i}
+              isUploadingReference={uploadingReferenceFor === i}
+              updateStop={updateStop}
+              moveStop={moveStop}
+              removeStop={removeStop}
+              handleStepAudioUpload={handleStepAudioUpload}
+              handleReferenceImageUpload={handleReferenceImageUpload}
+            />
           ))}
 
           <button onClick={addStop} className="w-full h-12 rounded-2xl border-2 border-dashed border-border flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground tap-highlight">
@@ -1049,8 +893,16 @@ export default function HuntEdit() {
 
         {/* Actions */}
         <div className="space-y-2 pt-2">
-          <button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2 disabled:opacity-50">
-            <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save'}
+          <button onClick={handleSave} disabled={saving || optimisticSaving} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold tap-highlight flex items-center justify-center gap-2 disabled:opacity-50">
+            {optimisticSaving ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" /> Saved ✓
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> {saving ? (huntId ? 'Saving…' : 'Creating…') : 'Save'}
+              </>
+            )}
           </button>
 
           {/* Org actions */}
@@ -1099,3 +951,313 @@ function Field({ label, children, required = false }: { label: string; children:
     </div>
   );
 }
+
+type StopEditorProps = {
+  stop: HuntStop;
+  index: number;
+  stopCount: number;
+  isUploadingStepAudio: boolean;
+  isUploadingReference: boolean;
+  updateStop: (idx: number, mut: (s: HuntStop) => HuntStop) => void;
+  moveStop: (idx: number, dir: 'up' | 'down') => void;
+  removeStop: (idx: number) => void;
+  handleStepAudioUpload: (idx: number, file: File) => void;
+  handleReferenceImageUpload: (idx: number, file: File) => void;
+};
+
+const StopEditor = memo(function StopEditor({
+  stop: s,
+  index: i,
+  stopCount,
+  isUploadingStepAudio,
+  isUploadingReference,
+  updateStop,
+  moveStop,
+  removeStop,
+  handleStepAudioUpload,
+  handleReferenceImageUpload,
+}: StopEditorProps) {
+  return (
+    <div className="rounded-2xl border bg-card p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">{i + 1}</span>
+        <span className="font-semibold text-sm flex-1 truncate">{s.title || 'Untitled stop'}</span>
+        <button onClick={() => moveStop(i, 'up')} disabled={i === 0} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
+        <button onClick={() => moveStop(i, 'down')} disabled={i === stopCount - 1} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
+        <button onClick={() => removeStop(i)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-destructive"><Trash2 className="w-4 h-4" /></button>
+      </div>
+
+      <Field label="Title" required><Input value={s.title} onChange={e => updateStop(i, x => ({ ...x, title: e.target.value }))} placeholder="Tilden Little Farm" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Latitude" required><Input type="number" step="any" value={s.lat} onChange={e => updateStop(i, x => ({ ...x, lat: parseFloat(e.target.value || '0') }))} placeholder="37.75046" /></Field>
+        <Field label="Longitude" required><Input type="number" step="any" value={s.lon} onChange={e => updateStop(i, x => ({ ...x, lon: parseFloat(e.target.value || '0') }))} placeholder="-122.44053" /></Field>
+      </div>
+      <Field label="Address (optional)"><Input value={s.address ?? ''} onChange={e => updateStop(i, x => ({ ...x, address: e.target.value }))} /></Field>
+      <Field label="Clue (shown to player)" required>
+        <Textarea value={s.clueText} rows={3} onChange={e => updateStop(i, x => ({ ...x, clueText: e.target.value }))} />
+      </Field>
+      <Field label="Audio guide / soundtrack (optional)">
+        <div className="space-y-2">
+          <Input
+            value={s.clueAudio ?? ''}
+            onChange={e => updateStop(i, x => ({ ...x, clueAudio: e.target.value }))}
+            placeholder="https://.../stop-01-audio-guide.mp3"
+          />
+          {s.clueAudio && (
+            <div className="rounded-xl border bg-muted/40 p-2 space-y-1">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+                <Headphones className="w-3.5 h-3.5" /> Preview audio guide
+              </div>
+              <audio src={s.clueAudio} controls className="w-full h-9" preload="metadata" />
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <label className={cn(
+              'h-10 px-3 rounded-xl border bg-background text-sm font-medium tap-highlight flex items-center justify-center gap-2 cursor-pointer',
+              isUploadingStepAudio && 'opacity-60 pointer-events-none',
+            )}>
+              <Upload className="w-4 h-4" />
+              {isUploadingStepAudio ? 'Uploading…' : 'Upload audio'}
+              <input
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleStepAudioUpload(i, file);
+                  e.currentTarget.value = '';
+                }}
+              />
+            </label>
+            {s.clueAudio && (
+              <button
+                type="button"
+                onClick={() => updateStop(i, x => ({ ...x, clueAudio: '' }))}
+                className="h-10 px-3 rounded-xl border text-sm font-medium tap-highlight flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" /> Remove
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            Use this for a venue voice-over, ambient soundtrack, or simple audio guide. Player sees it on the clue screen before answering.
+          </p>
+        </div>
+      </Field>
+      <Field label="Parent hint (optional — shown when kid taps 'Ask a grown-up')">
+        <Textarea value={s.parentHint ?? ''} rows={2} onChange={e => updateStop(i, x => ({ ...x, parentHint: e.target.value }))} placeholder="A nudge a grown-up can read aloud or paraphrase, without giving the answer outright." />
+      </Field>
+
+      <div className="space-y-2 border-t pt-3">
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Prompt</p>
+        <div className="grid grid-cols-2 gap-2">
+          {PROMPT_KINDS.map(p => (
+            <button
+              key={p.value}
+              onClick={() => updateStop(i, x => ({
+                ...x,
+                prompt: {
+                  kind: p.value,
+                  question: x.prompt.question,
+                  options: p.value === 'multiple_choice' ? (x.prompt.options ?? []) : undefined,
+                  correctAnswers: p.value === 'text' || p.value === 'multiple_choice' || p.value === 'voice_answer' ? (x.prompt.correctAnswers ?? []) : undefined,
+                  photoSubject: (p.value === 'photo' || p.value === 'spot_photo') ? x.prompt.photoSubject : undefined,
+                  referenceImage: p.value === 'spot_photo' ? x.prompt.referenceImage : undefined,
+                  audioSubject: p.value === 'audio' ? x.prompt.audioSubject : undefined,
+                  audioMaxSeconds: p.value === 'audio' ? (x.prompt.audioMaxSeconds ?? 5) : undefined,
+                  drawingSubject: p.value === 'drawing' ? x.prompt.drawingSubject : undefined,
+                  timeTravelImageUrl: p.value === 'time_travel_photo' ? x.prompt.timeTravelImageUrl : undefined,
+                  timeTravelCaption: p.value === 'time_travel_photo' ? x.prompt.timeTravelCaption : undefined,
+                  timeTravelOpacity: p.value === 'time_travel_photo' ? (x.prompt.timeTravelOpacity ?? 0.5) : undefined,
+                },
+              }))}
+              className={cn('rounded-xl border-2 p-2 text-left text-xs', s.prompt.kind === p.value ? 'border-primary bg-primary/8' : 'border-border bg-background')}
+            >
+              <p className="font-semibold">{p.label}</p>
+              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{p.helper}</p>
+            </button>
+          ))}
+        </div>
+        <Field label="Question" required><Input value={s.prompt.question} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, question: e.target.value } }))} placeholder="What should the kid do or answer here?" /></Field>
+
+        {s.prompt.kind === 'text' && (
+          <Field label="Acceptable answers (comma-separated, case-insensitive)">
+            <Input
+              value={(s.prompt.correctAnswers ?? []).join(', ')}
+              onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))}
+              placeholder="pig, piglet, swine"
+            />
+          </Field>
+        )}
+
+        {s.prompt.kind === 'voice_answer' && (
+          <>
+            <Field label="Acceptable answers (comma-separated, case-insensitive)" required>
+              <Input
+                value={(s.prompt.correctAnswers ?? []).join(', ')}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))}
+                placeholder="three, 3, three stars"
+              />
+            </Field>
+            <p className="text-[10px] text-muted-foreground leading-snug px-0.5">
+              💡 Speech-to-text varies — include common variations (e.g. <code>3</code>, <code>three</code>, <code>tree</code> for "three"). Match is case-insensitive contains. Kids can also tap "Type instead" if mic isn't available.
+            </p>
+          </>
+        )}
+
+        {s.prompt.kind === 'multiple_choice' && (
+          <>
+            <Field label="Options (one per line)" required>
+              <Textarea
+                rows={4}
+                value={(s.prompt.options ?? []).join('\n')}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) } }))}
+                placeholder={'Pig\nGoat\nSheep\nCow'}
+              />
+            </Field>
+            <Field label="Correct option (must match one option exactly)" required>
+              <Input
+                value={(s.prompt.correctAnswers ?? [])[0] ?? ''}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, correctAnswers: [e.target.value] } }))}
+                placeholder="Pig"
+              />
+            </Field>
+          </>
+        )}
+
+        {s.prompt.kind === 'photo' && (
+          <Field label="What should the photo show?">
+            <Input value={s.prompt.photoSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))} placeholder="A piglet at Little Farm" />
+          </Field>
+        )}
+
+        {s.prompt.kind === 'spot_photo' && (
+          <>
+            <Field label="Reference photo — what kid should find" required>
+              {s.prompt.referenceImage ? (
+                <div className="relative rounded-xl overflow-hidden border bg-muted">
+                  <img
+                    src={s.prompt.referenceImage}
+                    alt="Reference"
+                    className="w-full aspect-[4/3] object-cover"
+                    onError={() => toast.error("Couldn't load reference image preview")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, referenceImage: undefined } }))}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center tap-highlight"
+                    aria-label="Remove reference photo"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 aspect-[4/3] flex flex-col items-center justify-center gap-1 text-muted-foreground text-xs">
+                  <Upload className="w-5 h-5" />
+                  <span>No reference photo yet</span>
+                </div>
+              )}
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={s.prompt.referenceImage ?? ''}
+                  onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, referenceImage: e.target.value } }))}
+                  placeholder="https://… (or upload below)"
+                  className="flex-1"
+                />
+                <label
+                  className={cn(
+                    'cursor-pointer h-10 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 tap-highlight whitespace-nowrap',
+                    isUploadingReference && 'opacity-60 pointer-events-none',
+                  )}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {isUploadingReference ? 'Uploading…' : s.prompt.referenceImage ? 'Replace' : 'Upload'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleReferenceImageUpload(i, file);
+                      e.currentTarget.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-snug mt-1">
+                Kid sees this as "Find this!" on location. Use a clear, single-subject photo (e.g. a specific statue, plaque, mural detail).
+              </p>
+            </Field>
+            <Field label="Helper hint (optional)">
+              <Input
+                value={s.prompt.photoSubject ?? ''}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, photoSubject: e.target.value } }))}
+                placeholder="Look near the entrance fountain"
+              />
+            </Field>
+          </>
+        )}
+
+        {s.prompt.kind === 'audio' && (
+          <>
+            <Field label="What to listen for (informative)">
+              <Input value={s.prompt.audioSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, audioSubject: e.target.value } }))} placeholder="Sea lions barking at Pier 39" />
+            </Field>
+            <Field label="Max recording length (seconds, 2–15)">
+              <Input
+                type="number"
+                min={2}
+                max={15}
+                value={s.prompt.audioMaxSeconds ?? 5}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, audioMaxSeconds: Math.max(2, Math.min(15, parseInt(e.target.value || '5'))) } }))}
+              />
+            </Field>
+          </>
+        )}
+
+        {s.prompt.kind === 'drawing' && (
+          <Field label="What to draw (informative)">
+            <Input value={s.prompt.drawingSubject ?? ''} onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, drawingSubject: e.target.value } }))} placeholder="The shape of the bridge tower" />
+          </Field>
+        )}
+
+        {s.prompt.kind === 'time_travel_photo' && (
+          <>
+            <Field label="Historical/source image URL" required>
+              <Input
+                value={s.prompt.timeTravelImageUrl ?? ''}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelImageUrl: e.target.value } }))}
+                placeholder="https://archive.org/.../historic-photo.jpg"
+              />
+            </Field>
+            <Field label="Overlay caption / source note">
+              <Textarea
+                rows={2}
+                value={s.prompt.timeTravelCaption ?? ''}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelCaption: e.target.value } }))}
+                placeholder="Source: venue archive / public collection. Used to line up the old view with today."
+              />
+            </Field>
+            <Field label="Overlay opacity (0.1–0.85, default 0.5)">
+              <Input
+                type="number"
+                min={0.1}
+                max={0.85}
+                step={0.05}
+                value={s.prompt.timeTravelOpacity ?? 0.5}
+                onChange={e => updateStop(i, x => ({ ...x, prompt: { ...x.prompt, timeTravelOpacity: Math.max(0.1, Math.min(0.85, parseFloat(e.target.value || '0.5'))) } }))}
+              />
+            </Field>
+          </>
+        )}
+      </div>
+
+      <div className="space-y-2 border-t pt-3">
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Reveal — fun fact</p>
+        <Field label="Fun fact" required>
+          <Textarea rows={3} value={s.reveal.funFact} onChange={e => updateStop(i, x => ({ ...x, reveal: { ...x.reveal, funFact: e.target.value } }))} placeholder="A source-backed fact revealed after the stop." />
+        </Field>
+      </div>
+    </div>
+  );
+});

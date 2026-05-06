@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, MapPin, Clock, Trash2, Plus, Loader2, Mail, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import MapView from "@/components/MapView";
+import MapView from "@/components/LazyMapView";
 
 interface Event {
   id: string;

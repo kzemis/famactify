@@ -1,6 +1,7 @@
 import type { ScavengerHunt } from '@/types/hunt';
 import { berkeleyKidsEyes } from './berkeley-kids-eyes';
 import { oaklandBlackPanther } from './oakland-black-panther';
+import { oaklandLakeMerrittLakeshore } from './oakland-lake-merritt-lakeshore';
 import { rigaAgenskalnsGreenLoop } from './riga-agenskalns-green-loop';
 import { rigaAlbertStreetTimeTravel } from './riga-albert-street-time-travel';
 import { rigaBaronaPlayground } from './riga-barona-playground';
@@ -28,5 +29,6 @@ export const SEED_HUNTS: ScavengerHunt[] = [
   zklLatvianSchool75,
   berkeleyKidsEyes,
   oaklandBlackPanther,
+  oaklandLakeMerrittLakeshore,
   richmondRosie,
 ];

@@ -8,6 +8,8 @@ export interface ActivitySpot extends ActivitySpotBase {
   primary_category: string | null;
   involvement: string | null;
   city: string | null;
+  demo_enabled: boolean | null;
+  demo_rank: number | null;
   age_min: number | null;
   age_max: number | null;
   rain_suitable: boolean | null;
@@ -112,6 +114,32 @@ export interface PlanActivity {
   imageurlthumb: string | null;
 }
 
+export interface DemoActivityAdminRow {
+  id: string;
+  name: string;
+  description: string | null;
+  city: string | null;
+  country_code: string | null;
+  imageurlthumb: string | null;
+  location_address: string | null;
+  primary_category: string | null;
+  source: string | null;
+  urlmoreinfo_status: string | null;
+  excitement_score: number | null;
+  demo_enabled: boolean;
+  demo_rank: number | null;
+  created_at: string;
+}
+
+export type DemoActivityEnabledFilter = 'all' | 'enabled' | 'disabled';
+
+export interface DemoActivityAdminFilters {
+  countryCode?: string;
+  enabled?: DemoActivityEnabledFilter;
+  searchQuery?: string;
+  limit?: number;
+}
+
 export const ACTIVITY_PAGE_SIZE = 50;
 
 export const GRID_COLUMNS = [
@@ -123,7 +151,7 @@ export const GRID_COLUMNS = [
   'transit_accessible', 'fenced', 'event_starttime', 'event_endtime',
   'ticket_url', 'organizer', 'created_at', 'city', 'age_min', 'age_max',
   'facilities_restrooms', 'foodvenue_kidamenities', 'foodvenue_kidcorner',
-  'foodvenue_kidmenu', 'source', 'created_by', 'json',
+  'foodvenue_kidmenu', 'source', 'created_by', 'demo_enabled', 'demo_rank', 'json',
 ].join(', ');
 
 export const MAP_COLUMNS = [
@@ -134,6 +162,11 @@ export const MAP_COLUMNS = [
 
 const PLAN_COLUMNS = 'id, name, duration_minutes, min_price, max_price, location_address, location_lat, location_lon, imageurlthumb';
 const PLANNER_COLUMNS = 'id, name, imageurlthumb, duration_minutes, min_price, max_price, location_address, age_buckets, description';
+const ADMIN_DEMO_COLUMNS = [
+  'id', 'name', 'description', 'city', 'country_code', 'imageurlthumb', 'location_address',
+  'primary_category', 'source', 'urlmoreinfo_status', 'excitement_score',
+  'demo_enabled', 'demo_rank', 'created_at',
+].join(', ');
 
 function fallbackCenter(countryCode: string): LocationPoint {
   return countryCode === 'US'
@@ -161,6 +194,7 @@ function applyActivityFilters(query: any, filters: ActivityFilters): any {
 
   let q = query
     .eq('country_code', filters.countryCode)
+    .eq('demo_enabled', true)
     .or(`event_endtime.is.null,event_endtime.gt.${nowIso}`);
 
   if (filters.eventsOnly) {
@@ -240,6 +274,7 @@ export const activitiesService = {
       .from('activityspots')
       .select('city')
       .eq('country_code', countryCode)
+      .eq('demo_enabled', true)
       .not('city', 'is', null)
       .limit(1000);
 
@@ -273,6 +308,7 @@ export const activitiesService = {
       supabase.from('activityspots').select(GRID_COLUMNS, { count: 'exact' }),
       filters,
     )
+      .order('demo_rank', { ascending: true, nullsFirst: false })
       .order('excitement_score', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
 
@@ -286,6 +322,7 @@ export const activitiesService = {
     )
       .not('location_lat', 'is', null)
       .not('location_lon', 'is', null)
+      .order('demo_rank', { ascending: true, nullsFirst: false })
       .order('excitement_score', { ascending: false, nullsFirst: false })
       .limit(isNearby ? 5000 : options.mapLimit ?? 1000);
 
@@ -331,6 +368,8 @@ export const activitiesService = {
       supabase.from('activityspots').select(GRID_COLUMNS),
       filters,
     )
+      .order('demo_rank', { ascending: true, nullsFirst: false })
+      .order('excitement_score', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -345,6 +384,8 @@ export const activitiesService = {
     const { data, error } = await supabase
       .from('activityspots')
       .select(PLANNER_COLUMNS)
+      .eq('demo_enabled', true)
+      .order('demo_rank', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
 
     throwIfError('activitiesService.fetchPlannerActivities', error);
@@ -398,5 +439,54 @@ export const activitiesService = {
       if (spot.primary_category) counts[spot.primary_category] = (counts[spot.primary_category] ?? 0) + 1;
     }
     return counts;
+  },
+
+  async listDemoCuration(filters: DemoActivityAdminFilters = {}): Promise<{ activities: DemoActivityAdminRow[]; totalCount: number }> {
+    assertSupabaseProvider('activitiesService.listDemoCuration');
+    assertCapability('manage_activity_curation');
+
+    const enabled = filters.enabled ?? 'all';
+    const limit = filters.limit ?? 200;
+    let query = (supabase as any)
+      .from('activityspots')
+      .select(ADMIN_DEMO_COLUMNS, { count: 'exact' });
+
+    if (filters.countryCode && filters.countryCode !== 'all') query = query.eq('country_code', filters.countryCode);
+    if (enabled === 'enabled') query = query.eq('demo_enabled', true);
+    if (enabled === 'disabled') query = query.eq('demo_enabled', false);
+
+    const searchQuery = filters.searchQuery?.trim();
+    if (searchQuery) {
+      query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,location_address.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`);
+    }
+
+    const { data, error, count } = await query
+      .order('demo_enabled', { ascending: false })
+      .order('demo_rank', { ascending: true, nullsFirst: false })
+      .order('excitement_score', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    throwIfError('activitiesService.listDemoCuration', error);
+    return {
+      activities: (data || []) as DemoActivityAdminRow[],
+      totalCount: count ?? data?.length ?? 0,
+    };
+  },
+
+  async updateDemoCuration(id: string, patch: { demo_enabled?: boolean; demo_rank?: number | null }): Promise<void> {
+    assertSupabaseProvider('activitiesService.updateDemoCuration');
+    assertCapability('manage_activity_curation');
+
+    const updatePatch = {
+      ...patch,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await (supabase as any)
+      .from('activityspots')
+      .update(updatePatch)
+      .eq('id', id);
+
+    throwIfError('activitiesService.updateDemoCuration', error);
   },
 };

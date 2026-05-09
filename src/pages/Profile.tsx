@@ -211,7 +211,7 @@ const Profile = () => {
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold">Home Chores</p>
-                  <p className="text-xs text-muted-foreground">Hidden chore hunts your kids earn stamps from</p>
+                  <p className="text-xs text-muted-foreground">Hidden chore city games your kids earn stamps from</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -221,7 +221,7 @@ const Profile = () => {
                   <span className="text-lg leading-none">📱</span>
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold">Join two-phone hunt</p>
+                  <p className="text-sm font-semibold">Join two-phone city game</p>
                   <p className="text-xs text-muted-foreground">Type the 6-letter code from your parent's phone</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -233,7 +233,7 @@ const Profile = () => {
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold">Badges</p>
-                  <p className="text-xs text-muted-foreground">Hunt completion collection</p>
+                  <p className="text-xs text-muted-foreground">City game completion collection</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -457,17 +457,17 @@ const Profile = () => {
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-bold leading-tight">Badges</h2>
-              <p className="text-xs text-muted-foreground truncate">{currentProfile?.emoji ?? '👨‍👩‍👧'} {currentProfile?.name ?? 'Parent'} hunt collection</p>
+              <p className="text-xs text-muted-foreground truncate">{currentProfile?.emoji ?? '👨‍👩‍👧'} {currentProfile?.name ?? 'Parent'} city game collection</p>
             </div>
           </div>
           <div className="px-4 py-4 pb-tab-bar space-y-4">
             <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-pink-50 border p-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Scavenger Hunt Badges</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-700">City Game Badges</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Complete hunts to collect city and venue memories. Badge tiers reflect how many stops were solved without skips.
+                Complete city games to collect city and venue memories. Badge tiers reflect how many steps were solved without skips.
               </p>
               <button onClick={() => navigate('/hunts')} className="mt-3 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold tap-highlight">
-                Find a hunt
+                Find a city game
               </button>
             </div>
 
@@ -480,7 +480,7 @@ const Profile = () => {
                 <span className="text-5xl">🎖️</span>
                 <p className="font-semibold">No badges yet</p>
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  Start a scavenger hunt, finish the stops, and your first badge will appear here.
+                  Start a city game, finish the steps, and your first badge will appear here.
                 </p>
               </div>
             ) : (
@@ -501,7 +501,7 @@ const Profile = () => {
                           {badge.tier}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{badge.city} · {badge.stopsCompleted}/{badge.totalStops} stops</p>
+                      <p className="text-xs text-muted-foreground truncate">{badge.city} · {badge.stopsCompleted}/{badge.totalStops} steps</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
                         Earned {new Date(badge.earnedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>

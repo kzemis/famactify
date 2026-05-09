@@ -41,7 +41,7 @@ export default function OrgHunts() {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold truncate">Venue Hunt Artifacts</p>
+          <p className="text-sm font-bold truncate">Venue City Games</p>
           <p className="text-[11px] text-muted-foreground truncate">Human or AI-assisted drafts → review → publish</p>
         </div>
         <button onClick={() => navigate('/org/hunts/new?mode=ai')} className="h-9 px-3 rounded-full bg-primary text-primary-foreground text-xs font-semibold tap-highlight flex items-center gap-1.5">
@@ -56,7 +56,7 @@ export default function OrgHunts() {
               <Workflow className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm">Scavenger hunts are artifacts</p>
+              <p className="font-bold text-sm">City games are artifacts</p>
               <p className="text-xs text-muted-foreground leading-relaxed mt-1">
                 A venue can write one manually, or paste official source facts so an AI/agent can create a draft. Every artifact keeps provenance and goes through review before publishing.
               </p>
@@ -82,7 +82,7 @@ export default function OrgHunts() {
         ) : hunts.length === 0 ? (
           <div className="text-center py-12 space-y-3">
             <span className="text-5xl">🔍</span>
-            <p className="font-semibold">No hunts yet</p>
+            <p className="font-semibold">No city games yet</p>
             <p className="text-sm text-muted-foreground">Create a place-based artifact for your venue, neighbourhood, or city.</p>
             <div className="flex justify-center gap-2">
               <button onClick={() => navigate('/org/hunts/new')} className="h-11 px-4 rounded-full border border-border font-medium text-sm tap-highlight">
@@ -103,7 +103,7 @@ export default function OrgHunts() {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-pink-100 flex items-center justify-center text-2xl shrink-0">{h.coverEmoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{h.title || '(untitled)'}</p>
-                <p className="text-xs text-muted-foreground truncate">{h.city} · {h.stops.length} stops</p>
+                <p className="text-xs text-muted-foreground truncate">{h.city} · {h.stops.length} steps</p>
               </div>
               <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0', STATUS_COLOR[h.status ?? 'draft'])}>
                 {STATUS_LABEL[h.status ?? 'draft']}

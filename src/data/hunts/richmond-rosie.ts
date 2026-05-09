@@ -6,7 +6,7 @@ const shipyardTimeTravelImageUrl =
 export const richmondRosie: ScavengerHunt = {
   id: 'richmond-rosie',
   slug: 'richmond-rosie-the-riveter',
-  title: 'Rosie the Riveter — Richmond Home Front Hunt',
+  title: 'Rosie the Riveter — Richmond Home Front City Game',
   blurb:
     'How did war work change women, families, and a city? Walk Richmond’s WWII waterfront, meet the real people behind Rosie, and make your own family memory.',
   coverEmoji: '💪',
@@ -71,7 +71,7 @@ export const richmondRosie: ScavengerHunt = {
       lon: -122.3659,
       address: '1414 Harbour Way South #3000, Richmond, CA 94804',
       clueText:
-        'The poster is only the doorway. Now hunt for real life: one worker face, one object or tool, and one word about family, migration, childcare, housing, or work.',
+        'The poster is only the doorway. Now search for real life: one worker face, one object or tool, and one word about family, migration, childcare, housing, or work.',
       parentHint:
         'This is the “make history human” stop. Ask what feels more real than the poster: a face, a tool, a map, a lunchbox, a child-care story, or a worker name.',
       prompt: {
@@ -169,7 +169,7 @@ export const richmondRosie: ScavengerHunt = {
       prompt: {
         kind: 'photo',
         question:
-          'Take a Rosie-pose or family-work photo together to remember the hunt.',
+          'Take a Rosie-pose or family-work photo together to remember the city game.',
         photoSubject: 'Rosie pose, family work pose, or “we can do it” memory',
       },
       reveal: {

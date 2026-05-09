@@ -158,7 +158,7 @@ export default function RaceResults() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{p.familyName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {p.currentStop}/{p.totalStops} stops · {p.score} pts
+                      {p.currentStop}/{p.totalStops} steps · {p.score} pts
                     </p>
                   </div>
                   <div className="text-right">
@@ -180,7 +180,7 @@ export default function RaceResults() {
           onClick={() => navigate('/hunts')}
           className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold"
         >
-          Back to Hunts
+          Back to City Games
         </button>
       </div>
     </div>

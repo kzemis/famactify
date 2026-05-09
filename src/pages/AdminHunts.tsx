@@ -50,17 +50,17 @@ export default function AdminHunts() {
 
   const deleteHunt = async (hunt: AdminHunt) => {
     if (hunt.adminSource === 'seed') {
-      toast.message('Seed hunts live in code. Open and save it first to create an editable DB copy.');
+      toast.message('Seed city games live in code. Open and save it first to create an editable DB copy.');
       return;
     }
-    if (!window.confirm(`Delete "${hunt.title || 'this hunt'}"? This removes the hunt, stops, sponsors, and attempts. This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${hunt.title || 'this city game'}"? This removes the city game, steps, sponsors, and attempts. This cannot be undone.`)) return;
     setDeletingId(hunt.id);
     try {
       await huntsService.deleteHunt(hunt.id);
       setHunts(prev => prev.filter(item => item.id !== hunt.id));
-      toast.success('Hunt deleted');
+      toast.success('City game deleted');
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to delete hunt');
+      toast.error(error?.message || 'Failed to delete city game');
     } finally {
       setDeletingId(null);
     }
@@ -87,12 +87,15 @@ export default function AdminHunts() {
 
   return (
     <AdminPageShell
-      title="Hunts"
-      subtitle="All DB hunts plus editable seed templates"
+      title="City Games"
+      subtitle="All DB city games plus editable seed templates"
       backTo="/admin/lists"
       filters={filters}
       actions={(
         <>
+          <button onClick={() => navigate('/admin/activities-demo')} className={adminActionClass('secondary')}>
+            Activities
+          </button>
           <button onClick={() => navigate('/admin/hunts/photo-review')} className={adminActionClass('secondary')}>
             <ImageIcon className="w-4 h-4" /> Photos
           </button>
@@ -108,7 +111,7 @@ export default function AdminHunts() {
         <div className="text-center py-12 space-y-2">
           <span className="text-4xl">{tab === 'pending_review' ? '🌙' : '✨'}</span>
           <p className="text-sm text-muted-foreground">
-            No hunts for {REGION_FILTERS.find(r => r.key === region)?.label.toLowerCase()} in "{STATUS_TABS.find(t => t.key === tab)?.label}".
+            No city games for {REGION_FILTERS.find(r => r.key === region)?.label.toLowerCase()} in "{STATUS_TABS.find(t => t.key === tab)?.label}".
           </p>
         </div>
       ) : (
@@ -141,7 +144,7 @@ export default function AdminHunts() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  {h.hostName} · {country?.flag ?? '🏳️'} {h.city} · {h.countryCode} · {h.stops.length} stops
+                  {h.hostName} · {country?.flag ?? '🏳️'} {h.city} · {h.countryCode} · {h.stops.length} steps
                 </p>
                 {h.adminSource === 'seed' && (
                   <p className="text-[11px] text-sky-700 truncate mt-0.5">
@@ -161,7 +164,7 @@ export default function AdminHunts() {
                   onClick={() => deleteHunt(h)}
                   disabled={deletingId === h.id}
                   className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 tap-highlight shrink-0 disabled:opacity-60"
-                  aria-label={`Delete ${h.title || 'hunt'}`}
+                  aria-label={`Delete ${h.title || 'city game'}`}
                 >
                   {deletingId === h.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>

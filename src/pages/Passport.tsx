@@ -140,7 +140,7 @@ function ProgressionCard({ progression }: { progression: ExplorerProgression }) 
           <p className="font-black text-sm leading-tight">{progression.currentTierLabel}</p>
           {progression.nextTierLabel ? (
             <p className="text-[11px] text-muted-foreground leading-snug">
-              {progression.huntsToNextTier} more hunt{progression.huntsToNextTier !== 1 ? 's' : ''} to reach{' '}
+              {progression.huntsToNextTier} more city game{progression.huntsToNextTier !== 1 ? 's' : ''} to reach{' '}
               <span className="font-semibold text-primary">{progression.nextTierLabel}</span>
             </p>
           ) : (
@@ -186,13 +186,13 @@ function BlankPassport() {
       <BookOpen className="w-10 h-10 text-muted-foreground/50" />
       <p className="font-bold text-base">Your passport is empty</p>
       <p className="text-sm text-muted-foreground max-w-[240px] leading-snug">
-        Complete a scavenger hunt to earn your first stamp and start filling up your passport!
+        Complete a city game to earn your first stamp and start filling up your passport!
       </p>
       <button
         onClick={() => navigate('/hunts')}
         className="mt-1 h-10 px-5 rounded-full bg-primary text-primary-foreground text-sm font-semibold tap-highlight"
       >
-        Browse hunts
+        Browse city games
       </button>
     </div>
   );
@@ -293,7 +293,7 @@ export default function Passport() {
           {progression && (
             <p className="text-sm font-semibold text-gray-600 mt-1">
               {TIER_THRESHOLDS.find(t => t.tier === progression.currentTier)?.emoji ?? '🧭'}{' '}
-              {progression.currentTierLabel} · {progression.totalCompleted} hunt{progression.totalCompleted !== 1 ? 's' : ''} completed
+              {progression.currentTierLabel} · {progression.totalCompleted} city game{progression.totalCompleted !== 1 ? 's' : ''} completed
             </p>
           )}
           <p className="text-xs text-gray-400 mt-1">{badges.length} stamps · {cities.length} cities</p>

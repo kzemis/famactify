@@ -97,8 +97,11 @@ export default function AdminLists() {
       filters={filters}
       actions={(
         <>
+          <button onClick={() => navigate('/admin/activities-demo')} className={adminActionClass('secondary')}>
+            Activities
+          </button>
           <button onClick={() => navigate('/admin/hunts')} className={adminActionClass('secondary')}>
-            Hunts
+            City Games
           </button>
           <button onClick={() => navigate('/admin/lists/new')} className={adminActionClass('primary')}>
             <Plus className="w-4 h-4" /> New

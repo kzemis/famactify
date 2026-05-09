@@ -42,7 +42,7 @@ export default function DuoLobby() {
       try {
         const h = await huntsService.getHunt(slug);
         if (!h) {
-          toast.error('Hunt not found');
+          toast.error('City game not found');
           navigate('/hunts');
           return;
         }
@@ -170,7 +170,7 @@ export default function DuoLobby() {
           <button onClick={() => navigate(-1)} className="tap-highlight w-8 h-8 flex items-center justify-center -ml-1" aria-label="Back">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-base font-black flex-1">Join family hunt</h1>
+          <h1 className="text-base font-black flex-1">Join family city game</h1>
         </div>
 
         <div className="max-w-md mx-auto px-4 py-8 space-y-6">
@@ -220,7 +220,7 @@ export default function DuoLobby() {
         <button onClick={() => navigate(`/hunts/${hunt.slug}`)} className="tap-highlight w-8 h-8 flex items-center justify-center -ml-1" aria-label="Back">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-base font-black flex-1 truncate">Two-phone hunt</h1>
+        <h1 className="text-base font-black flex-1 truncate">Two-phone city game</h1>
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-5">
@@ -232,7 +232,7 @@ export default function DuoLobby() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-base leading-tight truncate">{hunt.title}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{hunt.stops.length} stops · {hunt.city}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{hunt.stops.length} steps · {hunt.city}</p>
             </div>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function DuoLobby() {
             <div className="flex-1">
               <p className="font-bold text-sm leading-tight">How two-phone mode works</p>
               <ol className="text-[13px] text-muted-foreground leading-snug mt-2 space-y-1.5 list-decimal pl-4">
-                <li>Kid opens FamActify on their phone and goes to <span className="font-semibold text-foreground">Profile → Two-phone hunt</span> or types <span className="font-mono">/duo/join</span></li>
+                <li>Kid opens FamActify on their phone and goes to <span className="font-semibold text-foreground">Profile → Two-phone city game</span> or types <span className="font-mono">/duo/join</span></li>
                 <li>Kid types the 6-letter code above</li>
                 <li>You read the clue out loud. Kid solves it.</li>
                 <li>You see the answer on your phone — you decide when to advance.</li>

@@ -42,7 +42,7 @@ export default function DuoPlay() {
         setSession(s);
 
         const huntRow = await huntsService.getHuntById(s.huntId).catch(() => null);
-        if (!huntRow) { toast.error('Hunt missing'); navigate('/hunts'); return; }
+        if (!huntRow) { toast.error('City game missing'); navigate('/hunts'); return; }
         if (cancelled) return;
         setHunt(huntRow);
 
@@ -161,7 +161,7 @@ export default function DuoPlay() {
         <div className="inline-flex w-20 h-20 rounded-full bg-amber-400/30 items-center justify-center">
           <Trophy className="w-10 h-10 text-amber-600" />
         </div>
-        <h1 className="text-3xl font-black tracking-tight">Hunt complete!</h1>
+        <h1 className="text-3xl font-black tracking-tight">City game complete!</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
           You did it together — every stop solved as a team. Great teamwork!
         </p>
@@ -169,7 +169,7 @@ export default function DuoPlay() {
           onClick={() => navigate('/hunts')}
           className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold tap-highlight"
         >
-          See more hunts
+          See more city games
         </button>
       </div>
     );
@@ -348,7 +348,7 @@ export default function DuoPlay() {
             className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold tap-highlight active:scale-[0.99] transition-transform shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {advancing ? <Loader2 className="w-5 h-5 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
-            {advancing ? 'Advancing…' : currentIdx + 1 === totalStops ? 'Finish hunt' : 'Solved! Next clue'}
+            {advancing ? 'Advancing…' : currentIdx + 1 === totalStops ? 'Finish city game' : 'Solved! Next clue'}
           </button>
         ) : (
           <div className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-medium flex items-center justify-center gap-2 text-sm">

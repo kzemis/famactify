@@ -3,7 +3,7 @@ import type { ScavengerHunt } from '@/types/hunt';
 export const sanFranciscoPostcardIcons: ScavengerHunt = {
   id: 'san-francisco-postcard-icons',
   slug: 'san-francisco-postcard-icons',
-  title: 'San Francisco Postcard Icons Hunt',
+  title: 'San Francisco Postcard Icons City Game',
   blurb: 'A classic San Francisco icon trail: bridge, crooked street, Painted Ladies, cable cars, and Telegraph Hill parrots.',
   coverEmoji: '🌉',
   hostName: 'FamActify Original',
@@ -84,16 +84,36 @@ export const sanFranciscoPostcardIcons: ScavengerHunt = {
       },
     },
     {
-      id: 'sf-cable-car-nine-point-five',
+      id: 'sf-painted-ladies-draw-pattern',
       order: 3,
+      title: 'Draw a Painted Lady pattern',
+      lat: 37.7763,
+      lon: -122.4328,
+      address: 'Alamo Square, Steiner Street, San Francisco, CA',
+      clueText: 'Look again at one Painted Lady. Pick one small design pattern: a window shape, trim, stair rail, roofline, flower, or color block.',
+      parentHint: 'This keeps the stop kid-active. Instead of only “beautiful houses,” ask what repeated shapes make a house feel special.',
+      prompt: {
+        kind: 'drawing',
+        question: 'Draw one tiny Victorian house pattern you notice: window, roofline, trim, railing, flower, or color shape.',
+        drawingSubject: 'A Painted Lady window, roofline, trim, railing, flower, or color shape',
+      },
+      reveal: {
+        funFact: 'Victorian and Edwardian houses often use repeated trim, brackets, bays, and color contrasts. Kids can spot architecture by drawing one small pattern.',
+      },
+    },
+    {
+      id: 'sf-cable-car-nine-point-five',
+      order: 4,
       title: 'Cable Car Bell + Grip',
       lat: 37.7946,
       lon: -122.4114,
       address: 'Cable Car Museum / Washington-Mason Powerhouse, San Francisco, CA',
       clueText: 'Listen for a bell or watch a cable car pass. If you are near the museum, look for the powerhouse that moves the underground cables.',
       prompt: {
-        kind: 'observation',
-        question: 'Notice one cable-car detail: bell, grip, cable slot, brake, hill, or turntable.',
+        kind: 'audio',
+        question: 'Record 5 seconds of cable-car city sound — a bell, wheel, street noise, or your own “ding ding!” if the street is quiet.',
+        audioSubject: 'Cable-car bell, street sound, wheel sound, or kid saying ding ding',
+        audioMaxSeconds: 5,
       },
       reveal: {
         funFact: 'The cable under the street runs at exactly 9.5 mph. The car moves when its grip grabs the cable.',
@@ -101,7 +121,7 @@ export const sanFranciscoPostcardIcons: ScavengerHunt = {
     },
     {
       id: 'sf-coit-tower-parrot-watch',
-      order: 4,
+      order: 5,
       title: 'Coit Tower Wild Parrots',
       lat: 37.8024,
       lon: -122.4058,

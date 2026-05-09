@@ -47,9 +47,9 @@ export default function Chores() {
               <Sparkles className="w-5 h-5 text-amber-700" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm leading-tight">Hidden hunts for your family</p>
+              <p className="font-bold text-sm leading-tight">Hidden city games for your family</p>
               <p className="text-[13px] text-muted-foreground leading-snug mt-1">
-                Build chore-based mini quests at home. Kids complete them like any scavenger hunt and earn stamps in their passport. Only your family sees these.
+                Build chore-based mini quests at home. Kids complete them like any city game and earn stamps in their passport. Only your family sees these.
               </p>
             </div>
           </div>
@@ -61,7 +61,7 @@ export default function Chores() {
           className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold tap-highlight active:scale-[0.99] transition-transform shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          New chore hunt
+          New chore city game
         </button>
 
         {/* List */}
@@ -72,15 +72,15 @@ export default function Chores() {
         ) : chores.length === 0 ? (
           <div className="rounded-3xl border-2 border-dashed border-border/60 bg-card/60 py-10 px-6 flex flex-col items-center text-center gap-2">
             <span className="text-4xl">🏠</span>
-            <p className="font-bold text-sm">No chore hunts yet</p>
+            <p className="font-bold text-sm">No chore city games yet</p>
             <p className="text-[13px] text-muted-foreground max-w-[280px] leading-snug">
-              Create your first one — try "Sunday tidy-up" with stops like "Make your bed" and "Feed the dog".
+              Create your first one — try "Sunday tidy-up" with steps like "Make your bed" and "Feed the dog".
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Your family's chore hunts ({chores.length})
+              Your family's chore city games ({chores.length})
             </p>
             {chores.map(c => (
               <div key={c.id} className="rounded-2xl border bg-card overflow-hidden shadow-sm">

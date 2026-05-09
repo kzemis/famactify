@@ -108,7 +108,7 @@ export const rigaAgenskalnsGreenLoop: ScavengerHunt = {
         photoSubject: 'Āgenskalns / Arkādijas / Māras dīķis detail without faces',
       },
       reveal: {
-        funFact: 'A neighbourhood hunt connects ordinary places — market, water, paths, and bridges — into one story kids can retell.',
+        funFact: 'A neighbourhood city game connects ordinary places — market, water, paths, and bridges — into one story kids can retell.',
       },
     },
   ],

@@ -45,7 +45,7 @@ export default function RaceLobby() {
     if (cachedHunt) {
       setHunt(cachedHunt);
     } else {
-      toast.error('Hunt not found');
+      toast.error('City game not found');
       setLoading(false);
     }
   }, [slug, huntFetched, cachedHunt]);

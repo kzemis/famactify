@@ -3,8 +3,8 @@ import type { ScavengerHunt } from '@/types/hunt';
 export const sanFranciscoWaterfrontWonders: ScavengerHunt = {
   id: 'san-francisco-waterfront-wonders',
   slug: 'san-francisco-waterfront-wonders',
-  title: 'San Francisco Waterfront Wonder Hunt',
-  blurb: 'A family-friendly Embarcadero hunt with sea lions, a survivor clock tower, hands-on science, a cable-car clue, and a waterfall quote at Yerba Buena Gardens.',
+  title: 'San Francisco Waterfront Wonder City Game',
+  blurb: 'A family-friendly Embarcadero city game with sea lions, a survivor clock tower, hands-on science, a cable-car clue, and a waterfall quote at Yerba Buena Gardens.',
   coverEmoji: '🦭',
   hostName: 'FamActify Original',
   city: 'San Francisco',
@@ -17,7 +17,7 @@ export const sanFranciscoWaterfrontWonders: ScavengerHunt = {
   estCostCents: 0,
   distanceMeters: 5200,
   publishedAt: '2026-05-04',
-  credits: 'Designed as a waterfront starter hunt; facts and time-travel image sources are linked on the artifact.',
+  credits: 'Designed as a waterfront starter city game; facts and time-travel image sources are linked on the artifact.',
   sourceLinks: [
     'https://www.pier39.com/sealions/',
     'https://en.wikipedia.org/wiki/San_Francisco_Ferry_Building',
@@ -49,8 +49,27 @@ export const sanFranciscoWaterfrontWonders: ScavengerHunt = {
       },
     },
     {
-      id: 'sf-ferry-building-clock-tower',
+      id: 'sf-pier-39-sound-postcard',
       order: 1,
+      title: 'Make a waterfront sound postcard',
+      lat: 37.8087,
+      lon: -122.4098,
+      address: 'PIER 39 waterfront, San Francisco, CA',
+      clueText: 'Before leaving the sea lions, find a safe place to stand still. Listen for one sound that says “San Francisco waterfront” to you.',
+      parentHint: 'A sound can be sea lions, gulls, water, footsteps, a cable-car bell far away, or the kid saying one sentence about what they hear.',
+      prompt: {
+        kind: 'audio',
+        question: 'Record 5 seconds of waterfront sound — sea lions, gulls, water, footsteps, or your own “I hear the city by the Bay.”',
+        audioSubject: 'Waterfront sound postcard from PIER 39',
+        audioMaxSeconds: 5,
+      },
+      reveal: {
+        funFact: 'CityGames are not only photos and facts. Sound makes a place easier to remember: bark, splash, bell, wind, footsteps.',
+      },
+    },
+    {
+      id: 'sf-ferry-building-clock-tower',
+      order: 2,
       title: 'Ferry Building Clock Tower',
       lat: 37.7955,
       lon: -122.3937,
@@ -69,15 +88,16 @@ export const sanFranciscoWaterfrontWonders: ScavengerHunt = {
     },
     {
       id: 'sf-exploratorium-pier-15',
-      order: 2,
+      order: 3,
       title: 'Exploratorium at Pier 15',
       lat: 37.8014,
       lon: -122.3976,
       address: 'Pier 15, The Embarcadero, San Francisco, CA',
       clueText: 'At Pier 15, pick one exhibit, outdoor installation, shadow, reflection, or moving thing that makes you ask “why?”',
       prompt: {
-        kind: 'observation',
-        question: 'Notice one thing that changes when you move, touch, listen, or look from a new angle.',
+        kind: 'drawing',
+        question: 'Draw a quick “science machine” inspired by one shadow, reflection, lever, wheel, wave, or moving thing you notice.',
+        drawingSubject: 'A shadow, reflection, lever, wheel, wave, or moving science idea',
       },
       reveal: {
         funFact: 'The Exploratorium moved to Pier 15 in 2013. Its whole idea is that science starts with noticing, testing, and asking better questions.',
@@ -85,7 +105,7 @@ export const sanFranciscoWaterfrontWonders: ScavengerHunt = {
     },
     {
       id: 'sf-cable-car-power',
-      order: 3,
+      order: 4,
       title: 'Cable Car Clue',
       lat: 37.7849,
       lon: -122.4078,
@@ -101,16 +121,16 @@ export const sanFranciscoWaterfrontWonders: ScavengerHunt = {
     },
     {
       id: 'sf-yerba-buena-mlk-waterfall',
-      order: 4,
+      order: 5,
       title: 'MLK Waterfall Quote',
       lat: 37.7857,
       lon: -122.4020,
       address: 'Yerba Buena Gardens, San Francisco, CA',
       clueText: 'Find the waterfall and the quote wall at the Martin Luther King Jr. Memorial. Look for a line with water in it.',
       prompt: {
-        kind: 'text',
-        question: 'Type one word you can read from the quote wall.',
-        correctAnswers: ['justice', 'water', 'righteousness', 'stream', 'satisfied'],
+        kind: 'photo',
+        question: 'Take a privacy-safe photo of water, glass, stone, or one word from the quote wall.',
+        photoSubject: 'MLK waterfall, quote wall, water, glass, or stone detail without faces',
       },
       reveal: {
         funFact: 'The memorial uses falling water, glass, and King’s words as a walk-through reflection on justice and peace.',

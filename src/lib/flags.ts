@@ -22,10 +22,10 @@ export const flags = {
   // Memory
   memory_loop:         import.meta.env.VITE_FF_MEMORY_LOOP         === 'true',
 
-  // Scavenger Hunts
+  // City Games
   scv_ml_photo_verification: import.meta.env.VITE_FF_SCV_ML_PHOTO_VERIFICATION === 'true',
   scv_live_races:            import.meta.env.VITE_FF_SCV_LIVE_RACES            !== 'false', // on by default
-  scv_duo_mode:              import.meta.env.VITE_FF_SCV_DUO_MODE              !== 'false', // on by default — parent+kid two-phone collaborative hunts
+  scv_duo_mode:              import.meta.env.VITE_FF_SCV_DUO_MODE              !== 'false', // on by default — parent+kid two-phone collaborative city games
 
   // Marketplace
   print_on_demand:     import.meta.env.VITE_FF_PRINT_ON_DEMAND     === 'true',

@@ -442,7 +442,7 @@ const Landing = () => {
                 { Icon: Search, head: "Smart filters", body: "Age, budget, weather, accessibility, timing." },
                 { Icon: MapPin, head: "Map view + GPS", body: "See activities near you. Locate me with one tap." },
                 { Icon: Sparkles, head: "Mood suggestions", body: "Not sure? Answer 4 questions, get matched." },
-                { Icon: Star, head: "NEW: Scavenger Games", body: "Follow clues, visit stops, answer challenges." },
+                { Icon: Star, head: "NEW: City Games", body: "Follow clues, visit steps, answer challenges." },
               ] as const).map(({ Icon, head, body }) => (
                 <div key={head} className="flex gap-3 items-start">
                   <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">

@@ -46,6 +46,7 @@ import CuratedLists from "./pages/CuratedLists";
 import CuratedListDetail from "./pages/CuratedListDetail";
 const AdminLists         = lazy(() => import("./pages/AdminLists"));
 const AdminListEdit      = lazy(() => import("./pages/AdminListEdit"));
+const AdminActivityDemoCuration = lazy(() => import("./pages/AdminActivityDemoCuration"));
 const LongHorizonPlanner = lazy(() => import("./pages/LongHorizonPlanner"));
 const BalanceTracker     = lazy(() => import("./pages/BalanceTracker"));
 const OrgSetup           = lazy(() => import("./pages/OrgSetup"));
@@ -133,6 +134,7 @@ const App = () => (
           <Route path="/admin/lists" element={<ProtectedRoute><AdminRoute><AdminLists /></AdminRoute></ProtectedRoute>} />
           <Route path="/admin/lists/new" element={<ProtectedRoute><AdminRoute><AdminListEdit /></AdminRoute></ProtectedRoute>} />
           <Route path="/admin/lists/:id" element={<ProtectedRoute><AdminRoute><AdminListEdit /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/activities-demo" element={<ProtectedRoute><AdminRoute><AdminActivityDemoCuration /></AdminRoute></ProtectedRoute>} />
           <Route path="/plan/horizon" element={<ProtectedRoute><LongHorizonPlanner /></ProtectedRoute>} />
           <Route path="/balance" element={<ProtectedRoute><BalanceTracker /></ProtectedRoute>} />
           <Route path="/proposals" element={<Navigate to="/activities?view=plan" replace />} />

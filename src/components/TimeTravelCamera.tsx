@@ -299,22 +299,32 @@ export default function TimeTravelCamera({
   const [hasAnnotations, setHasAnnotations] = useState(false);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [overlayDataUrl, setOverlayDataUrl] = useState<string | null>(null);
+  const [overlayLoadFailed, setOverlayLoadFailed] = useState(false);
   const [captureLayout, setCaptureLayout] = useState<CaptureLayout>('inset');
   // For "Full Story" two-step capture: scene first, then selfie
   const [pendingSceneDataUrl, setPendingSceneDataUrl] = useState<string | null>(null);
+  const overlayProxyUrl = overlayImageUrl ? proxiedImageUrl(overlayImageUrl) : null;
+  const overlayDisplayUrl = overlayDataUrl || overlayProxyUrl || overlayImageUrl || null;
 
   // Pre-fetch the overlay image as a data URL so canvas operations bypass CORS.
   useEffect(() => {
     if (!overlayImageUrl) {
       setOverlayDataUrl(null);
+      setOverlayLoadFailed(false);
       return;
     }
     // If it's already a data URL, just use it directly.
-    if (overlayImageUrl.startsWith('data:')) { setOverlayDataUrl(overlayImageUrl); return; }
+    if (overlayImageUrl.startsWith('data:')) {
+      setOverlayDataUrl(overlayImageUrl);
+      setOverlayLoadFailed(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setOverlayDataUrl(null);
-      const fetchSources = [overlayImageUrl, proxiedImageUrl(overlayImageUrl)].filter(Boolean) as string[];
+      setOverlayLoadFailed(false);
+      const proxied = proxiedImageUrl(overlayImageUrl);
+      const fetchSources = [proxied, overlayImageUrl].filter(Boolean) as string[];
       for (const source of fetchSources) {
         try {
           const dataUrl = await fetchImageAsDataUrl(source);
@@ -323,7 +333,7 @@ export default function TimeTravelCamera({
         } catch { /* try the next source */ }
       }
 
-      const imageSources = [overlayImageUrl, proxiedImageUrl(overlayImageUrl)].filter(Boolean) as string[];
+      const imageSources = [proxied, overlayImageUrl].filter(Boolean) as string[];
       try {
         for (const source of imageSources) {
           const img = await loadImage(source);
@@ -335,6 +345,7 @@ export default function TimeTravelCamera({
         }
       } catch {
         console.warn('[TimeTravelCamera] Could not pre-fetch overlay image for canvas embed');
+        if (!cancelled) setOverlayLoadFailed(true);
       }
     })();
     return () => { cancelled = true; };
@@ -531,8 +542,8 @@ export default function TimeTravelCamera({
   const loadOverlayForCanvas = async (): Promise<HTMLImageElement | null> => {
     const sources = [
       overlayDataUrl,
-      overlayImageUrl,
       overlayImageUrl ? proxiedImageUrl(overlayImageUrl) : null,
+      overlayImageUrl,
     ].filter(Boolean) as string[];
 
     for (const source of Array.from(new Set(sources))) {
@@ -589,6 +600,8 @@ export default function TimeTravelCamera({
       const overlay = await loadOverlayForCanvas();
       if (overlay) {
         drawSideBySide(ctx, video, overlay, canvas.width, canvas.height, mirrorCamera);
+      } else if (overlayLoadFailed) {
+        throw new Error('Historical image could not be embedded — try another source image');
       } else if (overlayImageUrl) {
         throw new Error('Historical image is still loading — try again');
       } else {
@@ -641,6 +654,9 @@ export default function TimeTravelCamera({
         }
         ctx.restore();
       } else {
+        if (overlayLoadFailed) {
+          throw new Error('Historical image could not be embedded — try another source image');
+        }
         throw new Error('Historical image is still loading — try again');
       }
     }
@@ -664,6 +680,8 @@ export default function TimeTravelCamera({
     const overlay = await loadOverlayForCanvas();
     if (overlay) {
       drawSideBySide(ctx, scene, overlay, canvas.width, canvas.height, false);
+    } else if (overlayLoadFailed) {
+      throw new Error('Historical image could not be embedded — try another source image');
     } else if (overlayImageUrl) {
       throw new Error('Historical image is still loading — try again');
     } else {
@@ -917,8 +935,15 @@ export default function TimeTravelCamera({
             </div>
             <div className="w-[2px] bg-white shrink-0" />
             <div className="w-1/2 h-full relative overflow-hidden">
-              <img src={overlayImageUrl} alt="" className="w-full h-full object-cover" />
+              {overlayDisplayUrl ? (
+                <img src={overlayDisplayUrl} alt="" className="w-full h-full object-cover" />
+              ) : null}
               <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white/90 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur">THEN</span>
+              {!overlayDisplayUrl && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-white/70 text-xs font-semibold text-center px-3">
+                  Historical image loading…
+                </div>
+              )}
             </div>
           </div>
           {(starting || cameraError) && (
@@ -947,18 +972,18 @@ export default function TimeTravelCamera({
             muted
             className={cn('w-full object-cover', immersive ? 'h-full' : 'aspect-[4/3]', facingMode === 'user' && 'scale-x-[-1]', cameraError && 'hidden')}
           />
-          {overlayImageUrl && !cameraError && facingMode === 'environment' && (
+          {overlayDisplayUrl && !cameraError && facingMode === 'environment' && (
             <img
-              src={overlayImageUrl}
+              src={overlayDisplayUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               style={{ opacity: previewOpacity }}
             />
           )}
-          {overlayImageUrl && !cameraError && facingMode === 'user' && (
+          {overlayDisplayUrl && !cameraError && facingMode === 'user' && (
             <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+86px)] w-32 h-44 rounded-3xl border-2 border-white/85 bg-white/15 shadow-2xl overflow-hidden pointer-events-none">
               <img
-                src={overlayImageUrl}
+                src={overlayDisplayUrl}
                 alt=""
                 className="w-full h-full object-cover"
                 style={{ opacity: previewOpacity }}

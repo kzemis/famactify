@@ -3,7 +3,7 @@ import type { ScavengerHunt } from '@/types/hunt';
 export const rigaOldTownWeekend: ScavengerHunt = {
   id: 'riga-old-town-weekend',
   slug: 'riga-old-town-weekend',
-  title: 'Riga Old Town Weekend Scavenger Game',
+  title: 'Riga Old Town Weekend City Game',
   blurb: 'A walkable Old Riga game with clues, landmark facts, and privacy-safe challenges for this weekend.',
   coverEmoji: '🏰',
   hostName: 'FamActify Original',

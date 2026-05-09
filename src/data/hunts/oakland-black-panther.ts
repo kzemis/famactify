@@ -18,6 +18,12 @@ export const oaklandBlackPanther: ScavengerHunt = {
   distanceMeters: 4500,
   publishedAt: '2026-05-02',
   credits: 'Inspired by David Sclar (Berkeley PM) — same spirit as his 1982 Brockton CityGames: history is everyday people, their homes, jobs, and lives. Please walk respectfully — these are real neighbourhoods.',
+  sourceLinks: [
+    'https://en.wikipedia.org/wiki/Free_Breakfast_for_Children',
+    'https://www.visitoakland.com/listing/west-oakland-mural-project/6280/',
+    'https://home.nps.gov/articles/000/the-west-oakland-mural-project-oakland-california.htm',
+    'https://commons.wikimedia.org/wiki/File:Lake_Merritt,_Oakland,_California-LCCN2008678131.jpg',
+  ],
   stops: [
     {
       id: 'merritt-college-historical-marker',
@@ -73,8 +79,26 @@ export const oaklandBlackPanther: ScavengerHunt = {
       },
     },
     {
-      id: 'lake-merritt-grounding',
+      id: 'women-black-panther-mural-photo',
       order: 3,
+      title: 'Women of the Panthers mural',
+      lat: 37.8068,
+      lon: -122.2948,
+      address: '831 Center Street, Oakland, CA 94607',
+      clueText: 'Find a safe public view of the Women of the Black Panther Party mural. Stay on the sidewalk and look for one face, one word, and one symbol of care or power.',
+      parentHint: 'Keep this respectful: it is public art attached to a real community place. The goal is to notice women’s leadership, not just the Panther icon.',
+      prompt: {
+        kind: 'photo',
+        question: 'Take a privacy-safe photo of one mural detail: a color, face, word, raised hand, food basket, or community-care symbol.',
+        photoSubject: 'Women of the Black Panther Party mural detail without close-up faces of bystanders',
+      },
+      reveal: {
+        funFact: 'The West Oakland Mural Project honors women of the Black Panther Party and the Survival Programs they helped build — including food, health, education, and community care.',
+      },
+    },
+    {
+      id: 'lake-merritt-grounding',
+      order: 4,
       title: 'Lake Merritt Community Grounding',
       lat: 37.8044,
       lon: -122.2595,
@@ -90,8 +114,29 @@ export const oaklandBlackPanther: ScavengerHunt = {
       },
     },
     {
+      id: 'lake-merritt-time-travel',
+      order: 5,
+      title: 'Lake Merritt then / community now',
+      lat: 37.8044,
+      lon: -122.2595,
+      address: 'Lake Merritt shoreline, Oakland, CA',
+      clueText: 'Hold up an old Lake Merritt image and compare it with today. What still feels like a shared public place? What has changed?',
+      parentHint: 'This is not a Panther-specific photo; it connects the broader Oakland public-space story to the community-power question.',
+      prompt: {
+        kind: 'time_travel_photo',
+        question: 'Take a now + history photo: line up the old Lake Merritt image with the shoreline, then use Full Story mode if you want a selfie in the memory.',
+        photoSubject: 'Lake Merritt then-and-now public space comparison',
+        timeTravelImageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Lake%20Merritt%2C%20Oakland%2C%20California-LCCN2008678131.jpg',
+        timeTravelCaption: 'Historical reference: Lake Merritt, Oakland, California. Photochrom Print Collection, Library of Congress via Wikimedia Commons.',
+        timeTravelOpacity: 0.46,
+      },
+      reveal: {
+        funFact: 'Lake Merritt was photographed as a civic showplace long before modern Oakland. CityGames use old images like mirrors: they help kids ask who shared public space then, and who belongs now.',
+      },
+    },
+    {
       id: 'lake-merritt-walk',
-      order: 4,
+      order: 6,
       title: 'Lake Merritt — community wrap-up',
       lat: 37.8044,
       lon: -122.2595,

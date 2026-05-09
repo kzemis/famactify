@@ -110,8 +110,10 @@ export default function KidView() {
         .from('activityspots')
         .select('id, name, imageurlthumb, description, highlights, min_price, max_price, age_buckets, duration_minutes, involvement, primary_category, tags, json')
         .eq('country_code', countryCode)
+        .eq('demo_enabled', true)
+        .order('demo_rank', { ascending: true, nullsFirst: false })
         .order('excitement_score', { ascending: false, nullsFirst: false })
-        .limit(200);
+        .limit(30);
       if (error) {
         toast.error('Could not load activities');
       } else {

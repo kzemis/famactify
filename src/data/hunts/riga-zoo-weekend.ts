@@ -10,7 +10,7 @@ export const rigaZooWeekend: ScavengerHunt = {
   id: 'riga-zoo-weekend',
   slug: 'riga-zoo-weekend',
   title: 'Riga Zoo Weekend Animal Detective',
-  blurb: 'A flexible Riga Zoo scavenger game for noticing habitats, animal clues, and conservation stories without rushing from cage to cage.',
+  blurb: 'A flexible Riga Zoo city game for noticing habitats, animal clues, and conservation stories without rushing from cage to cage.',
   coverEmoji: '🦒',
   hostName: 'FamActify Original',
   city: 'Rīga',

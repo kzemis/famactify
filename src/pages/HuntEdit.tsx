@@ -168,7 +168,7 @@ export default function HuntEdit() {
     if (isNew || !params.id) return;
     (async () => {
       const h = await huntsService.getHuntById(params.id!);
-      if (!h) { toast.error('Hunt not found'); navigate(mode === 'admin' ? '/admin/hunts' : '/org/hunts'); return; }
+      if (!h) { toast.error('City game not found'); navigate(mode === 'admin' ? '/admin/hunts' : '/org/hunts'); return; }
       const isSeedTemplate = h.adminSource === 'seed';
       setHunt(h);
       setHuntStatus(h.status);
@@ -269,7 +269,7 @@ export default function HuntEdit() {
     if (!hunt.blurb?.trim()) return 'Blurb is required';
     if (!hunt.hostName?.trim()) return 'Host name is required';
     if (!hunt.city?.trim()) return 'City is required';
-    if (!(hunt.stops?.length)) return 'Add at least one stop';
+    if (!(hunt.stops?.length)) return 'Add at least one step';
     for (const [i, s] of (hunt.stops ?? []).entries()) {
       if (!s.title.trim()) return `Stop ${i + 1}: title required`;
       if (!s.prompt.question.trim()) return `Stop ${i + 1}: question required`;
@@ -287,7 +287,7 @@ export default function HuntEdit() {
       }
     }
     if ((hunt.createdVia === 'ai_assisted' || hunt.createdVia === 'ai_generated') && !(hunt.sourceLinks?.length) && !hunt.credits?.trim()) {
-      return 'AI-assisted hunts need source links or source notes in credits';
+      return 'AI-assisted city games need source links or source notes in credits';
     }
     return null;
   };
@@ -337,9 +337,9 @@ export default function HuntEdit() {
       artifactVersion: 1,
       createdVia: 'ai_assisted',
       hostName: prev.hostName || place,
-      title: prev.title || `${place} Scavenger Hunt`,
-      slug: prev.slug || slugify(`${place}-scavenger-hunt`),
-      blurb: prev.blurb || `A place-based scavenger hunt for families visiting ${place}, drafted from source-backed venue facts.`,
+      title: prev.title || `${place} City Game`,
+      slug: prev.slug || slugify(`${place}-city-game`),
+      blurb: prev.blurb || `A place-based city game for families visiting ${place}, drafted from source-backed venue facts.`,
       coverEmoji: prev.coverEmoji || '🔍',
       primaryTheme: prev.primaryTheme || 'community',
       city: prev.city || '',
@@ -347,7 +347,7 @@ export default function HuntEdit() {
       credits: prev.credits || `AI-assisted draft from venue-provided source facts.${sourceSummary}`,
       sourceLinks: links,
       aiPrompt: [
-        `Create a family scavenger hunt artifact for ${place}.`,
+        `Create a family city game artifact for ${place}.`,
         aiSourceFacts.trim(),
         aiStopIdeas.trim() ? `Requested stops:\n${aiStopIdeas.trim()}` : '',
       ].filter(Boolean).join('\n\n'),
@@ -480,7 +480,7 @@ export default function HuntEdit() {
       }
       const stopSaveMode = await saveStopsAndSponsors(id, stopsToSave, sponsorsToSave);
       if (draftStorageKey) sessionStorage.removeItem(draftStorageKey);
-      toast.success(editingSeedTemplate ? 'Editable hunt draft created from seed' : 'Saved');
+      toast.success(editingSeedTemplate ? 'Editable city game draft created from seed' : 'Saved');
       if (isNew || creatingEditableCopy) {
         const target = mode === 'admin' ? `/admin/hunts/${id}` : `/org/hunts/${id}`;
         navigate(target, { replace: true });
@@ -498,7 +498,7 @@ export default function HuntEdit() {
   };
 
   const handleSubmitForReview = async () => {
-    if (!huntId) { toast.error('Save the hunt first'); return; }
+    if (!huntId) { toast.error('Save the city game first'); return; }
     try {
       await huntsService.submitForReview(huntId);
       setHuntStatus('pending_review');
@@ -513,7 +513,7 @@ export default function HuntEdit() {
     try {
       await huntsService.approve(huntId, user.id);
       setHuntStatus('published');
-      toast.success('Hunt approved & published');
+      toast.success('City game approved & published');
     } catch (e: any) { toast.error(e.message || 'Approve failed'); }
   };
 
@@ -527,7 +527,7 @@ export default function HuntEdit() {
       await huntsService.reject(huntId, user.id, notes);
       setHuntStatus('rejected');
       setReviewNotes(notes);
-      toast.success('Hunt rejected');
+      toast.success('City game rejected');
     } catch (e: any) { toast.error(e.message || 'Reject failed'); }
   };
 
@@ -614,8 +614,8 @@ export default function HuntEdit() {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-muted-foreground">{mode === 'admin' ? 'Admin' : 'Org'} · Hunt builder</p>
-          <p className="text-sm font-bold truncate">{hunt.title || (isNew ? 'New hunt' : 'Untitled')}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{mode === 'admin' ? 'Admin' : 'Org'} · City game builder</p>
+          <p className="text-sm font-bold truncate">{hunt.title || (isNew ? 'New city game' : 'Untitled')}</p>
         </div>
         {statusBadge}
       </div>
@@ -634,8 +634,8 @@ export default function HuntEdit() {
         <div className="mx-4 mt-3 p-3 rounded-xl bg-sky-50 border border-sky-200 text-sm text-sky-900 flex items-start gap-2">
           <FileText className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <p className="font-semibold">Seed hunt template</p>
-            <p className="mt-0.5">This hunt lives in code. Your first save creates an editable database draft, so admin edits will not be blocked by the global region picker.</p>
+            <p className="font-semibold">Seed city game template</p>
+            <p className="mt-0.5">This city game lives in code. Your first save creates an editable database draft, so admin edits will not be blocked by the global region picker.</p>
           </div>
         </div>
       )}
@@ -649,9 +649,9 @@ export default function HuntEdit() {
                 <Workflow className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm">Scavenger hunt artifact</p>
+                <p className="font-bold text-sm">City game artifact</p>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                  Draft → source-backed stops → submit for review → publish. A human can author it directly, or an AI/agent can draft the same artifact for human verification.
+                  Draft → source-backed steps → submit for review → publish. A human can author it directly, or an AI/agent can draft the same artifact for human verification.
                 </p>
               </div>
             </div>
@@ -688,7 +688,7 @@ export default function HuntEdit() {
                 >
                   <Bot className="w-4 h-4 mb-2 text-primary" />
                   <p className="text-xs font-bold">AI-assisted draft</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">Paste source facts; generate editable stops.</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">Paste source facts; generate editable steps.</p>
                 </button>
               </div>
             )}
@@ -713,7 +713,7 @@ export default function HuntEdit() {
                 <Field label="Source facts / venue brief">
                   <Textarea value={aiSourceFacts} onChange={e => setAiSourceFacts(e.target.value)} rows={5} placeholder="Paste only facts the venue can stand behind: opening year, exhibit names, route notes, safety notes, accessibility notes…" />
                 </Field>
-                <Field label="Desired stops (optional, one per line)">
+                <Field label="Desired steps (optional, one per line)">
                   <Textarea value={aiStopIdeas} onChange={e => setAiStopIdeas(e.target.value)} rows={4} placeholder="Entrance sign&#10;Main exhibit&#10;Outdoor sculpture&#10;Memory photo spot" />
                 </Field>
                 <button onClick={handleGenerateArtifactDraft} className="w-full h-11 rounded-2xl bg-pink-600 text-white font-semibold tap-highlight flex items-center justify-center gap-2">
@@ -748,7 +748,7 @@ export default function HuntEdit() {
               />
             </Field>
             <Field label="AI / agent prompt or brief (optional)">
-              <Textarea value={hunt.aiPrompt ?? ''} onChange={e => updateField('aiPrompt', e.target.value)} rows={3} placeholder="Prompt/brief used by an AI agent to draft this hunt." />
+              <Textarea value={hunt.aiPrompt ?? ''} onChange={e => updateField('aiPrompt', e.target.value)} rows={3} placeholder="Prompt/brief used by an AI agent to draft this city game." />
             </Field>
             <Field label="Generation + verification notes">
               <Textarea value={hunt.generationNotes ?? ''} onChange={e => updateField('generationNotes', e.target.value)} rows={3} placeholder="What was generated? What did a human verify? What still needs review?" />
@@ -811,7 +811,7 @@ export default function HuntEdit() {
                 </label>
               </div>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Use a CC-licensed Wikimedia/Commons photo or your own. Cover appears full-bleed on the hunt detail page with title overlaid.
+                Use a CC-licensed Wikimedia/Commons photo or your own. Cover appears full-bleed on the city game detail page with title overlaid.
               </p>
             </div>
           </Field>
@@ -854,7 +854,7 @@ export default function HuntEdit() {
         </Section>
 
         {/* Stops */}
-        <Section title={`Stops (${(hunt.stops ?? []).length})`}>
+        <Section title={`Steps (${(hunt.stops ?? []).length})`}>
           {(hunt.stops ?? []).map((s, i) => (
             <StopEditor
               key={s.id}

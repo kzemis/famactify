@@ -7,8 +7,8 @@ const ALBERT_STREET_OLD_IMAGE = 'https://latvians.com/en/Trips/Features-AlbertaI
 export const rigaAlbertStreetTimeTravel: ScavengerHunt = {
   id: 'riga-albert-street-time-travel',
   slug: 'riga-albert-street-time-travel',
-  title: 'Albert Street Time-Travel Art Nouveau Hunt',
-  blurb: 'A short Riga Art Nouveau walk where kids line up an old Albertstraße photo with today’s Alberta iela and hunt for architects, faces, towers, and museum clues.',
+  title: 'Albert Street Time-Travel Art Nouveau City Game',
+  blurb: 'A short Riga Art Nouveau walk where kids line up an old Albertstraße photo with today’s Alberta iela and search for architects, faces, towers, and museum clues.',
   coverEmoji: '🕰️',
   hostName: 'FamActify Original',
   city: 'Rīga',
@@ -75,7 +75,7 @@ export const rigaAlbertStreetTimeTravel: ScavengerHunt = {
     {
       id: 'albert-street-eisenstein-facades',
       order: 2,
-      title: 'Eisenstein Façade Hunt',
+      title: 'Eisenstein Façade Search',
       lat: 56.9593002,
       lon: 24.109658,
       address: 'Alberta iela 8, Rīga, LV-1010',

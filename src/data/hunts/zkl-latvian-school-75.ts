@@ -9,8 +9,8 @@ const LATVIAN_HALL = {
 export const zklLatvianSchool75: ScavengerHunt = {
   id: 'zkl-latvian-school-75',
   slug: 'zkl-latvian-school-75',
-  title: 'Latviešu skola 75: Anniversary Concert Hunt',
-  blurb: 'A short bilingual hunt for families attending the Northern California Latvian School 75th Anniversary Celebration at Latvian Hall.',
+  title: 'Latviešu skola 75: Anniversary Concert City Game',
+  blurb: 'A short bilingual city game for families attending the Northern California Latvian School 75th Anniversary Celebration at Latvian Hall.',
   coverEmoji: '🇱🇻',
   hostName: 'Ziemeļkalifornijas Latviešu skola',
   city: 'San Francisco',

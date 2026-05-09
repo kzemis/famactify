@@ -10,7 +10,7 @@ export const rigaUzvarasPark: ScavengerHunt = {
   id: 'riga-uzvaras-park',
   slug: 'riga-uzvaras-park',
   title: 'Uzvaras Park Active Clue Game',
-  blurb: 'A flexible park hunt for the renewed Uzvaras Park landscape: water play, natural materials, movement, and calm observation.',
+  blurb: 'A flexible park city game for the renewed Uzvaras Park landscape: water play, natural materials, movement, and calm observation.',
   coverEmoji: '🌳',
   hostName: 'FamActify Original',
   city: 'Rīga',
@@ -63,7 +63,7 @@ export const rigaUzvarasPark: ScavengerHunt = {
     {
       id: 'uzvaras-natural-materials',
       order: 2,
-      title: 'Natural Materials Hunt',
+      title: 'Natural Materials Search',
       ...UZVARAS_PARK,
       clueText: 'Find three natural textures in the park: wood, bark, stone, grass, sand, leaves, or soil.',
       parentHint: 'The Riga City article says play, sport, and rest elements were placed under existing trees and use natural materials.',
@@ -104,7 +104,7 @@ export const rigaUzvarasPark: ScavengerHunt = {
         photoSubject: 'Uzvaras Park detail without faces',
       },
       reveal: {
-        funFact: 'A good park hunt can be about noticing small design choices: where paths bend, how shade works, and what invites kids to move.',
+        funFact: 'A good park city game can be about noticing small design choices: where paths bend, how shade works, and what invites kids to move.',
       },
     },
   ],

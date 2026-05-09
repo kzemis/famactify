@@ -40,7 +40,7 @@ export const rigaBaronaPlayground: ScavengerHunt = {
         correctAnswers: ['Krišjāņa Barona iela'],
       },
       reveal: {
-        funFact: 'This mini quest is intentionally short: playground hunts work best when the game supports free play instead of replacing it.',
+        funFact: 'This mini quest is intentionally short: playground city games work best when the game supports free play instead of replacing it.',
       },
     },
     {

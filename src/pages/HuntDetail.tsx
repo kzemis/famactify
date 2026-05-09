@@ -10,7 +10,7 @@ import { flags } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 import { useHunt } from '@/hooks/useHunt';
 
-const SLIDE_LABEL: Record<string, string> = { about: 'About', map: 'Map', stops: 'Stops', credits: 'Sources' };
+const SLIDE_LABEL: Record<string, string> = { about: 'About', map: 'Map', stops: 'Steps', credits: 'Sources' };
 
 export default function HuntDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -54,9 +54,9 @@ export default function HuntDetail() {
     return (
       <div className="min-h-[100dvh] bg-background px-6 flex flex-col items-center justify-center text-center gap-3">
         <span className="text-5xl">🗺️</span>
-        <p className="font-semibold">Hunt not found</p>
+        <p className="font-semibold">City game not found</p>
         <button onClick={() => navigate('/hunts')} className="h-11 px-6 rounded-full bg-primary text-primary-foreground font-medium text-sm tap-highlight">
-          See all hunts
+          See all city games
         </button>
       </div>
     );
@@ -64,7 +64,7 @@ export default function HuntDetail() {
 
   const isInProgress = !!latestAttempt && !latestAttempt.completedAt;
   const isCompleted = !!latestAttempt?.completedAt;
-  const ctaLabel = isInProgress ? 'Continue hunt' : isCompleted ? 'Play again' : 'Start hunt';
+  const ctaLabel = isInProgress ? 'Continue city game' : isCompleted ? 'Play again' : 'Start city game';
   const huntPath = [...hunt.stops]
     .sort((a, b) => a.order - b.order)
     .filter((s): s is typeof s & { lat: number; lon: number } => (
@@ -128,7 +128,7 @@ export default function HuntDetail() {
 
                   <div className="flex items-center gap-1.5 mt-3 overflow-x-auto no-scrollbar">
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur border border-white/25 text-[11px] font-semibold whitespace-nowrap">
-                      <MapPin className="w-3 h-3" /> {hunt.stops.length} stops
+                      <MapPin className="w-3 h-3" /> {hunt.stops.length} steps
                     </span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur border border-white/25 text-[11px] font-semibold whitespace-nowrap">
                       <Clock className="w-3 h-3" /> ~{hours}h
@@ -220,7 +220,7 @@ export default function HuntDetail() {
           onClick={() => navigate('/hunts')}
           className="absolute top-3 left-3 z-20 w-10 h-10 rounded-full bg-black/45 backdrop-blur text-white flex items-center justify-center tap-highlight active:scale-95 transition-transform"
           style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
-          aria-label="Back to hunts"
+          aria-label="Back to city games"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -259,13 +259,13 @@ export default function HuntDetail() {
               <button
                 onClick={async () => {
                   if (!latestAttempt) return;
-                  if (window.confirm('Restart from the first stop? Your progress on this hunt will be cleared.')) {
+                  if (window.confirm('Restart from the first step? Your progress on this city game will be cleared.')) {
                     await huntsService.abandonAttempt(latestAttempt.id);
                     navigate(`/hunts/${hunt.slug}/play`);
                   }
                 }}
                 className="h-12 px-4 rounded-2xl border border-border tap-highlight"
-                aria-label="Restart hunt"
+                aria-label="Restart city game"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -293,7 +293,7 @@ export default function HuntDetail() {
               onClick={() => navigate(`/race/create/${hunt.slug}`)}
               className="w-full mt-2 h-11 rounded-2xl border-2 border-primary/30 text-primary font-semibold text-sm flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform"
             >
-              <Zap className="w-4 h-4" /> Race this hunt with another family
+              <Zap className="w-4 h-4" /> Race this city game with another family
             </button>
           )}
         </div>

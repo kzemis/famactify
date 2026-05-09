@@ -234,7 +234,7 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.fillText('FamActify', margin, 54);
   ctx.font = '700 18px system-ui, sans-serif';
   ctx.fillStyle = hasVisuals ? 'rgba(255,255,255,0.78)' : '#9ca3af';
-  ctx.fillText('· Scavenger Hunt', margin + 155, 63);
+  ctx.fillText('· City Game', margin + 155, 63);
 
   if (logoImg) {
     ctx.save();
@@ -271,7 +271,7 @@ export async function renderHuntPostcard(opts: RenderOpts): Promise<Blob | null>
   ctx.shadowColor = 'transparent';
   const pillH = 58;
   ctx.font = 'bold 25px system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
-  const pillLabel = `${tierMeta.label}  ·  ${correct}/${totalStops} stops`;
+  const pillLabel = `${tierMeta.label}  ·  ${correct}/${totalStops} steps`;
   const pillW = Math.min(W - margin * 2, ctx.measureText(pillLabel).width + 48);
   roundedRectPath(ctx, margin, textY, pillW, pillH, pillH / 2);
   ctx.fillStyle = tierMeta.bg;

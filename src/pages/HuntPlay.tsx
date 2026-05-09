@@ -197,8 +197,8 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     && Number.isFinite(currentStop.lon);
   const displayedClueText = currentStop
     ? activeStopLanguage === 'lv'
-      ? currentStop.clueTextLv || currentStop.clueText || 'Head to this stop, then complete the action.'
-      : currentStop.clueText || 'Head to this stop, then complete the action.'
+      ? currentStop.clueTextLv || currentStop.clueText || 'Head to this step, then complete the action.'
+      : currentStop.clueText || 'Head to this step, then complete the action.'
     : '';
   const displayedFunFact = currentStop
     ? activeStopLanguage === 'lv'
@@ -206,6 +206,9 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
       : currentStop.reveal.funFact
     : '';
   const promptActionCopy = currentStop ? getPromptActionCopy(currentStop.prompt.kind) : null;
+  const compactProgressPct = totalStops > 0
+    ? Math.min(100, Math.max(0, ((attempt.currentStopOrder + (phase === 'reveal' ? 1 : 0)) / totalStops) * 100))
+    : 0;
 
   // ── Voice-over (Web Speech API) ──
   const speak = (text: string, lang: 'en' | 'lv' = activeStopLanguage) => {
@@ -231,7 +234,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
 
   const handleLocate = () => {
     if (!currentStop || !hasStopCoordinates) {
-      toast.message('This stop has no map pin yet — use manual check-in.');
+      toast.message('This step has no map pin yet — use manual check-in.');
       return;
     }
     if (!('geolocation' in navigator)) {
@@ -438,7 +441,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         });
       } catch (e) {
         console.warn('[race progress sync]', e);
-        toast.error('Race progress could not sync — continuing hunt');
+        toast.error('Race progress could not sync — continuing city game');
       }
       setAttempt(cleaned);
       setTextAnswer('');
@@ -475,7 +478,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
       const file = new File([postcardBlob], fileName, { type: 'image/png' });
       const shareData: ShareData = {
         title: `${currentProfile?.name ?? 'We'} finished ${hunt.title}!`,
-        text: `${currentProfile?.name ?? 'We'} just completed the FamActify hunt — walk it yourself: famactify.app/hunts/${hunt.slug}`,
+        text: `${currentProfile?.name ?? 'We'} just completed the FamActify City Game: famactify.app/hunts/${hunt.slug}`,
         url: `${window.location.origin}/hunts/${hunt.slug}`,
         files: [file],
       };
@@ -549,7 +552,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/65 truncate">Stop {attempt.currentStopOrder + 1} of {totalStops} · {currentStop.title}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/65 truncate">Step {attempt.currentStopOrder + 1} of {totalStops} · {currentStop.title}</p>
                   <h2 className="text-base font-black leading-tight drop-shadow truncate">{promptActionCopy?.title ?? currentStop.title}</h2>
                 </div>
               </div>
@@ -560,7 +563,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   onClick={skipStop}
                   disabled={skippingStop || submittingAnswer}
                   className="w-12 h-12 rounded-full border border-white/20 bg-black/45 tap-highlight flex items-center justify-center backdrop-blur disabled:opacity-60"
-                  aria-label="Skip stop"
+                  aria-label="Skip step"
                 >
                   {skippingStop ? <Loader2 className="w-5 h-5 animate-spin" /> : <SkipForward className="w-5 h-5" />}
                 </button>
@@ -595,7 +598,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Stop {attempt.currentStopOrder + 1} of {totalStops}</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Step {attempt.currentStopOrder + 1} of {totalStops}</p>
               <p className="text-sm font-bold truncate">{promptActionCopy?.title ?? currentStop.title}</p>
             </div>
           </div>
@@ -689,12 +692,12 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
             <button
               onClick={() => navigate(`/hunts/${hunt.slug}`)}
               className="w-9 h-9 rounded-full flex items-center justify-center bg-white/70 border tap-highlight"
-              aria-label="Back to hunt"
+              aria-label="Back to city game"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Finished hunt</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Finished city game</p>
               <p className="text-sm font-black truncate">{hunt.title}</p>
             </div>
             <div className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-black">
@@ -735,7 +738,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   <p className="text-xs font-semibold">Painting your postcard…</p>
                 </div>
               ) : postcardUrl ? (
-                <img src={postcardUrl} alt="Hunt completion postcard" className="w-full h-full object-contain block bg-white" />
+                <img src={postcardUrl} alt="City game completion postcard" className="w-full h-full object-contain block bg-white" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                   Postcard unavailable
@@ -833,7 +836,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
               </button>
               <button
                 onClick={async () => {
-                  if (window.confirm('Play this hunt again from the start?')) {
+                  if (window.confirm('Play this city game again from the start?')) {
                     await huntsService.abandonAttempt(attempt.id);
                     navigate(`/hunts/${hunt.slug}/play`, { replace: true });
                     window.location.reload();
@@ -849,7 +852,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                 className="h-14 rounded-2xl bg-white/80 border text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
               >
                 <ChevronRight className="w-4 h-4" />
-                <span>Hunts</span>
+                <span>City games</span>
               </button>
             </div>
           </section>
@@ -864,44 +867,22 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     <div className="min-h-[100dvh] bg-background flex flex-col pb-tab-bar">
       {raceOverlay}
       {/* Top bar */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}>
-        <button onClick={() => navigate(`/hunts/${hunt.slug}`)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight" aria-label="Back to hunt">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Stop {attempt.currentStopOrder + 1} of {totalStops}</p>
-          <p className="text-sm font-semibold truncate">{currentStop?.title}</p>
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40">
+        <div className="px-4 flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 8px)', paddingBottom: 8, minHeight: 52 }}>
+          <button onClick={() => navigate(`/hunts/${hunt.slug}`)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted tap-highlight" aria-label="Back to city game">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">City game step</p>
+            <p className="text-sm font-semibold truncate">{currentStop?.title}</p>
+          </div>
+          <div className="shrink-0 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-black tabular-nums">
+            {attempt.currentStopOrder + 1}/{totalStops}
+          </div>
         </div>
-      </div>
-
-      {/* Stamp-dot progress row — one dot per stop */}
-      <div className="bg-background/95 backdrop-blur border-b border-border/20 flex items-center gap-1.5 overflow-x-auto no-scrollbar px-4 py-2">
-        {hunt.stops.map((s, i) => {
-          const isDone    = i < attempt.currentStopOrder;
-          const isCurrent = i === attempt.currentStopOrder && !isFinished;
-          const result    = isDone ? attempt.results.find(r => r.stopId === s.id) : null;
-          const correct   = !!result?.isCorrect && !result.skipped;
-          const skipped   = !!result?.skipped;
-          return (
-            <div
-              key={s.id}
-              title={s.title}
-              className={cn(
-                'shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-300 select-none',
-                isDone && correct  ? 'bg-emerald-500 text-white shadow-sm' :
-                isDone && skipped  ? 'bg-muted text-muted-foreground' :
-                isDone             ? 'bg-amber-400 text-white' :
-                isCurrent          ? 'bg-primary text-primary-foreground ring-2 ring-primary/40' :
-                                     'bg-muted/40 text-muted-foreground/40 border border-dashed border-border/50',
-              )}
-            >
-              {isDone ? (skipped ? '·' : '✓') : i + 1}
-            </div>
-          );
-        })}
-        <span className="shrink-0 ml-auto pl-2 text-[10px] font-semibold text-muted-foreground whitespace-nowrap">
-          {attempt.currentStopOrder}/{totalStops}
-        </span>
+        <div className="h-1 bg-muted/50">
+          <div className="h-full bg-primary transition-all duration-300" style={{ width: `${compactProgressPct}%` }} />
+        </div>
       </div>
 
       <div className="flex-1 px-5 py-5 space-y-4">
@@ -1065,7 +1046,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <span className="text-sm text-muted-foreground flex-1 min-w-0">
-                    {currentStop.address || 'Find this stop'}
+                    {currentStop.address || 'Find this step'}
                   </span>
                   {distanceToCurrent != null && (
                     <span className={cn('shrink-0 text-[11px] font-bold rounded-full px-2 py-1', isAtStop ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>
@@ -1145,7 +1126,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
               <h2 className="text-xl font-black leading-tight">{promptActionCopy?.title ?? 'Action to do'}</h2>
               <p className="text-sm font-semibold leading-snug text-foreground/85">{currentStop.prompt.question}</p>
               <p className="text-xs text-muted-foreground">
-                This is the task/question for this stop. Complete it, then the app reveals any extra story.
+                This is the task/question for this step. Complete it, then the app reveals any extra story.
               </p>
             </div>
 
@@ -1358,45 +1339,31 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
           const lastResult = attempt.results.find(r => r.stopId === currentStop.id);
           const wasSkipped = lastResult?.skipped;
           const wasCorrect = lastResult?.isCorrect && !wasSkipped;
-          const stampDate  = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase();
 
           // Tier colours matching the Passport page
           const stampStyle = wasCorrect
-            ? { outer: 'border-emerald-500', inner: 'bg-emerald-50 text-emerald-800', label: 'Solved! ✓',   bg: 'bg-emerald-50/60 border-emerald-200' }
+            ? { icon: 'bg-emerald-500 text-white', label: 'Saved ✓', bg: 'bg-emerald-50/60 border-emerald-200 text-emerald-900' }
             : wasSkipped
-            ? { outer: 'border-muted-foreground/40', inner: 'bg-muted/60 text-muted-foreground', label: 'Skipped', bg: 'bg-muted/30 border-border' }
-            : { outer: 'border-amber-500', inner: 'bg-amber-50 text-amber-800', label: 'Explored!',   bg: 'bg-amber-50/60 border-amber-200' };
+            ? { icon: 'bg-muted text-muted-foreground', label: 'Skipped', bg: 'bg-muted/30 border-border text-foreground' }
+            : { icon: 'bg-amber-400 text-amber-950', label: 'Explored', bg: 'bg-amber-50/60 border-amber-200 text-amber-900' };
 
           return (
             <div className="space-y-4">
 
-              {/* ── Stop stamp ──────────────────────────────────────────── */}
-              <div className={cn('rounded-2xl border p-4 flex items-center gap-4', stampStyle.bg)}>
-                {/* Rubber stamp visual */}
-                <div
-                  className={cn(
-                    'shrink-0 w-[72px] h-[72px] rounded-full border-[3px] border-double flex flex-col items-center justify-center gap-0.5 shadow-md',
-                    stampStyle.outer, stampStyle.inner,
-                  )}
-                  style={{ transform: 'rotate(-4deg)' }}
-                >
-                  <span className="text-[28px] leading-none">{hunt.coverEmoji}</span>
-                  <span className="text-[6.5px] font-bold uppercase tracking-tight text-center leading-tight px-1">
-                    Stop {currentStop.order + 1}/{totalStops}
-                  </span>
-                  <span className="text-[6px] font-mono opacity-70 leading-none">{stampDate}</span>
+              {/* ── Compact step receipt ─────────────────────────────────── */}
+              <div className={cn('rounded-2xl border px-3 py-2.5 flex items-center gap-3', stampStyle.bg)}>
+                <div className={cn('shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm', stampStyle.icon)}>
+                  {wasSkipped ? '·' : '✓'}
                 </div>
-
-                {/* Text */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">Stop stamp earned</p>
-                  <p className="font-black text-base leading-tight truncate">{currentStop.title}</p>
-                  <p className="text-sm font-semibold mt-0.5">{stampStyle.label}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Step {currentStop.order + 1}/{totalStops} complete</p>
+                  <p className="font-black text-sm leading-tight truncate">{currentStop.title}</p>
                   {!wasSkipped && lastResult?.answer
                     && !['✓', '(photo)', '(audio)', '(drawing)', '(time-travel-photo)'].includes(lastResult.answer) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">Your answer: {lastResult.answer}</p>
+                    <p className="text-xs opacity-70 mt-0.5 truncate">Your answer: {lastResult.answer}</p>
                   )}
                 </div>
+                <span className="shrink-0 text-xs font-black">{stampStyle.label}</span>
               </div>
 
               <div className="rounded-3xl bg-sky-50 border border-sky-200 p-5 space-y-2">
@@ -1440,8 +1407,8 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   <div className="flex items-start gap-2">
                     <BookOpen className="w-4 h-4 text-sky-700 mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-sky-800">Stop complete</p>
-                      <p className="text-sm text-sky-900/80 mt-1">No extra fun fact for this stop — your memory is saved.</p>
+                      <p className="text-xs font-black uppercase tracking-widest text-sky-800">Step complete</p>
+                      <p className="text-sm text-sky-900/80 mt-1">No extra fun fact for this step — your memory is saved.</p>
                     </div>
                   </div>
                 )}
@@ -1492,7 +1459,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   </>
                 ) : (
                   <>
-                    {attempt.currentStopOrder + 1 >= totalStops ? 'Finish hunt' : 'Next stop'} <ChevronRight className="w-4 h-4" />
+                    {attempt.currentStopOrder + 1 >= totalStops ? 'Finish city game' : 'Next step'} <ChevronRight className="w-4 h-4" />
                   </>
                 )}
               </button>

@@ -4,7 +4,7 @@ export const rigaMezaparksForest: ScavengerHunt = {
   id: 'riga-mezaparks-forest',
   slug: 'riga-mezaparks-forest',
   title: 'Mežaparks Forest Weekend Quest',
-  blurb: 'A green Riga hunt for Mežaparks: forest paths, lake-air clues, movement choices, and the cultural landmark of the Grand Bandstand.',
+  blurb: 'A green Riga city game for Mežaparks: forest paths, lake-air clues, movement choices, and the cultural landmark of the Grand Bandstand.',
   coverEmoji: '🌲',
   hostName: 'FamActify Original',
   city: 'Rīga',
@@ -83,7 +83,7 @@ export const rigaMezaparksForest: ScavengerHunt = {
       lon: 24.163,
       address: 'Mežaparks, Rīga',
       clueText: 'Pick a safe movement for 30 seconds: slow walk, fast walk, balance, stretch, cycle, scooter, or quiet listening.',
-      parentHint: 'Quiet listening counts. This keeps the hunt good for different ages and energy levels.',
+      parentHint: 'Quiet listening counts. This keeps the city game good for different ages and energy levels.',
       prompt: {
         kind: 'drawing',
         question: 'Draw your forest movement or one path shape you followed.',

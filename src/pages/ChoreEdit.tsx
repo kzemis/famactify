@@ -69,7 +69,7 @@ export default function ChoreEdit() {
     if (!isEditing || !routeSlug) return;
     (async () => {
       const h = await huntsService.getHunt(routeSlug);
-      if (!h) { toast.error('Chore hunt not found'); navigate('/chores'); return; }
+      if (!h) { toast.error('Chore city game not found'); navigate('/chores'); return; }
       setHuntId(h.id);
       originalStopsRef.current = h.stops ?? [];
       setTitle(h.title);
@@ -97,7 +97,7 @@ export default function ChoreEdit() {
     setStops(prev => prev.map((s, j) => j === i ? { ...s, expanded: !s.expanded } : s));
 
   const validate = (): string | null => {
-    if (!title.trim()) return 'Hunt title required';
+    if (!title.trim()) return 'City game title required';
     if (stops.length === 0) return 'Add at least one chore';
     for (let i = 0; i < stops.length; i++) {
       const s = stops[i];
@@ -171,7 +171,7 @@ export default function ChoreEdit() {
       }
       await huntsService.saveStopsDiff(id, originalStopsRef.current, huntStops);
       originalStopsRef.current = huntStops.map((stop, order) => ({ ...stop, order }));
-      if (!isEditing) toast.success('Chore hunt created!');
+      if (!isEditing) toast.success('Chore city game created!');
       navigate('/chores');
     } catch (e: any) {
       console.error('[ChoreEdit] save', e);
@@ -204,12 +204,12 @@ export default function ChoreEdit() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="text-base font-black flex-1 truncate">
-          {isEditing ? 'Edit chore hunt' : 'New chore hunt'}
+          {isEditing ? 'Edit chore city game' : 'New chore city game'}
         </h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
-        {/* Hunt basics */}
+        {/* City game basics */}
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div>
             <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Title</label>
@@ -226,7 +226,7 @@ export default function ChoreEdit() {
               value={blurb}
               onChange={e => setBlurb(e.target.value)}
               rows={2}
-              placeholder="Why this hunt matters — written for the kid"
+              placeholder="Why this city game matters — written for the kid"
               className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -399,7 +399,7 @@ export default function ChoreEdit() {
           className="h-12 px-6 rounded-2xl bg-primary text-primary-foreground font-bold tap-highlight active:scale-[0.98] transition-transform shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <Save className="w-4 h-4" />
-          {optimisticSaving ? 'Saved ✓' : saving ? 'Creating…' : isEditing ? 'Save changes' : 'Create hunt'}
+          {optimisticSaving ? 'Saved ✓' : saving ? 'Creating…' : isEditing ? 'Save changes' : 'Create city game'}
         </button>
       </div>
     </div>

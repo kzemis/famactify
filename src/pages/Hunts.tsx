@@ -32,7 +32,7 @@ export default function Hunts() {
         <div className="flex items-center justify-between gap-3 w-full">
           <div className="flex items-baseline gap-2 min-w-0">
             <span className="text-2xl">🔍</span>
-            <h1 className="text-lg font-bold truncate">Scavenger Hunts</h1>
+            <h1 className="text-lg font-bold truncate">City Games</h1>
             <span className="text-xs text-muted-foreground">· {hunts.length}</span>
           </div>
           <RegionPill compact />
@@ -49,15 +49,15 @@ export default function Hunts() {
         ) : hunts.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
             <span className="text-5xl">🗺️</span>
-            <p className="font-semibold">No hunts here yet</p>
+            <p className="font-semibold">No city games here yet</p>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Hunts are place-based mini-adventures designed by venues and museums. We'll add some near you soon.
+              City games are place-based mini-adventures designed by venues and museums. We'll add some near you soon.
             </p>
           </div>
         ) : (
           <>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Showing {country.name}. Place-based mini-adventures: clue → location → answer.
+              Showing {country.name}. Place-based mini-adventures: clue → place → action → story.
             </p>
             {hunts.map(h => (
               <button
@@ -89,7 +89,7 @@ export default function Hunts() {
                   </div>
                   <p className="text-sm text-muted-foreground leading-snug line-clamp-2">{h.blurb}</p>
                   <div className="flex flex-wrap gap-2 pt-1 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" />{h.stops.length} stops</span>
+                    <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" />{h.stops.length} steps</span>
                     <span>·</span>
                     <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" />~{Math.round(h.durationMinutes / 60 * 10) / 10}h</span>
                     <span>·</span>

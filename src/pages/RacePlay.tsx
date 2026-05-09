@@ -58,7 +58,7 @@ export default function RacePlay() {
         ]);
 
         if (!huntRecord) {
-          toast.error('Hunt not found');
+          toast.error('City game not found');
           navigate('/hunts', { replace: true });
           return;
         }

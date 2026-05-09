@@ -8,7 +8,8 @@ export type CapabilityId =
   | 'send_calendar_invite'
   | 'track_analytics_event'
   | 'submit_activity'
-  | 'manage_curated_lists';
+  | 'manage_curated_lists'
+  | 'manage_activity_curation';
 
 export interface CapabilityDefinition {
   id: CapabilityId;
@@ -66,6 +67,11 @@ export const serviceCapabilities: Record<CapabilityId, CapabilityDefinition> = {
     id: 'manage_curated_lists',
     layer: 'atomic-capability',
     description: 'Create, update, delete, and publish curated activity lists.',
+  },
+  manage_activity_curation: {
+    id: 'manage_activity_curation',
+    layer: 'atomic-capability',
+    description: 'Enable, disable, and rank activities for the lightweight demo catalog.',
   },
 };
 

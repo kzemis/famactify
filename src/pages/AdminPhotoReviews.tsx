@@ -83,7 +83,7 @@ export default function AdminPhotoReviews() {
           <div className="text-center py-12 space-y-3">
             <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground" />
             <p className="font-semibold">{tab === 'pending' ? 'No pending photos' : 'No photo answers yet'}</p>
-            <p className="text-sm text-muted-foreground">Photo prompts from completed hunts appear here for manual verification.</p>
+            <p className="text-sm text-muted-foreground">Photo prompts from completed city games appear here for manual verification.</p>
           </div>
         ) : (
           items.map(item => {

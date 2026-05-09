@@ -8,6 +8,7 @@ import DrawingPad from '@/components/DrawingPad';
 import TimeTravelCamera from '@/components/TimeTravelCamera';
 import { renderHuntPostcard } from '@/lib/huntPostcard';
 import { huntsService, type HuntAttempt, type HuntStopResult } from '@/services/huntsService';
+import type { HuntPromptKind } from '@/types/hunt';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,30 @@ function formatGuideTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
   return `${mins}:${secs}`;
+}
+
+function getPromptActionCopy(kind: HuntPromptKind): { title: string; cta: string } {
+  switch (kind) {
+    case 'time_travel_photo':
+      return { title: 'Add now photo to history photo', cta: 'Open timeline camera' };
+    case 'photo':
+      return { title: 'Take a photo', cta: 'Open camera' };
+    case 'spot_photo':
+      return { title: 'Find the detail', cta: 'Start looking' };
+    case 'audio':
+      return { title: 'Record a sound', cta: 'Record now' };
+    case 'drawing':
+      return { title: 'Draw what you see', cta: 'Open drawing' };
+    case 'voice_answer':
+      return { title: 'Say the answer', cta: 'Answer aloud' };
+    case 'multiple_choice':
+      return { title: 'Pick the answer', cta: 'Answer now' };
+    case 'observation':
+      return { title: 'Notice and confirm', cta: 'I noticed it' };
+    case 'text':
+    default:
+      return { title: 'Answer the question', cta: 'Answer now' };
+  }
 }
 
 export interface HuntProgressSnapshot {
@@ -73,6 +98,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
   const [audioGuideProgress, setAudioGuideProgress] = useState(0);
   const [audioGuideDuration, setAudioGuideDuration] = useState(0);
   const [audioGuideVolume, setAudioGuideVolume] = useState(1);
+  const [showLocationMenu, setShowLocationMenu] = useState(false);
   const [finishedSlide, setFinishedSlide] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioGuideRef = useRef<HTMLAudioElement>(null);
@@ -148,6 +174,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
     setAudioGuidePlaying(false);
     setAudioGuideProgress(0);
     setAudioGuideDuration(0);
+    setShowLocationMenu(false);
   }, [attempt?.currentStopOrder, huntId]);
 
   if (huntLoading || !hunt || !attempt) {
@@ -178,6 +205,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
       ? currentStop.reveal.funFactLv || currentStop.reveal.funFact
       : currentStop.reveal.funFact
     : '';
+  const promptActionCopy = currentStop ? getPromptActionCopy(currentStop.prompt.kind) : null;
 
   // ── Voice-over (Web Speech API) ──
   const speak = (text: string, lang: 'en' | 'lv' = activeStopLanguage) => {
@@ -226,6 +254,18 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
       },
       (err) => { setLocating(false); toast.error(err.message || 'Could not get your location'); },
       { enableHighAccuracy: false, timeout: 10000 },
+    );
+  };
+
+  const openMapsNavigation = () => {
+    if (!currentStop) return;
+    const destination = hasStopCoordinates
+      ? `${currentStop.lat},${currentStop.lon}`
+      : currentStop.address || currentStop.title;
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`,
+      '_blank',
+      'noopener,noreferrer',
     );
   };
 
@@ -509,8 +549,8 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/65">Stop {attempt.currentStopOrder + 1} of {totalStops}</p>
-                  <h2 className="text-base font-black leading-tight drop-shadow truncate">{currentStop.title}</h2>
+                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/65 truncate">Stop {attempt.currentStopOrder + 1} of {totalStops} · {currentStop.title}</p>
+                  <h2 className="text-base font-black leading-tight drop-shadow truncate">{promptActionCopy?.title ?? currentStop.title}</h2>
                 </div>
               </div>
             )}
@@ -556,9 +596,10 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
             </button>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Stop {attempt.currentStopOrder + 1} of {totalStops}</p>
-              <p className="text-sm font-bold truncate">{currentStop.title}</p>
+              <p className="text-sm font-bold truncate">{promptActionCopy?.title ?? currentStop.title}</p>
             </div>
           </div>
+          <p className="mt-1 text-xs text-white/60 truncate">{currentStop.title}</p>
           <p className="mt-2 text-sm font-semibold leading-snug line-clamp-2">{currentStop.prompt.question}</p>
         </div>
 
@@ -932,6 +973,23 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                 </div>
               </div>
               <p className="text-base leading-relaxed">{displayedClueText}</p>
+              {promptActionCopy && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/8 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Your task</span>
+                    <span className="min-w-0 flex-1 text-sm font-black text-foreground truncate">{promptActionCopy.title}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+                    {currentStop.prompt.question}
+                  </p>
+                  <button
+                    onClick={() => setPhase('prompt')}
+                    className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-black tap-highlight flex items-center justify-center gap-1.5"
+                  >
+                    {promptActionCopy.cta} <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
               {currentStop.clueAudio && audioGuideOpen && (
                 <div className="rounded-2xl bg-background/90 border border-border/70 p-3 space-y-2">
                   <audio
@@ -1003,7 +1061,7 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                   </div>
                 </div>
               )}
-              <div className="rounded-2xl bg-background/85 border border-border/70 p-3 space-y-3">
+              <div className="rounded-2xl bg-background/85 border border-border/70 p-2.5 space-y-2">
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <span className="text-sm text-muted-foreground flex-1 min-w-0">
@@ -1014,43 +1072,58 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
                       {isAtStop ? 'Close' : `${Math.round(distanceToCurrent)}m`}
                     </span>
                   )}
-                </div>
-                <div className={cn('grid gap-2', hasStopCoordinates ? 'grid-cols-3' : 'grid-cols-1')}>
-                  {hasStopCoordinates && (
-                    <button
-                      onClick={handleLocate}
-                      disabled={locating}
-                      className="min-w-0 h-12 rounded-xl bg-muted text-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-70"
-                      aria-label="Auto check in with GPS"
-                    >
-                      {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Locate className="w-4 h-4" />}
-                      <span>{locating ? 'GPS…' : 'GPS'}</span>
-                    </button>
-                  )}
                   <button
-                    onClick={() => setPhase('prompt')}
-                    className="min-w-0 h-12 rounded-xl bg-primary text-primary-foreground text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
-                    aria-label="Manual check in"
+                    onClick={() => setShowLocationMenu(open => !open)}
+                    className="h-9 px-3 rounded-full bg-foreground text-background text-xs font-black tap-highlight flex items-center gap-1.5 shrink-0"
+                    aria-expanded={showLocationMenu}
+                    aria-label="Open location actions"
                   >
-                    <MapPin className="w-4 h-4" />
-                    <span>I'm here</span>
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Go</span>
+                    <ChevronRight className={cn('w-3.5 h-3.5 transition-transform', showLocationMenu && 'rotate-90')} />
                   </button>
-                  {hasStopCoordinates && (
-                    <button
-                      onClick={() => setShowARGuide(true)}
-                      className="min-w-0 h-12 rounded-xl bg-black text-white text-[11px] font-bold tap-highlight flex flex-col items-center justify-center gap-0.5"
-                      aria-label="Open AR arrow guide"
-                    >
-                      <Navigation className="w-4 h-4" />
-                      <span>AR</span>
-                    </button>
-                  )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {hasStopCoordinates
-                    ? 'GPS can auto-check in. "I\'m here" skips GPS.'
-                    : 'No map pin for this stop yet. Manual check-in is available.'}
-                </p>
+                {showLocationMenu && (
+                  <div className={cn('grid gap-1.5 border-t border-border/60 pt-2', hasStopCoordinates ? 'grid-cols-4' : 'grid-cols-2')}>
+                    {hasStopCoordinates && (
+                      <button
+                        onClick={handleLocate}
+                        disabled={locating}
+                        className="min-w-0 h-10 rounded-xl bg-muted text-foreground text-[10px] font-black tap-highlight flex flex-col items-center justify-center gap-0.5 disabled:opacity-70"
+                        aria-label="Auto check in with GPS"
+                      >
+                        {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Locate className="w-3.5 h-3.5" />}
+                        <span>{locating ? 'GPS…' : 'GPS'}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={openMapsNavigation}
+                      className="min-w-0 h-10 rounded-xl bg-muted text-foreground text-[10px] font-black tap-highlight flex flex-col items-center justify-center gap-0.5"
+                      aria-label="Open map navigation"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>Maps</span>
+                    </button>
+                    <button
+                      onClick={() => setPhase('prompt')}
+                      className="min-w-0 h-10 rounded-xl bg-primary text-primary-foreground text-[10px] font-black tap-highlight flex flex-col items-center justify-center gap-0.5"
+                      aria-label="Manual check in"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Here</span>
+                    </button>
+                    {hasStopCoordinates && (
+                      <button
+                        onClick={() => setShowARGuide(true)}
+                        className="min-w-0 h-10 rounded-xl bg-black text-white text-[10px] font-black tap-highlight flex flex-col items-center justify-center gap-0.5"
+                        aria-label="Open AR arrow guide"
+                      >
+                        <Target className="w-3.5 h-3.5" />
+                        <span>AR</span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               {/* Parent hint — co-pilot mode */}
               {currentStop.parentHint && showParentHint && (
@@ -1067,9 +1140,10 @@ export default function HuntPlay({ huntSlug, raceOverlay, onRaceProgress }: Hunt
         {/* PROMPT phase */}
         {phase === 'prompt' && currentStop && (
           <div className="space-y-4">
-            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5 space-y-1">
-              <p className="text-xs font-black uppercase tracking-widest text-primary">Action to do</p>
-              <h2 className="text-xl font-bold leading-tight">{currentStop.prompt.question}</h2>
+            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5 space-y-2">
+              <p className="text-xs font-black uppercase tracking-widest text-primary">Task</p>
+              <h2 className="text-xl font-black leading-tight">{promptActionCopy?.title ?? 'Action to do'}</h2>
+              <p className="text-sm font-semibold leading-snug text-foreground/85">{currentStop.prompt.question}</p>
               <p className="text-xs text-muted-foreground">
                 This is the task/question for this stop. Complete it, then the app reveals any extra story.
               </p>

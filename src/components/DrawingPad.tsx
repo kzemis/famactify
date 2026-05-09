@@ -183,26 +183,28 @@ export default function DrawingPad({ subject, onChange, initialDataUrl, aspect =
             style={{ background: c }}
           />
         ))}
-        <span className="w-px h-6 bg-border mx-1" />
+        <span className={cn('w-px h-6 mx-1', immersive ? 'bg-white/30' : 'bg-border')} />
         <button
           onClick={() => setTool('eraser')}
           className={cn(
             'h-8 px-3 rounded-full border text-xs font-medium flex items-center gap-1 tap-highlight',
-            tool === 'eraser' ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background',
+            tool === 'eraser'
+              ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+              : 'border-white/70 bg-white text-slate-950 shadow-sm',
           )}
         >
           <Eraser className="w-3.5 h-3.5" /> Eraser
         </button>
         <button
           onClick={undo}
-          className="h-8 px-3 rounded-full border border-border text-xs font-medium flex items-center gap-1 bg-background tap-highlight"
+          className="h-8 px-3 rounded-full border border-white/70 text-xs font-medium flex items-center gap-1 bg-white text-slate-950 shadow-sm tap-highlight"
         >
           <Undo2 className="w-3.5 h-3.5" /> Undo
         </button>
         <button
           onClick={clear}
           disabled={!hasContent}
-          className="h-8 px-3 rounded-full border border-border text-xs font-medium flex items-center gap-1 bg-background tap-highlight disabled:opacity-50"
+          className="h-8 px-3 rounded-full border border-white/70 text-xs font-medium flex items-center gap-1 bg-white text-slate-950 shadow-sm tap-highlight disabled:opacity-50"
         >
           <Trash2 className="w-3.5 h-3.5" /> Clear
         </button>

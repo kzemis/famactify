@@ -2,6 +2,8 @@ import type { ScavengerHunt } from '@/types/hunt';
 
 const shipyardTimeTravelImageUrl =
   'https://upload.wikimedia.org/wikipedia/commons/c/c6/Shipbuilding_in_the_Kaiser_Shipyards_in_the_USA_during_the_Second_World_War_A12090.jpg';
+const rosiePortraitTimelineImageUrl =
+  'https://ca-times.brightspotcdn.com/dims4/default/9ce7182/2147483647/strip/true/crop/817x1024+0+0/resize/1200x1504!/format/webp/quality/75/?url=https%3A%2F%2Fcalifornia-times-brightspot.s3.amazonaws.com%2F01%2F82%2F9f987139a3227dfa0c013a3fbb12%2Fla-me-c1-rosie-riveter-pictures-005';
 
 export const richmondRosie: ScavengerHunt = {
   id: 'richmond-rosie',
@@ -31,9 +33,10 @@ export const richmondRosie: ScavengerHunt = {
     'https://www.nps.gov/places/ss-red-oak-victory-ship.htm',
     'https://www.nps.gov/rori/planyourvisit/rosie-the-riveter-memorial.htm',
     'https://commons.wikimedia.org/wiki/File:Shipbuilding_in_the_Kaiser_Shipyards_in_the_USA_during_the_Second_World_War_A12090.jpg',
+    rosiePortraitTimelineImageUrl,
   ],
   generationNotes:
-    'CityGame v1 seed update: focuses on the question “How did war work change women, families, and a city?” Uses existing prompt kinds only: multiple_choice, observation, time_travel_photo, audio, drawing, photo, and text. Field-verify exact walking order, current access, and best camera angle before publishing broadly.',
+    'CityGame v1 seed update: focuses on the question “How did war work change women, families, and a city?” Uses existing prompt kinds only: multiple_choice, observation, time_travel_photo, audio, drawing, photo, and text. Field-verify exact walking order, current access, and best camera angle before publishing broadly. The Rosie portrait timeline image is a user-provided LA Times CDN URL; verify usage rights or replace with a licensed/public-domain source before broad public release.',
   stops: [
     {
       id: 'rosie-visitor-center-poster',
@@ -64,8 +67,34 @@ export const richmondRosie: ScavengerHunt = {
       },
     },
     {
-      id: 'rosie-real-workers-grounding',
+      id: 'rosie-portrait-full-story',
       order: 1,
+      title: 'Rosie then / you now',
+      lat: 37.9032,
+      lon: -122.3659,
+      address: '1414 Harbour Way South #3000, Richmond, CA 94804',
+      clueText:
+        'Stay near the Visitor Center story displays. This time, do not only look at the famous icon — put your own face into the story and ask what work is worth remembering now.',
+      parentHint:
+        'Use Full Story mode so the captured memory includes three layers: today’s place, the old Rosie reference image, and the child/family selfie. This is the emotional “history meets us” moment.',
+      prompt: {
+        kind: 'time_travel_photo',
+        question:
+          'Create a Full Story timeline photo: capture today’s place, add your selfie, and place the old Rosie image beside the now photo.',
+        photoSubject: 'Rosie reference image with today’s Visitor Center memory and selfie',
+        timeTravelImageUrl: rosiePortraitTimelineImageUrl,
+        timeTravelCaption:
+          'Rosie/Riveter reference image provided by user via Los Angeles Times CDN. Rights must be verified or replaced with a licensed source before public release.',
+        timeTravelOpacity: 0.5,
+      },
+      reveal: {
+        funFact:
+          'The power of Rosie is not only the old image. It is the question it asks today: whose work is visible, whose work is hidden, and what story would your family want future kids to remember?',
+      },
+    },
+    {
+      id: 'rosie-real-workers-grounding',
+      order: 2,
       title: 'Real workers, real families',
       lat: 37.9032,
       lon: -122.3659,
@@ -86,7 +115,7 @@ export const richmondRosie: ScavengerHunt = {
     },
     {
       id: 'rosie-shipyard-time-travel',
-      order: 2,
+      order: 3,
       title: 'Shipyard then / waterfront now',
       lat: 37.9032,
       lon: -122.3659,
@@ -112,7 +141,7 @@ export const richmondRosie: ScavengerHunt = {
     },
     {
       id: 'red-oak-victory-sound',
-      order: 3,
+      order: 4,
       title: 'SS Red Oak Victory: what did work sound like?',
       lat: 37.917,
       lon: -122.3603,
@@ -135,7 +164,7 @@ export const richmondRosie: ScavengerHunt = {
     },
     {
       id: 'rosie-memorial-draw-the-work',
-      order: 4,
+      order: 5,
       title: 'Rosie Memorial: draw the work',
       lat: 37.9072,
       lon: -122.3611,
@@ -157,7 +186,7 @@ export const richmondRosie: ScavengerHunt = {
     },
     {
       id: 'rosie-pose-memory-photo',
-      order: 5,
+      order: 6,
       title: 'Make your own Rosie memory',
       lat: 37.9072,
       lon: -122.3611,
@@ -179,7 +208,7 @@ export const richmondRosie: ScavengerHunt = {
     },
     {
       id: 'rosie-family-time-capsule',
-      order: 6,
+      order: 7,
       title: 'Family time capsule',
       lat: null,
       lon: null,

@@ -1,10 +1,14 @@
 import type { ScavengerHunt } from '@/types/hunt';
 
+const shipyardTimeTravelImageUrl =
+  'https://upload.wikimedia.org/wikipedia/commons/c/c6/Shipbuilding_in_the_Kaiser_Shipyards_in_the_USA_during_the_Second_World_War_A12090.jpg';
+
 export const richmondRosie: ScavengerHunt = {
   id: 'richmond-rosie',
   slug: 'richmond-rosie-the-riveter',
   title: 'Rosie the Riveter — Richmond Home Front Hunt',
-  blurb: 'During WWII, more than 90,000 people came to Richmond to build Liberty ships. Most of them were women. Walk where they walked, see one of their ships, and meet Rosie.',
+  blurb:
+    'How did war work change women, families, and a city? Walk Richmond’s WWII waterfront, meet the real people behind Rosie, and make your own family memory.',
   coverEmoji: '💪',
   hostName: 'FamActify Original',
   city: 'Richmond',
@@ -15,21 +19,37 @@ export const richmondRosie: ScavengerHunt = {
   durationMinutes: 180,
   difficulty: 'medium',
   estCostCents: 0,
-  distanceMeters: 2500,
+  distanceMeters: 3500,
   publishedAt: '2026-05-02',
-  credits: 'Anchored on Rosie the Riveter / WWII Home Front National Historical Park (NPS). Inspired by David\'s 1982 Brockton CityGames philosophy: history is everyday people, their jobs, and lives.',
+  credits:
+    'Anchored on Rosie the Riveter / WWII Home Front National Historical Park (NPS). Inspired by David Riemer’s Brockton CityGames philosophy: history is everyday people, their jobs, and lives.',
+  sourceLinks: [
+    'https://www.nps.gov/rori/index.htm',
+    'https://www.nps.gov/rori/learn/historyculture/who-was-rosie-the-riveter.htm',
+    'https://www.nps.gov/rori/learn/historyculture/historic-richmond-shipyards.htm',
+    'https://www.nps.gov/places/rosie-the-riveter-visitor-education-center.htm',
+    'https://www.nps.gov/places/ss-red-oak-victory-ship.htm',
+    'https://www.nps.gov/rori/planyourvisit/rosie-the-riveter-memorial.htm',
+    'https://commons.wikimedia.org/wiki/File:Shipbuilding_in_the_Kaiser_Shipyards_in_the_USA_during_the_Second_World_War_A12090.jpg',
+  ],
+  generationNotes:
+    'CityGame v1 seed update: focuses on the question “How did war work change women, families, and a city?” Uses existing prompt kinds only: multiple_choice, observation, time_travel_photo, audio, drawing, photo, and text. Field-verify exact walking order, current access, and best camera angle before publishing broadly.',
   stops: [
     {
-      id: 'rosie-visitor-center',
+      id: 'rosie-visitor-center-poster',
       order: 0,
-      title: 'Rosie the Riveter / WWII Home Front National Historical Park — Visitor Education Center',
+      title: 'The poster: was Rosie real?',
       lat: 37.9032,
       lon: -122.3659,
       address: '1414 Harbour Way South #3000, Richmond, CA 94804',
-      clueText: 'Inside this old Ford assembly building, find the giant "We Can Do It!" poster. Look at the woman in the red bandana. Most people thought for 70 years that we knew her name. In 2016 a researcher proved otherwise. The real woman worked here in the Bay Area, at Naval Air Station Alameda. What was her name?',
+      clueText:
+        'Start inside the Visitor Education Center. Find the famous “We Can Do It!” poster. Look closely before answering: was Rosie one real person, or a symbol for many people?',
+      parentHint:
+        'Ask: when one poster becomes famous, whose names can disappear behind the symbol?',
       prompt: {
         kind: 'multiple_choice',
-        question: 'Who is now believed to be the real-life Rosie behind the "We Can Do It!" poster?',
+        question:
+          'Who is now believed to be the real-life inspiration behind the “We Can Do It!” poster?',
         options: [
           'Naomi Parker Fraley',
           'Geraldine Hoff Doyle',
@@ -39,76 +59,143 @@ export const richmondRosie: ScavengerHunt = {
         correctAnswers: ['Naomi Parker Fraley'],
       },
       reveal: {
-        funFact: '"Rosie the Riveter" was never one person — she was a symbol for the millions of women who took factory and shipyard jobs during WWII. Naomi Parker Fraley worked at Naval Air Station Alameda. She was identified as the inspiration for J. Howard Miller\'s 1943 "We Can Do It!" poster by Prof. James Kimble in 2016. She passed away in 2018, age 96.',
+        funFact:
+          '“Rosie the Riveter” was never only one person. She became a symbol for millions of women who took factory, shipyard, and defense jobs during WWII. Naomi Parker Fraley worked at Naval Air Station Alameda and is now widely linked to the “We Can Do It!” poster.',
       },
     },
     {
-      id: 'rosie-visitor-grounding',
+      id: 'rosie-real-workers-grounding',
       order: 1,
-      title: 'Home Front Grounding',
+      title: 'Real workers, real families',
       lat: 37.9032,
       lon: -122.3659,
       address: '1414 Harbour Way South #3000, Richmond, CA 94804',
-      clueText: 'Before heading to the ship, find three home-front clues: a worker photo, tool, poster, shipyard map, timeline, or everyday object.',
-      parentHint: 'This is a grounding stop inside/near the visitor centre. Ask: what shows that real people worked here, not just “history” in a book?',
+      clueText:
+        'The poster is only the doorway. Now hunt for real life: one worker face, one object or tool, and one word about family, migration, childcare, housing, or work.',
+      parentHint:
+        'This is the “make history human” stop. Ask what feels more real than the poster: a face, a tool, a map, a lunchbox, a child-care story, or a worker name.',
       prompt: {
         kind: 'observation',
-        question: 'Notice three clues that show real wartime workers and families were here.',
+        question:
+          'Find three clues that show real wartime workers and families were here: one face, one object, and one word.',
       },
       reveal: {
-        funFact: 'The Richmond Home Front story is about ordinary people doing extraordinary work: building ships, running childcare, moving to new jobs, and changing what work looked like for women and families.',
+        funFact:
+          'Richmond grew fast during WWII because work pulled people here. Families moved, schools and housing changed, child-care centers mattered, and women took jobs that many people had said were “not women’s work.”',
       },
     },
     {
-      id: 'red-oak-victory',
+      id: 'rosie-shipyard-time-travel',
       order: 2,
-      title: 'SS Red Oak Victory ship',
-      lat: 37.9170,
+      title: 'Shipyard then / waterfront now',
+      lat: 37.9032,
+      lon: -122.3659,
+      address: 'Ford Point / Craneway waterfront, near the Visitor Education Center',
+      clueText:
+        'Step outside toward the waterfront. Hold up the old Richmond shipyard image and compare it with today: what stayed industrial, what became quiet, and where would thousands of workers have moved?',
+      parentHint:
+        'Use “Full Story” mode if possible so the final memory includes today’s place, the historical shipyard image, and a selfie. Exact alignment is less important than noticing what changed.',
+      prompt: {
+        kind: 'time_travel_photo',
+        question:
+          'Take a timeline photo: line up the old shipbuilding image with today’s waterfront, then use Full Story mode if you want your selfie in the memory.',
+        photoSubject: 'Richmond shipyard then-and-now comparison',
+        timeTravelImageUrl: shipyardTimeTravelImageUrl,
+        timeTravelCaption:
+          'Liberty ship section being moved at Richmond Shipyard No. 2 during WWII. Public-domain image via Wikimedia Commons / Imperial War Museums.',
+        timeTravelOpacity: 0.48,
+      },
+      reveal: {
+        funFact:
+          'Richmond’s shipyards did not build one ship at a time in the old slow way. Workers built big sections separately, moved them with cranes, and assembled ships fast — like a city-sized puzzle.',
+      },
+    },
+    {
+      id: 'red-oak-victory-sound',
+      order: 3,
+      title: 'SS Red Oak Victory: what did work sound like?',
+      lat: 37.917,
       lon: -122.3603,
       address: '1337 Canal Boulevard, Richmond, CA 94804',
-      clueText: 'Find the Red Oak Victory — a real cargo ship built right here in 1944. The Kaiser Shipyards built ONE Liberty ship every WEEK using new fast-welding techniques invented in Richmond. How many ships did they build during the war?',
+      clueText:
+        'Find the Red Oak Victory — a real cargo ship built here in 1944. Pause and listen. Imagine cranes, welding, footsteps, voices, water, and metal.',
+      parentHint:
+        'If the ship area is closed or too far today, use the waterfront soundscape near the visitor center and talk about what the working shipyard might have sounded like.',
       prompt: {
         kind: 'audio',
-        question: 'Record 5 seconds of harbour/shipyard sound — wind, water, footsteps, or your own “clang clang” shipbuilding sound.',
-        audioSubject: 'Harbour, wind, water, footsteps, or a pretend shipbuilding clang',
+        question:
+          'Record 5 seconds of harbor or shipyard sound — wind, water, footsteps, or your own “clang clang” shipbuilding sound.',
+        audioSubject: 'Harbor, wind, water, footsteps, or a pretend shipbuilding clang',
         audioMaxSeconds: 5,
       },
       reveal: {
-        funFact: 'The four Kaiser Shipyards in Richmond built 747 ships during WWII — more than any other shipyard complex in the world. Workers were so fast that one Liberty ship was built and launched in only 4 days, 15 hours, and 26 minutes — a record that still stands.',
+        funFact:
+          'The four Richmond Kaiser shipyards built 747 ships during WWII — more than any other shipyard complex in the world. Richmond became a place where speed, work, migration, and family life all collided.',
       },
     },
     {
-      id: 'rosie-memorial',
-      order: 3,
-      title: 'Rosie the Riveter Memorial',
+      id: 'rosie-memorial-draw-the-work',
+      order: 4,
+      title: 'Rosie Memorial: draw the work',
       lat: 37.9072,
       lon: -122.3611,
       address: 'Marina Bay Park, 1900 Esplanade Drive, Richmond, CA 94804',
-      clueText: 'Walk along the bay to the Rosie the Riveter Memorial — a long sculpture shaped like a Liberty ship under construction. Read the timeline panels along it. Find the year a single Liberty ship was built and launched in less than 5 days.',
+      clueText:
+        'Walk the Rosie the Riveter Memorial. It is shaped like a Liberty ship under construction. Look for lines, names, dates, and forms that make work visible.',
+      parentHint:
+        'Ask: why would a memorial to women’s work be shaped like a ship? What kind of work usually gets monuments, and what kind does not?',
       prompt: {
         kind: 'drawing',
-        question: 'Draw the outline of a Liberty ship or one timeline shape you notice at the memorial.',
-        drawingSubject: 'A Liberty ship outline, rivet, timeline mark, or memorial shape',
+        question:
+          'Draw the outline of a Liberty ship, a rivet, a timeline mark, a worker tool, or one shape you notice at the memorial.',
+        drawingSubject: 'A Liberty ship outline, rivet, timeline mark, worker tool, or memorial shape',
       },
       reveal: {
-        funFact: 'The SS Robert E. Peary was launched in 1942 as a publicity stunt to prove the Kaiser shipyards\' speed. The keel was laid on November 8 at 12:01 AM; the ship slid into the water on November 12 at 3:27 PM — 4 days, 15 hours, 26 minutes. Most of the welders were women.',
+        funFact:
+          'The Rosie Memorial was created to honor women’s labor on the Home Front. Its walkway is the length of a ship’s keel and points toward the Bay, turning industrial work into a place for memory.',
       },
     },
     {
-      id: 'rosie-photo',
-      order: 4,
-      title: "Strike a Rosie pose",
+      id: 'rosie-pose-memory-photo',
+      order: 5,
+      title: 'Make your own Rosie memory',
       lat: 37.9072,
       lon: -122.3611,
       address: 'Rosie the Riveter Memorial, Marina Bay Park',
-      clueText: "End the hunt with a photo. Roll up your sleeve, make a fist, give your best 'We Can Do It!' face. (Yes, grown-ups too.)",
+      clueText:
+        'End the place-walk with a photo. You can do the classic Rosie arm pose, or invent a pose for “work worth remembering” in your own family.',
+      parentHint:
+        'Keep it playful. The point is not copying the poster perfectly — it is turning the icon into a family memory.',
       prompt: {
         kind: 'photo',
-        question: 'Take a Rosie-pose photo together to remember the hunt.',
-        photoSubject: 'Rosie the Riveter pose',
+        question:
+          'Take a Rosie-pose or family-work photo together to remember the hunt.',
+        photoSubject: 'Rosie pose, family work pose, or “we can do it” memory',
       },
       reveal: {
-        funFact: 'The phrase "We Can Do It!" was barely seen during WWII — the poster was internal Westinghouse motivation only, displayed for 2 weeks in 1943. It was rediscovered in the 1980s and became the icon of women\'s empowerment we know today, decades after Rosie\'s real generation had retired.',
+        funFact:
+          'The “We Can Do It!” poster was not famous during WWII. It was rediscovered decades later and became a symbol of women’s empowerment long after the wartime workers had changed the country.',
+      },
+    },
+    {
+      id: 'rosie-family-time-capsule',
+      order: 6,
+      title: 'Family time capsule',
+      lat: null,
+      lon: null,
+      clueText:
+        'Before you leave, connect Richmond’s work story to your own family. Think of one job, skill, migration story, caregiving task, or ordinary act that deserves to be remembered.',
+      parentHint:
+        'This is the Brockton CityGame-style ending: history becomes personal. Ask the child what future kids should know about today’s family work.',
+      prompt: {
+        kind: 'text',
+        question:
+          'Write one sentence for a family time capsule: “In our family, work worth remembering is…”',
+        correctAnswers: [],
+      },
+      reveal: {
+        funFact:
+          'A city is not only buildings and dates. It is people solving practical problems: earning money, caring for children, moving for work, learning skills, and making something together.',
       },
     },
   ],

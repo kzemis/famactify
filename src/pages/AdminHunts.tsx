@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Plus, AlertCircle, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
+import { Plus, AlertCircle, Image as ImageIcon, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { huntsService } from '@/services/huntsService';
 import { authService } from '@/services';
 import { AdminPageShell, adminActionClass, adminPillClass } from '@/components/admin/AdminPageShell';
@@ -32,37 +32,66 @@ export default function AdminHunts() {
   const [region, setRegion] = useState<RegionFilter>('all');
   const [hunts, setHunts] = useState<AdminHunt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const u = await authService.getCurrentUser();
-      if (!u) { navigate('/auth'); return; }
-      setLoading(true);
-      const list = await huntsService.listAllHunts({
-        status: tab === 'all' ? undefined : tab,
-        countryCode: region === 'all' ? undefined : region,
-      });
-      setHunts(list);
-      setLoading(false);
-    })();
+  const loadHunts = useCallback(async () => {
+    const u = await authService.getCurrentUser();
+    if (!u) { navigate('/auth'); return; }
+    setLoading(true);
+    const list = await huntsService.listAllHunts({
+      status: tab === 'all' ? undefined : tab,
+      countryCode: region === 'all' ? undefined : region,
+    });
+    setHunts(list);
+    setLoading(false);
   }, [tab, region, navigate]);
 
-  const deleteHunt = async (hunt: AdminHunt) => {
-    if (hunt.adminSource === 'seed') {
-      toast.message('Seed city games live in code. Open and save it first to create an editable DB copy.');
-      return;
+  useEffect(() => {
+    loadHunts();
+  }, [loadHunts]);
+
+  const refreshAfterAction = async () => {
+    await loadHunts();
+  };
+
+  const toggleHuntEnabled = async (hunt: AdminHunt) => {
+    const isPublished = hunt.status === 'published';
+    const verb = isPublished ? 'disable' : 'enable';
+    const resultCopy = isPublished
+      ? 'This hides it from public City Games but keeps it available in admin.'
+      : 'This publishes/restores it in public City Games.';
+    if (!window.confirm(`${isPublished ? 'Disable' : 'Enable'} "${hunt.title || 'this city game'}"? ${resultCopy}`)) return;
+    setBusyId(hunt.id);
+    try {
+      if (isPublished) {
+        await huntsService.disableHunt(hunt.id);
+        toast.success('City game disabled');
+      } else {
+        await huntsService.enableHunt(hunt.id);
+        toast.success('City game enabled');
+      }
+      await refreshAfterAction();
+    } catch (error: any) {
+      toast.error(error?.message || `Failed to ${verb} city game`);
+    } finally {
+      setBusyId(null);
     }
-    if (!window.confirm(`Delete "${hunt.title || 'this city game'}"? This removes the city game, steps, sponsors, and attempts. This cannot be undone.`)) return;
-    setDeletingId(hunt.id);
+  };
+
+  const deleteHunt = async (hunt: AdminHunt) => {
+    const seedCopy = hunt.adminSource === 'seed'
+      ? 'This hides the code-backed seed template persistently. To restore it later, clear the seed override in Supabase.'
+      : 'This removes the database row, steps, sponsors, and attempts.';
+    if (!window.confirm(`Delete "${hunt.title || 'this city game'}"? ${seedCopy} This cannot be undone from this page.`)) return;
+    setBusyId(hunt.id);
     try {
       await huntsService.deleteHunt(hunt.id);
-      setHunts(prev => prev.filter(item => item.id !== hunt.id));
       toast.success('City game deleted');
+      await refreshAfterAction();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete city game');
     } finally {
-      setDeletingId(null);
+      setBusyId(null);
     }
   };
 
@@ -130,45 +159,65 @@ export default function AdminHunts() {
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-pink-100 flex items-center justify-center text-2xl shrink-0">{h.coverEmoji}</div>
                 <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <p className="font-semibold text-sm truncate">{h.title || '(untitled)'}</p>
-                  {tab === 'all' && statusMeta && statusMeta.key !== 'all' && (
-                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0', statusMeta.color)}>
-                      {statusMeta.label}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-semibold text-sm truncate">{h.title || '(untitled)'}</p>
+                    {tab === 'all' && statusMeta && statusMeta.key !== 'all' && (
+                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0', statusMeta.color)}>
+                        {statusMeta.label}
+                      </span>
+                    )}
+                    {h.adminSource === 'seed' && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 bg-sky-100 text-sky-800">
+                        Seed
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {h.hostName} · {country?.flag ?? '🏳️'} {h.city} · {h.countryCode} · {h.stops.length} steps
+                  </p>
                   {h.adminSource === 'seed' && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 bg-sky-100 text-sky-800">
-                      Seed
-                    </span>
+                    <p className={cn('text-[11px] truncate mt-0.5', h.status === 'draft' ? 'text-amber-700' : 'text-sky-700')}>
+                      {h.status === 'draft'
+                        ? 'Disabled code-backed template — hidden from public City Games.'
+                        : 'Code-backed template — opening it lets admin create an editable DB copy.'}
+                    </p>
                   )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {h.hostName} · {country?.flag ?? '🏳️'} {h.city} · {h.countryCode} · {h.stops.length} steps
-                </p>
-                {h.adminSource === 'seed' && (
-                  <p className="text-[11px] text-sky-700 truncate mt-0.5">
-                    Code-backed template — opening it lets admin create an editable DB copy.
-                  </p>
-                )}
-                {h.reviewNotes && (
-                  <p className="text-[11px] text-rose-600 truncate mt-0.5 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3 shrink-0" /> {h.reviewNotes}
-                  </p>
-                )}
+                  {h.reviewNotes && (
+                    <p className="text-[11px] text-rose-600 truncate mt-0.5 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" /> {h.reviewNotes}
+                    </p>
+                  )}
                 </div>
               </button>
-              {h.adminSource === 'db' && (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => toggleHuntEnabled(h)}
+                  disabled={busyId === h.id}
+                  className={cn(
+                    'w-10 h-10 rounded-full flex items-center justify-center tap-highlight disabled:opacity-60',
+                    h.status === 'published'
+                      ? 'border bg-background text-muted-foreground hover:bg-muted'
+                      : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+                  )}
+                  aria-label={`${h.status === 'published' ? 'Disable' : 'Enable'} ${h.title || 'city game'}`}
+                >
+                  {busyId === h.id
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : h.status === 'published'
+                      ? <EyeOff className="w-4 h-4" />
+                      : <Eye className="w-4 h-4" />}
+                </button>
                 <button
                   type="button"
                   onClick={() => deleteHunt(h)}
-                  disabled={deletingId === h.id}
-                  className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 tap-highlight shrink-0 disabled:opacity-60"
+                  disabled={busyId === h.id}
+                  className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 tap-highlight disabled:opacity-60"
                   aria-label={`Delete ${h.title || 'city game'}`}
                 >
-                  {deletingId === h.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {busyId === h.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
-              )}
+              </div>
             </div>
           );
         })

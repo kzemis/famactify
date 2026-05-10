@@ -39,6 +39,12 @@ export type AdminHuntListItem = ScavengerHunt & {
   seedId?: string;
 };
 
+type SeedHuntOverride = {
+  seed_slug: string;
+  disabled: boolean;
+  deleted_at: string | null;
+};
+
 // ── localStorage fallback for guest attempts ─────────────────────────────────
 const ATTEMPTS_KEY = 'famactify-hunt-attempts';
 const SEED_ADMIN_ID_PREFIX = 'seed:';
@@ -72,13 +78,74 @@ function findSeedHuntByEditableId(id: string): ScavengerHunt | null {
   return SEED_HUNTS.find(h => h.id === id || h.slug === id) ?? null;
 }
 
-function mapSeedAdminHunt(hunt: ScavengerHunt, preservePublicId = false): AdminHuntListItem {
+function seedOverrideTableMissing(error: any): boolean {
+  const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''} ${error?.code ?? ''}`;
+  return text.includes('hunt_seed_overrides') && (
+    text.includes('schema cache')
+    || text.includes('does not exist')
+    || text.includes('PGRST205')
+    || text.includes('42P01')
+  );
+}
+
+async function listSeedOverrides(): Promise<Map<string, SeedHuntOverride>> {
+  const { data, error } = await (supabase as any)
+    .from('hunt_seed_overrides')
+    .select('seed_slug,disabled,deleted_at');
+  if (error) {
+    if (!seedOverrideTableMissing(error)) console.warn('[huntsService.listSeedOverrides]', error.message);
+    return new Map();
+  }
+  return new Map((data ?? []).map((row: SeedHuntOverride) => [row.seed_slug, row]));
+}
+
+async function getSeedOverride(slug: string): Promise<SeedHuntOverride | null> {
+  const { data, error } = await (supabase as any)
+    .from('hunt_seed_overrides')
+    .select('seed_slug,disabled,deleted_at')
+    .eq('seed_slug', slug)
+    .maybeSingle();
+  if (error) {
+    if (!seedOverrideTableMissing(error)) console.warn('[huntsService.getSeedOverride]', error.message);
+    return null;
+  }
+  return data ?? null;
+}
+
+function seedIsDeleted(override?: SeedHuntOverride | null): boolean {
+  return !!override?.deleted_at;
+}
+
+function seedIsPublic(override?: SeedHuntOverride | null): boolean {
+  return !override?.disabled && !seedIsDeleted(override);
+}
+
+function seedAdminStatus(override?: SeedHuntOverride | null): 'published' | 'draft' {
+  return override?.disabled ? 'draft' : 'published';
+}
+
+async function upsertSeedOverride(slug: string, patch: Partial<Pick<SeedHuntOverride, 'disabled' | 'deleted_at'>>): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  const payload = {
+    seed_slug: slug,
+    disabled: patch.disabled ?? false,
+    deleted_at: patch.deleted_at ?? null,
+    updated_at: new Date().toISOString(),
+    updated_by: userData.user?.id ?? null,
+  };
+  const { error } = await (supabase as any)
+    .from('hunt_seed_overrides')
+    .upsert(payload, { onConflict: 'seed_slug' });
+  if (error) throw error;
+}
+
+function mapSeedAdminHunt(hunt: ScavengerHunt, preservePublicId = false, override?: SeedHuntOverride | null): AdminHuntListItem {
   return {
     ...hunt,
     id: preservePublicId ? hunt.id : seedAdminId(hunt.slug),
-    status: 'published',
+    status: seedAdminStatus(override),
     createdBy: null,
-    reviewNotes: null,
+    reviewNotes: override?.disabled ? 'Disabled seed template — hidden from public City Games.' : null,
     adminSource: 'seed',
     seedId: hunt.id,
   };
@@ -327,7 +394,10 @@ function promptMetadata(prompt: HuntPrompt): Record<string, unknown> {
 export const huntsService = {
   /** Public — list published hunts. Merges DB rows with seed data by slug. */
   async listHunts(opts: { countryCode?: string } = {}): Promise<ScavengerHunt[]> {
-    const seedHunts = SEED_HUNTS.filter(h => !opts.countryCode || h.countryCode === opts.countryCode);
+    const seedOverrides = await listSeedOverrides();
+    const seedHunts = SEED_HUNTS
+      .filter(h => !opts.countryCode || h.countryCode === opts.countryCode)
+      .filter(h => seedIsPublic(seedOverrides.get(h.slug)));
 
     // Single query: public published rows OR own family-private rows.
     // PostgREST `.or()` with `and(...)` clauses is one round-trip vs the previous two.
@@ -397,7 +467,10 @@ export const huntsService = {
     }
     const { data } = await query.maybeSingle();
     if (data) return mapHuntRow(data, data.hunt_stops ?? [], data.hunt_sponsors ?? []);
-    return SEED_HUNTS.find(h => h.slug === slug) ?? null;
+    const seed = SEED_HUNTS.find(h => h.slug === slug) ?? null;
+    if (!seed) return null;
+    const override = await getSeedOverride(seed.slug);
+    return seedIsPublic(override) ? seed : null;
   },
 
   // ── Authoring (Phase 2) ────────────────────────────────────────────────────
@@ -417,10 +490,13 @@ export const huntsService = {
 
   /** Admin — list ALL hunts (any author, any status). RLS will filter to admin role in production. */
   async listAllHunts(opts: { status?: string; countryCode?: string; includeSeedHunts?: boolean } = {}): Promise<AdminHuntListItem[]> {
-    const includeSeeds = opts.includeSeedHunts !== false && (!opts.status || opts.status === 'published');
+    const includeSeeds = opts.includeSeedHunts !== false;
+    const seedOverrides = await listSeedOverrides();
     const seedHuntsForFilter = () => SEED_HUNTS
       .filter(h => !opts.countryCode || h.countryCode === opts.countryCode)
-      .map(h => mapSeedAdminHunt(h));
+      .map(h => mapSeedAdminHunt(h, false, seedOverrides.get(h.slug)))
+      .filter(h => !seedIsDeleted(seedOverrides.get(h.slug)))
+      .filter(h => !opts.status || h.status === opts.status);
 
     let query = supabase
       .from('hunts')
@@ -452,11 +528,12 @@ export const huntsService = {
   /** Get hunt by id including draft/pending state — for builder UI. */
   async getHuntById(id: string): Promise<AdminHuntListItem | null> {
     const seedByEditableId = findSeedHuntByEditableId(id);
+    const seedOverride = seedByEditableId ? await getSeedOverride(seedByEditableId.slug) : null;
     if (id.startsWith(SEED_ADMIN_ID_PREFIX)) {
-      return seedByEditableId ? mapSeedAdminHunt(seedByEditableId) : null;
+      return seedByEditableId && !seedIsDeleted(seedOverride) ? mapSeedAdminHunt(seedByEditableId, false, seedOverride) : null;
     }
     if (!isUuid(id)) {
-      return seedByEditableId ? mapSeedAdminHunt(seedByEditableId, true) : null;
+      return seedByEditableId && !seedIsDeleted(seedOverride) ? mapSeedAdminHunt(seedByEditableId, true, seedOverride) : null;
     }
 
     const { data, error } = await supabase
@@ -465,7 +542,7 @@ export const huntsService = {
       .eq('id', id)
       .maybeSingle();
     if (error) { console.error('[huntsService.getHuntById]', error); return null; }
-    if (!data) return seedByEditableId ? mapSeedAdminHunt(seedByEditableId, true) : null;
+    if (!data) return seedByEditableId && !seedIsDeleted(seedOverride) ? mapSeedAdminHunt(seedByEditableId, true, seedOverride) : null;
     return {
       ...mapHuntRow(data, data.hunt_stops ?? [], data.hunt_sponsors ?? []),
       status: data.status,
@@ -765,10 +842,86 @@ export const huntsService = {
     if (error) throw error;
   },
 
-  /** Delete a database-backed hunt. Admin RLS allows any hunt; author RLS allows own drafts. */
+  /** Admin disables/unpublishes a hunt. Seed templates are hidden through seed overrides. */
+  async disableHunt(id: string): Promise<void> {
+    const seed = findSeedHuntByEditableId(id);
+    if (seed && !isUuid(id)) {
+      await upsertSeedOverride(seed.slug, { disabled: true, deleted_at: null });
+      return;
+    }
+
+    const { data: existing, error: readError } = await supabase
+      .from('hunts')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+    if (readError) throw readError;
+
+    const { error } = await supabase
+      .from('hunts')
+      .update({ status: 'draft', published_at: null })
+      .eq('id', id);
+    if (error) throw error;
+
+    const matchingSeed = existing?.slug ? SEED_HUNTS.find(h => h.slug === existing.slug) : null;
+    if (matchingSeed) {
+      await upsertSeedOverride(matchingSeed.slug, { disabled: true, deleted_at: null });
+    }
+  },
+
+  /** Admin enables/publishes a hunt. Seed templates are restored through seed overrides. */
+  async enableHunt(id: string): Promise<void> {
+    const seed = findSeedHuntByEditableId(id);
+    if (seed && !isUuid(id)) {
+      await upsertSeedOverride(seed.slug, { disabled: false, deleted_at: null });
+      return;
+    }
+
+    const { data: existing, error: readError } = await supabase
+      .from('hunts')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+    if (readError) throw readError;
+
+    const { error } = await supabase
+      .from('hunts')
+      .update({
+        status: 'published',
+        published_at: new Date().toISOString(),
+        review_notes: null,
+      })
+      .eq('id', id);
+    if (error) throw error;
+
+    const matchingSeed = existing?.slug ? SEED_HUNTS.find(h => h.slug === existing.slug) : null;
+    if (matchingSeed) {
+      await upsertSeedOverride(matchingSeed.slug, { disabled: false, deleted_at: null });
+    }
+  },
+
+  /** Delete a database-backed hunt or persistently hide a code-backed seed hunt. */
   async deleteHunt(id: string): Promise<void> {
+    const seed = findSeedHuntByEditableId(id);
+    if (seed && !isUuid(id)) {
+      await upsertSeedOverride(seed.slug, { disabled: true, deleted_at: new Date().toISOString() });
+      return;
+    }
+
+    const { data: existing, error: readError } = await supabase
+      .from('hunts')
+      .select('slug')
+      .eq('id', id)
+      .maybeSingle();
+    if (readError) throw readError;
+
     const { error } = await supabase.from('hunts').delete().eq('id', id);
     if (error) throw error;
+
+    const matchingSeed = existing?.slug ? SEED_HUNTS.find(h => h.slug === existing.slug) : null;
+    if (matchingSeed) {
+      await upsertSeedOverride(matchingSeed.slug, { disabled: true, deleted_at: new Date().toISOString() });
+    }
   },
 
   // ── Hunt asset upload (storage bucket: 'hunt-assets') ─────────────────────

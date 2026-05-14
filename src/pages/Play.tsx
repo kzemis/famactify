@@ -1,18 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Footprints, Award, Trophy, Users, ArrowLeft } from 'lucide-react';
+import { MapPin, Clock, Users } from 'lucide-react';
 import { huntsService } from '@/services/huntsService';
-import CitygameCard from '@/components/CitygameCard';
+import { useCountry } from '@/i18n/CountryContext';
+import RegionPill from '@/components/RegionPill';
 
-const OTHER_MODES = [
-  { to: '/hunts',     icon: Footprints, label: 'All Hunts',  description: 'Browse the full catalog' },
-  { to: '/chores',    icon: Award,      label: 'Home Chores', description: 'Parent-built home hunts' },
-  { to: '/passport',  icon: Trophy,     label: 'Passport',    description: 'Track completed games' },
-  { to: '/race/join', icon: Users,      label: 'Race',        description: 'Multi-family live race' },
-];
+const DIFFICULTY_LABEL: Record<string, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+const DIFFICULTY_COLOR: Record<string, string> = {
+  easy:   'bg-emerald-100 text-emerald-700',
+  medium: 'bg-amber-100 text-amber-700',
+  hard:   'bg-rose-100 text-rose-700',
+};
 
+/**
+ * /play — focused list of FamActify-curated citygames.
+ * Filtered to host_name = 'FamActify Original' (see huntsService.listCitygames).
+ * Visual style mirrors /hunts so the two surfaces feel consistent.
+ */
 export default function Play() {
   const navigate = useNavigate();
+  const { country } = useCountry();
   const { data: games = [], isLoading } = useQuery({
     queryKey: ['citygames'],
     queryFn: () => huntsService.listCitygames(24),
@@ -20,83 +27,89 @@ export default function Play() {
   });
 
   return (
-    <div className="min-h-[100dvh] bg-background pb-20">
+    <div className="min-h-[100dvh] bg-background">
 
-      {/* Header */}
+      {/* Top bar */}
       <div
-        className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center gap-3"
+        className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 px-4 flex items-center"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: 12, minHeight: 56 }}
       >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-        </button>
-        <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-2xl">🗺️</span>
-          <h1 className="text-lg font-bold truncate">Play</h1>
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span className="text-2xl">🗺️</span>
+            <h1 className="text-lg font-bold truncate">Citygames</h1>
+            <span className="text-xs text-muted-foreground">· {games.length}</span>
+          </div>
+          <RegionPill compact />
         </div>
       </div>
 
-      {/* Hero blurb */}
-      <div className="px-4 pt-5 pb-1">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Place-based games and adventures for families. Go somewhere, discover something, make a memory.
-        </p>
-      </div>
-
-      {/* ── Citygames grid ── */}
-      <section className="px-4 pt-4">
-        <h2 className="text-base font-semibold mb-3">Citygames</h2>
+      <div className="px-4 pt-4 pb-tab-bar space-y-4">
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl bg-muted animate-pulse overflow-hidden">
-                <div className="h-28 bg-muted-foreground/10" />
-                <div className="p-3 space-y-2">
-                  <div className="h-2 w-10 rounded bg-muted-foreground/20" />
-                  <div className="h-3 w-full rounded bg-muted-foreground/20" />
-                  <div className="h-2 w-20 rounded bg-muted-foreground/15" />
-                </div>
-              </div>
+          <div className="space-y-3">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="h-44 rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : games.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-            <span className="text-4xl">🗺️</span>
-            <p className="font-semibold text-sm">No citygames yet</p>
-            <p className="text-xs text-muted-foreground max-w-xs">
-              Citygames are coming to your city soon. Check back or browse all hunts below.
+          <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
+            <span className="text-5xl">🗺️</span>
+            <p className="font-semibold">No citygames here yet</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Citygames are place-based mini-adventures — clue → place → action → story. We'll add some near you soon.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {games.map(g => (
-              <CitygameCard key={g.id} hunt={g} variant="grid" />
+          <>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Showing {country.name}. Place-based mini-adventures: clue → place → action → story.
+            </p>
+            {games.map(h => (
+              <button
+                key={h.id}
+                onClick={() => navigate(`/hunts/${h.slug}`)}
+                className="w-full text-left rounded-3xl border bg-card overflow-hidden shadow-sm tap-highlight active:scale-[0.99] transition-transform"
+              >
+                {/* Cover */}
+                <div className="relative h-36 bg-gradient-to-br from-primary/20 via-pink-100 to-amber-100 flex items-center justify-center overflow-hidden">
+                  {h.coverImage ? (
+                    <img
+                      src={h.coverImage}
+                      alt={h.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="text-6xl drop-shadow-sm">{h.coverEmoji}</span>
+                  )}
+                  <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-sm ${DIFFICULTY_COLOR[h.difficulty] ?? 'bg-muted text-muted-foreground'}`}>
+                    {DIFFICULTY_LABEL[h.difficulty] ?? h.difficulty}
+                  </span>
+                </div>
+                {/* Body */}
+                <div className="p-4 space-y-2">
+                  <div>
+                    <h3 className="font-bold text-base leading-tight">{h.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">by {h.hostName} · {h.city}</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-snug line-clamp-2">{h.blurb}</p>
+                  <div className="flex flex-wrap gap-2 pt-1 text-xs text-muted-foreground">
+                    {h.stops.length > 0 && (
+                      <>
+                        <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" />{h.stops.length} steps</span>
+                        <span>·</span>
+                      </>
+                    )}
+                    <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" />~{Math.round(h.durationMinutes / 60 * 10) / 10}h</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" />ages {h.ageMin}–{h.ageMax}</span>
+                  </div>
+                </div>
+              </button>
             ))}
-          </div>
+          </>
         )}
-      </section>
-
-      {/* ── Other play modes rail ── */}
-      <section className="px-4 mt-8">
-        <h2 className="text-base font-semibold mb-3">More play modes</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {OTHER_MODES.map(({ to, icon: Icon, label, description }) => (
-            <button
-              key={to}
-              onClick={() => navigate(to)}
-              className="flex flex-col items-start gap-1.5 p-4 rounded-xl border border-border/60 bg-card hover:bg-muted active:scale-[0.98] transition-all text-left min-h-[44px]"
-            >
-              <Icon className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold leading-tight">{label}</span>
-              <span className="text-xs text-muted-foreground leading-snug">{description}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
+      </div>
     </div>
   );
 }

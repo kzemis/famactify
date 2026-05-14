@@ -24,7 +24,6 @@ import { useFamilyMode } from '@/contexts/FamilyModeContext';
 import { activitiesService, authService, tripsService, curatedListsService, profileService, ACTIVITY_PAGE_SIZE as PAGE_SIZE, type ActivityFilters, type ActivitySpot, type CuratedList, type SlimActivity } from '@/services';
 import MoodSuggest, { type MoodFilters } from '@/components/MoodSuggest';
 import RegionPill from '@/components/RegionPill';
-import CitygamesRail from '@/components/CitygamesRail';
 import type { User } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
@@ -1686,9 +1685,6 @@ export default function CommunityActivities() {
           )}
         </div>
       )}
-
-      {/* ── Citygames rail (Option A) — hero surface above the activity feed ── */}
-      {viewMode === 'grid' && !isLittleExplorer && <CitygamesRail />}
 
       {/* ── Loading skeletons ── */}
       {loading && viewMode !== 'mood' && (

@@ -433,6 +433,34 @@ export const huntsService = {
     return [...myChores, ...publicDb, ...seedFill];
   },
 
+  /**
+   * Public — list FamActify-authored citygames.
+   * Filtered by host_name = 'FamActify Original'.
+   * See seed: 20260510_120000_seed_citygames_v1_polished.sql
+   * Falls back to in-memory seed if DB migration hasn't run yet.
+   */
+  async listCitygames(limit = 12): Promise<ScavengerHunt[]> {
+    const { data, error } = await supabase
+      .from('hunts')
+      .select('id, slug, title, blurb, cover_emoji, cover_image, host_name, city, country_code, age_min, age_max, duration_minutes, difficulty, published_at, created_at')
+      .eq('host_name', 'FamActify Original')
+      .eq('status', 'published')
+      .eq('visibility', 'public')
+      .order('published_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.warn('[huntsService.listCitygames] DB error, falling back to seed:', error.message);
+      return SEED_HUNTS.filter(h => h.hostName === 'FamActify Original').slice(0, limit);
+    }
+
+    const results = (data ?? []).map((row: any) => mapHuntRow(row, [], []));
+    if (results.length > 0) return results;
+
+    // Migration not yet applied — fall back to in-memory seed
+    return SEED_HUNTS.filter(h => h.hostName === 'FamActify Original').slice(0, limit);
+  },
+
   /** Parent — list current user's home-chore (family_private) hunts only. */
   async listMyHomeChores(): Promise<ScavengerHunt[]> {
     const { data: user } = await supabase.auth.getUser();

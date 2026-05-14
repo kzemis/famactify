@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Compass, BookMarked, Sparkles, User, CalendarDays, Lock } from 'lucide-react';
+import { Compass, BookMarked, Sparkles, User, CalendarDays, Lock, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
@@ -27,6 +27,7 @@ export default function BottomTabBar() {
     if (id === 'plan')     return pathname === '/plan' || (pathname === '/activities' && search.includes('view=plan'));
     if (id === 'saved')    return pathname === '/saved-trips';
     if (id === 'kids')     return pathname === '/kids';
+    if (id === 'play')     return pathname === '/play' || pathname.startsWith('/hunts');
     if (id === 'me')       return pathname === '/profile';
     return false;
   };
@@ -39,6 +40,7 @@ export default function BottomTabBar() {
     { id: 'plan',     label: 'Plan',        icon: CalendarDays, gated: false, reason: '',                 to: '/activities?view=plan' },
     { id: 'saved',    label: 'Trips',       icon: BookMarked,   gated: true,  reason: 'save your trips',  to: '/saved-trips'          },
     { id: 'kids',     label: 'Mode',        icon: Sparkles,     gated: false, reason: '',                 to: '/kids'                 },
+    { id: 'play',     label: 'Play',        icon: Gamepad2,     gated: false, reason: '',                 to: '/play'                 },
     { id: 'me',       label: 'Me',          icon: User,         gated: true,  reason: 'see your profile', to: '/profile'              },
   ] as const;
 

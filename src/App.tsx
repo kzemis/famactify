@@ -56,6 +56,7 @@ const OrgSetup           = lazy(() => import("./pages/OrgSetup"));
 const OrgDashboard       = lazy(() => import("./pages/OrgDashboard"));
 const OrgListEdit        = lazy(() => import("./pages/OrgListEdit"));
 import KasparsPage from "./pages/KasparsPage";
+import Play from "./pages/Play";
 import Hunts from "./pages/Hunts";
 import HuntDetail from "./pages/HuntDetail";
 import HuntPlay from "./pages/HuntPlay";
@@ -76,7 +77,7 @@ const DuoPlay           = lazy(() => import("./pages/DuoPlay"));
 
 const queryClient = new QueryClient();
 
-const TAB_ROUTES = ['/', '/activities', '/plan', '/saved-trips', '/kids', '/profile', '/hunts'];
+const TAB_ROUTES = ['/', '/activities', '/plan', '/saved-trips', '/kids', '/profile', '/hunts', '/play'];
 
 function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -149,6 +150,7 @@ const App = () => (
           <Route path="/org/lists/new" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           <Route path="/org/lists/:id" element={<ProtectedRoute><OrgListEdit /></ProtectedRoute>} />
           <Route path="/kaspars" element={<KasparsPage />} />
+          <Route path="/play" element={<Play />} />
           <Route path="/hunts" element={<Hunts />} />
           <Route path="/hunts/:slug" element={<HuntDetail />} />
           <Route path="/hunts/:slug/play" element={<HuntPlay />} />

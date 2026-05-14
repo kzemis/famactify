@@ -21,8 +21,8 @@ export default function Play() {
   const navigate = useNavigate();
   const { country } = useCountry();
   const { data: games = [], isLoading } = useQuery({
-    queryKey: ['citygames'],
-    queryFn: () => huntsService.listCitygames(24),
+    queryKey: ['citygames', country.code],
+    queryFn: () => huntsService.listCitygames({ countryCode: country.code, limit: 24 }),
     staleTime: 5 * 60_000,
   });
 

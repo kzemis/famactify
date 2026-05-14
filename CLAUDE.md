@@ -1,8 +1,14 @@
 # FamActify — AI Navigation
 
-**Last updated:** 2026-04-25
+**Last updated:** 2026-05-14
 **Owner:** Kaspars Zemitis
 **What is FamActify:** App that helps busy Bay Area families discover, plan, and remember meaningful weekend activities with their kids. Tagline: "Every Saturday is a memory waiting to happen."
+
+**Recent sprints (read these before touching auth, citygames, or bottom nav):**
+- [`AUTH-T0`](../../../knowledge/famactify/docs/sprints/AUTH-T0-tier-0-safety-and-honest-signup.md) — Honest signup + password reset + `/test-auth` removed. ✅ 2026-05-14
+- [`AUTH-T0.5`](../../../knowledge/famactify/docs/sprints/AUTH-T0.5-soft-auth-gate-and-lock-icons.md) — Soft auth gate drawer + `?next=` flow + lock icons. ✅ 2026-05-14
+- [`CITYGAMES-T1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1-hero-rail-and-play-tab.md) — Play tab + citygames curation. ✅ 2026-05-14 (Option A rail removed post-ship)
+- [`CITYGAMES-T1.1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1.1-remove-banner-and-add-country-filter.md) — Remove legacy banner + country filter on `/play`. ✅ 2026-05-14
 
 ---
 
@@ -95,7 +101,7 @@ supabase/
 - ❌ Call `supabase.from(...)` directly inside a page component — use a service in `src/services/`
 - ❌ Import `createClient` anywhere except `src/integrations/supabase/client.ts`
 - ❌ Edit `src/integrations/supabase/types.ts` manually — it's auto-generated
-- ❌ Add Latvian translations for new v3.1 Bay Area features — English only for now
+- ❌ Add Latvian translations for new post-v3.1 features — English only for now (Bay Area, citygames, auth flows)
 - ❌ Commit `.env` file — it contains Supabase keys
 - ❌ Merge to `main` without Kaspars review
 
@@ -104,25 +110,109 @@ supabase/
 - ✅ Use `import { flags } from '@/lib/flags'` to gate unfinished features
 - ✅ New Supabase tables go in `supabase/migrations/YYYYMMDD_HHMMSS_description.sql`
 - ✅ New features get a doc in `docs/features/FEATURE-CODE.md` before or alongside code
+- ✅ For ANY tap to a gated route, use `gateOrNavigate({ to, reason })` from `useAuthGate()` — not `navigate(...)`
+- ✅ Email/OAuth `redirectTo` is `/auth` — never `/home`, never `/activities` (`<Navigate replace>` strips OAuth callback)
+- ✅ `?next=` validation in Auth.tsx must use `safeNext` (only `/`-prefixed, not `//`) — open-redirect is CVE material
+
+---
+
+## Load-Bearing Patterns (2026-05-14)
+
+After AUTH-T0 / AUTH-T0.5 / CITYGAMES-T1, these patterns are now non-negotiable. Full details in `~/knowledge/famactify/docs/genai/HANDOFF.md` "What shipped 2026-05-14" block.
+
+### Auth callbacks
+- **All auth flows funnel through `/auth`.** Google OAuth `redirectTo: ${origin}/auth`; email signup `emailRedirectTo: ${origin}/auth`; password reset `redirectTo: ${origin}/auth/reset-password`.
+- **Listener handles both `SIGNED_IN` and `INITIAL_SESSION`** — Supabase v2 may process OAuth before the listener subscribes and surface it as INITIAL_SESSION.
+- **Supabase Redirect URL allowlist** must include `/auth` + `/auth/reset-password` for both localhost and production.
+
+### Soft auth gate
+- Use `gateOrNavigate({ to, reason })` for taps leading to gated routes. Anonymous → drawer; signed-in → navigate.
+- `ProtectedRoute` preserves `?next=<encoded-path>` for direct-URL access.
+- Lock icons on bottom tabs only when `isAuthenticated === false` (not during loading).
+- Provider mount order: `<BrowserRouter><AuthGateProvider><AuthGate /><AppShell>...</AppShell></AuthGateProvider></BrowserRouter>`.
+
+### Citygames
+- Filter: `host_name = 'FamActify Original'`. Canonical. Load-bearing.
+- `huntsService.listCitygames(...)` is the only entry — don't write inline `.from('hunts').eq('host_name', ...)` calls.
+- Seed: `supabase/migrations/20260510_120000_seed_citygames_v1_polished.sql` (Richmond/Oakland/Lake Merritt).
+
+### Bottom nav
+- 5 tabs in order: **Play / Activities / Plan / Trips / Me**.
+- `Mode` tab dropped (route `/kids` still works).
+- 6 tabs is a soft no — labels truncate at 360px.
+
+### Don't
+- ❌ Re-add `/test-auth` — it leaked the admin flow
+- ❌ Re-add the "Remember me" checkbox — it never worked
+- ❌ Add `redirectTo: ${origin}/home` for any auth flow — strips OAuth hash
 
 ---
 
 ## Routes at a Glance
 
-| Path | Page | Auth | Status |
-|------|------|:----:|--------|
-| `/` | Landing.tsx | No | ⚠️ Needs rewrite (v3.1) |
-| `/auth` | Auth.tsx | No | ✅ Working |
-| `/home` | Home.tsx | ✅ | ✅ Working |
-| `/onboarding/interests` | OnboardingInterests.tsx | ✅ | ✅ Working |
-| `/onboarding/questions` | OnboardingQuestions.tsx | ✅ | ✅ Working |
-| `/events` | Events.tsx | ✅ | ✅ Working (calls generate-recommendations) |
-| `/saved-trips` | SavedTrips.tsx | ✅ | ✅ Working |
-| `/pitch-deck` | PitchDeck.tsx | No | ⚠️ Needs rewrite (v3.1) |
-| `/contribute` | Contribute.tsx | ✅ | ✅ Working |
-| `/community` | CommunityActivities.tsx | No | ✅ Working |
-| `/confirm` | ConfirmAttendance.tsx | No | ✅ Working |
-| `/trip/:token` | SharedTrip.tsx | No | ✅ Working |
+**Auth column legend:**
+- `No` = public, no auth required
+- `Soft` = soft-gated via AuthGate drawer (anonymous tap opens "Sign in to …" drawer; ProtectedRoute also enforces at route level)
+- `Yes` = hard-gated via ProtectedRoute (redirects anonymous to `/auth?next=<path>`)
+- `Admin` = ProtectedRoute + AdminRoute (`profiles.is_admin = true`)
+
+### Public routes
+
+| Path | Page | Auth | Notes |
+|------|------|:----:|-------|
+| `/` | Landing.tsx | No | Landing page |
+| `/auth` | Auth.tsx | No | 5-mode state machine: signin/signup/signup-confirm-sent/reset-request/reset-link-sent. Reads `?next=` with `safeNext` validation. ALL auth callbacks land here. |
+| `/auth/reset-password` | ResetPassword.tsx | No | Guarded by Supabase `PASSWORD_RECOVERY` event |
+| `/home` | redirect | No | `<Navigate to="/activities" replace />` — vestigial, drop in AUTH-T1 |
+| `/activities` | CommunityActivities.tsx | No | Main discover/plan/map view. `?view=plan` for plan view. |
+| `/play` | Play.tsx | No | Citygames list (filter `host_name = 'FamActify Original'`). First tab in bottom nav. |
+| `/hunts` | Hunts.tsx | No | Full hunts catalog (broader than `/play`) |
+| `/hunts/:slug` | HuntDetail.tsx | No | Hunt detail |
+| `/hunts/:slug/play` | HuntPlay.tsx | No | In-progress hunt |
+| `/kids` | KidModePage.tsx | No | Little Explorer mode (NOT in bottom tab bar anymore — reach via direct URL / AppHeader) |
+| `/lists` | CuratedLists.tsx | No | Curated activity lists |
+| `/lists/:slug` | CuratedListDetail.tsx | No | Curated list detail |
+| `/generated-activities` | GeneratedActivities.tsx | No | AI-generated activities |
+| `/confirm` | ConfirmAttendance.tsx | No | RSVP from email |
+| `/trip/:shareToken` | SharedTrip.tsx | No | Shared trip view |
+| `/events-calendar` | EventsCalendar.tsx | No | Public events calendar |
+| `/cats` | CatComparison.tsx | No | Cat category comparison |
+| `/kaspars` | KasparsPage.tsx | No | Personal demo page |
+| `/pitch-deck`, `/about`, `/careers`, `/benefits`, `/faq`, `/contact`, `/terms`, `/privacy` | various | No | Marketing / legal (lazy-loaded) |
+
+### Soft-gated routes (tab/menu-tap → drawer; direct URL → ProtectedRoute)
+
+| Path | Page | Auth | Notes |
+|------|------|:----:|-------|
+| `/saved-trips` | SavedTrips.tsx | Soft | Bottom tab "Trips". Drawer reason: "save your trips" |
+| `/profile` | Profile.tsx | Soft | Bottom tab "Me". Drawer reason: "see your profile" |
+
+### Auth-required routes
+
+| Path | Page | Auth | Notes |
+|------|------|:----:|-------|
+| `/onboarding/interests` | OnboardingInterests.tsx | Yes | |
+| `/onboarding/questions` | OnboardingQuestions.tsx | Yes | |
+| `/events` | Events.tsx | Yes | Calls generate-recommendations |
+| `/itinerary` | Itinerary.tsx | Yes | |
+| `/calendar` | Calendar.tsx | Yes | |
+| `/contribute` | Contribute.tsx | Yes | Drawer reason: "contribute an activity" |
+| `/passport` | Passport.tsx | Yes | Stamp book — drawer reason: "track your passport" |
+| `/chores` | Chores.tsx | Yes | Parent home chores — drawer reason: "create home chores" |
+| `/chores/new`, `/chores/edit/:slug` | ChoreEdit.tsx | Yes | |
+| `/balance` | BalanceTracker.tsx | Yes | |
+| `/plan/horizon` | LongHorizonPlanner.tsx | Yes | |
+| `/race/create/:slug`, `/race/join`, `/race/:raceId/play`, `/race/:raceId/results` | RaceLobby/RacePlay/RaceResults | Yes | Multi-family live race |
+| `/duo/host/:slug`, `/duo/join`, `/duo/:sessionId/play` | DuoLobby/DuoPlay | Yes | Two-phone parent+kid mode |
+| `/org/setup`, `/org/dashboard`, `/org/lists/*`, `/org/hunts`, `/org/hunts/*` | various | Yes | Org admin pages |
+| `/activities/:id/edit` | EditActivity.tsx | Yes | |
+
+### Admin-only routes
+
+| Path | Auth | Notes |
+|------|:----:|-------|
+| `/admin/lists`, `/admin/lists/*`, `/admin/activities-demo` | Admin | Curated list admin |
+| `/admin/hunts`, `/admin/hunts/*`, `/admin/hunts/photo-review` | Admin | Hunt approval + photo review |
 
 ---
 
@@ -173,15 +263,20 @@ All in `src/lib/flags.ts`. Vite env vars: `VITE_FF_*`.
 
 ## Active Sprint
 
-**v3.1** — 36 hours — see `docs/sprints/SPRINT-V3.1.md`
+**v3.1 is complete** (shipped over 2026-04-25 through 2026-05-06).
 
-Priority order:
-1. Feature flags ✅ (flags.ts created)
-2. Analytics (Vercel Analytics)
-3. Google auth redirect URLs (Supabase dashboard)
-4. Activity seeding (Bay Area, 10-20 venues)
-5. Pitch deck page rewrite
-6. Landing page rewrite (ships last)
+**Recently finished sprints (2026-05-14):**
+1. **AUTH-T0** — safety + honest signup. ✅ Done
+2. **AUTH-T0.5** — soft auth gate drawer + lock icons + `?next=` flow. ✅ Done
+3. **CITYGAMES-T1** — Play tab + citygames curation. ✅ Done (Option A rail removed post-ship)
+
+**Recently finished:**
+- **CITYGAMES-T1.1** — removed legacy "City Games" banner from `/activities`, added `countryCode` filter to `listCitygames`, wired `country.code` in `Play.tsx` React Query key. ✅ 2026-05-14
+
+**Future sprints (not yet planned):**
+- **AUTH-T1** — soft-gate Save/Heart/Add-to-passport; preserve `?next=` through Google OAuth; drop `/home`; onboarding → DB; `authService` consistency
+- **AUTH-T2** — account deletion, parental consent, email change, admin grant UI
+- **CITYGAMES-T2** — geolocation sort, filter chips, featured slot, analytics
 
 ---
 

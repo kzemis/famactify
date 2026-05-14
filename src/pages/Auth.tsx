@@ -33,7 +33,9 @@ const Auth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
+      // Handle both SIGNED_IN (email/password) and INITIAL_SESSION (Google OAuth — Supabase
+      // may process the hash before our listener subscribes and surfaces it as INITIAL_SESSION).
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         const params = new URLSearchParams(location.search);
         const next = params.get('next');
         // Only allow internal paths — prevent open-redirect to external URLs.
@@ -46,9 +48,12 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
+      // Redirect back to /auth (not /home) so the SIGNED_IN listener on this page
+      // can process the session. /home → <Navigate replace> strips the OAuth hash
+      // before Supabase can read it, so the session is never established.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/home` },
+        options: { redirectTo: `${window.location.origin}/auth` },
       });
       if (error) throw error;
     } catch (error: unknown) {

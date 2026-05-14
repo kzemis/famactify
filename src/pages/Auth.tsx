@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Lock } from "lucide-react";
+import { authService } from "@/services/authService";
+import { Mail, Lock, ArrowLeft, CheckCircle } from "lucide-react";
 import patternBg from "@/assets/pattern-bg.jpg";
+
+type Mode = "signin" | "signup" | "signup-confirm-sent" | "reset-request" | "reset-link-sent";
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5">
@@ -20,98 +22,50 @@ const GoogleIcon = () => (
 );
 
 const Auth = () => {
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Load remembered email on mount
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem("famactify_remembered_email");
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRememberMe(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Listen for auth changes - only redirect after successful login
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+      if (event === "SIGNED_IN" && session) {
         navigate("/activities");
       }
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleGoogleSignIn = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/home`,
-        },
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/home` },
       });
-      
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Could not sign in with Google",
         variant: "destructive",
       });
     }
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/home`,
-          },
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Account created!",
-          description: "You can now sign in with your credentials.",
-        });
-        setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-
-        // Handle remember me - save or remove email
-        if (rememberMe) {
-          localStorage.setItem("famactify_remembered_email", email);
-        } else {
-          localStorage.removeItem("famactify_remembered_email");
-        }
-        
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in.",
-        });
-      }
-    } catch (error: any) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // onAuthStateChange SIGNED_IN listener handles navigation
+    } catch (error: unknown) {
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Sign in failed",
+        description: error instanceof Error ? error.message : "Could not sign in",
         variant: "destructive",
       });
     } finally {
@@ -119,39 +73,199 @@ const Auth = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 flex h-16 items-center">
-          <span className="text-2xl font-bold text-primary cursor-pointer" onClick={() => navigate("/")}>
-            FamActify
-          </span>
-        </div>
-      </header>
-      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url(${patternBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-        
-        <Card className="w-full max-w-md relative shadow-2xl">
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        // Redirect to /auth so the onAuthStateChange SIGNED_IN listener can
+        // process the session from the URL hash and navigate to /activities.
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) throw error;
+
+      if (data.session) {
+        // Email confirmation is OFF — user is already signed in.
+        // onAuthStateChange SIGNED_IN listener will navigate to /activities.
+        toast({ title: "Welcome to FamActify!" });
+      } else {
+        // Email confirmation is ON — user must click the link in their email.
+        setSubmittedEmail(email);
+        setMode("signup-confirm-sent");
+        toast({
+          title: "Check your email",
+          description: `We sent a confirmation link to ${email}`,
+        });
+      }
+    } catch (error: unknown) {
+      toast({
+        title: "Could not create account",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!submittedEmail) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email: submittedEmail });
+      if (error) throw error;
+      toast({ title: "Email re-sent", description: "Check your inbox." });
+    } catch (error: unknown) {
+      toast({
+        title: "Could not resend email",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await authService.requestPasswordReset(email);
+      setSubmittedEmail(email);
+      setMode("reset-link-sent");
+    } catch (error: unknown) {
+      toast({
+        title: "Could not send reset email",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cardContent = () => {
+    if (mode === "signup-confirm-sent") {
+      return (
+        <>
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-2">
+              <CheckCircle className="h-12 w-12 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center md:text-3xl">Check your email</CardTitle>
+            <CardDescription className="text-center text-sm md:text-base">
+              We sent a confirmation link to <strong>{submittedEmail}</strong>. Click it to activate your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              type="button"
+              className="w-full min-h-[44px]"
+              variant="outline"
+              disabled={loading}
+              onClick={handleResendConfirmation}
+            >
+              {loading ? "Sending..." : "Resend email"}
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setMode("signin")}
+                className="text-sm text-muted-foreground hover:text-primary flex items-center justify-center gap-1 mx-auto"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to sign in
+              </button>
+            </div>
+          </CardContent>
+        </>
+      );
+    }
+
+    if (mode === "reset-link-sent") {
+      return (
+        <>
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-2">
+              <CheckCircle className="h-12 w-12 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center md:text-3xl">Check your email</CardTitle>
+            <CardDescription className="text-center text-sm md:text-base">
+              We sent a password-reset link to <strong>{submittedEmail}</strong>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="text-sm text-muted-foreground hover:text-primary flex items-center justify-center gap-1 mx-auto"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to sign in
+            </button>
+          </CardContent>
+        </>
+      );
+    }
+
+    if (mode === "reset-request") {
+      return (
+        <>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center md:text-3xl">Reset password</CardTitle>
+            <CardDescription className="text-center text-sm md:text-base">
+              Enter your email and we'll send you a reset link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={handleResetRequest} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="pl-10 min-h-[44px]"
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full min-h-[44px]" disabled={loading}>
+                {loading ? "Sending..." : "Send reset link"}
+              </Button>
+            </form>
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="text-sm text-muted-foreground hover:text-primary flex items-center justify-center gap-1 mx-auto"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to sign in
+            </button>
+          </CardContent>
+        </>
+      );
+    }
+
+    // signin and signup modes share the form structure
+    const isSignUp = mode === "signup";
+    return (
+      <>
         <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center">
+          <CardTitle className="text-2xl font-bold text-center md:text-3xl">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </CardTitle>
-          <CardDescription className="text-center">
-            {isSignUp 
-              ? "Sign up to start planning amazing family activities" 
+          <CardDescription className="text-center text-sm md:text-base">
+            {isSignUp
+              ? "Sign up to start planning amazing family activities"
               : "Sign in to continue planning amazing family activities"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleAuth} className="space-y-4">
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -163,38 +277,38 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-10"
+                  className="pl-10 min-h-[44px]"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    className="text-sm text-muted-foreground underline-offset-2 hover:underline hover:text-primary"
+                    onClick={() => setMode("reset-request")}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
-                  placeholder=""
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-10"
+                  className="pl-10 min-h-[44px]"
                 />
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="remember"
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked === true)}
-              />
-              <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
-                Remember me
-              </Label>
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading 
-                ? (isSignUp ? "Creating Account..." : "Signing In...") 
+            <Button type="submit" className="w-full min-h-[44px]" disabled={loading}>
+              {loading
+                ? (isSignUp ? "Creating Account..." : "Signing In...")
                 : (isSignUp ? "Create Account" : "Sign In")}
             </Button>
           </form>
@@ -205,7 +319,7 @@ const Auth = () => {
             </span>
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => setMode(isSignUp ? "signin" : "signup")}
               className="text-primary hover:underline font-medium"
             >
               {isSignUp ? "Sign In" : "Sign Up"}
@@ -224,14 +338,42 @@ const Auth = () => {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full min-h-[44px]"
             onClick={handleGoogleSignIn}
           >
             <GoogleIcon />
             Sign in with Google
           </Button>
         </CardContent>
-      </Card>
+      </>
+    );
+  };
+
+  return (
+    <div className="min-h-screen relative overflow-hidden">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center">
+          <span
+            className="text-2xl font-bold text-primary cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            FamActify
+          </span>
+        </div>
+      </header>
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url(${patternBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
+        <Card className="w-full max-w-md relative shadow-2xl">
+          {cardContent()}
+        </Card>
       </div>
     </div>
   );

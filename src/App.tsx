@@ -12,6 +12,7 @@ import BottomTabBar from "@/components/BottomTabBar";
 import { type ReactNode, lazy, Suspense } from "react";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 
 import OnboardingInterests from "./pages/OnboardingInterests";
@@ -34,7 +35,7 @@ import CommunityActivities from "./pages/CommunityActivities";
 import GeneratedActivities from "./pages/GeneratedActivities";
 import ConfirmAttendance from "./pages/ConfirmAttendance";
 import SharedTrip from "./pages/SharedTrip";
-import TestAuth from "./pages/TestAuth";
+
 import EventsCalendar from "./pages/EventsCalendar";
 import CatComparison from "./pages/CatComparison";
 import NotFound from "./pages/NotFound";
@@ -102,6 +103,7 @@ const App = () => (
           <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
           <Route path="/home" element={<Navigate to="/activities" replace />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/onboarding/interests" element={<ProtectedRoute><OnboardingInterests /></ProtectedRoute>} />
@@ -124,7 +126,7 @@ const App = () => (
           <Route path="/generated-activities" element={<GeneratedActivities />} />
           <Route path="/confirm" element={<ConfirmAttendance />} />
           <Route path="/trip/:shareToken" element={<SharedTrip />} />
-          <Route path="/test-auth" element={<TestAuth />} />
+
           <Route path="/events-calendar" element={<EventsCalendar />} />
           <Route path="/cats" element={<CatComparison />} />
           <Route path="/plan" element={<Navigate to="/activities?view=plan" replace />} />

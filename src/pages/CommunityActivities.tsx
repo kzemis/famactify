@@ -1799,20 +1799,6 @@ export default function CommunityActivities() {
       {/* ── Parent / Kid feed ── */}
       {!loading && !isLittleExplorer && viewMode !== 'mood' && activities.length > 0 && (
         <div className="px-4 py-2 space-y-3">
-          {/* City Games entry banner — only at top of feed */}
-          {currentPage === 0 && (
-            <button
-              onClick={() => navigate('/hunts')}
-              className="w-full text-left rounded-2xl overflow-hidden border border-pink-200 bg-gradient-to-r from-pink-100 via-purple-100 to-amber-100 p-4 flex items-center gap-3 tap-highlight active:scale-[0.99] transition-transform"
-            >
-              <span className="text-3xl shrink-0">🔍</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-pink-800">City Games</p>
-                <p className="text-xs text-pink-700/80 leading-snug">Place-based mini-adventures with clues, steps, and playful challenges.</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-pink-700" />
-            </button>
-          )}
           {activities.map(activity => {
             const displayImage = activity.json?.images?.[0] || activity.imageurlthumb;
             const visual = getActivityVisual(activity);

@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useFamilyMode } from "@/contexts/FamilyModeContext";
 import { countUniqueActionableKidProposals, readKidProposals } from "@/lib/kidProposals";
+import { useAuthGate } from "@/hooks/use-auth-gate";
 
 interface AppHeaderProps {
   hidden?: boolean;
@@ -29,6 +30,7 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { isLittleExplorer } = useFamilyMode();
+  const { gateOrNavigate } = useAuthGate();
   const [user, setUser] = useState<any>(null);
   const [proposalCount, setProposalCount] = useState(0);
 
@@ -133,8 +135,8 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">{user.email}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/profile")}>{t.header.profileSettings}</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/saved-trips")}>{t.header.savedTrips}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => gateOrNavigate({ to: "/profile", reason: "see your profile" })}>{t.header.profileSettings}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => gateOrNavigate({ to: "/saved-trips", reason: "save your trips" })}>{t.header.savedTrips}</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive">{t.common.signOut}</DropdownMenuItem>
                   </DropdownMenuContent>
@@ -203,10 +205,10 @@ const AppHeader = ({ hidden = false }: AppHeaderProps) => {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/profile")}>{t.header.profileSettings}</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/saved-trips")}>{t.header.savedTrips}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => gateOrNavigate({ to: "/profile", reason: "see your profile" })}>{t.header.profileSettings}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => gateOrNavigate({ to: "/saved-trips", reason: "save your trips" })}>{t.header.savedTrips}</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/org/dashboard")}>
+                    <DropdownMenuItem onClick={() => gateOrNavigate({ to: "/org/dashboard", reason: "manage your organization" })}>
                       <Building2 className="h-4 w-4 mr-2" />My Organization
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />

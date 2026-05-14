@@ -33,4 +33,26 @@ export const authService = {
     const { error } = await supabase.auth.signOut();
     throwIfError('authService.signOut', error);
   },
+
+  /**
+   * Sends a password-reset email to the given address.
+   * The user clicks the link and lands on /auth/reset-password
+   * with a temporary recovery session.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    assertSupabaseProvider('authService.requestPasswordReset');
+    const redirectTo = `${window.location.origin}/auth/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    throwIfError('authService.requestPasswordReset', error);
+  },
+
+  /**
+   * Updates the current user's password. Must be called from a page reached
+   * via a password-reset email link, where Supabase has set up a recovery session.
+   */
+  async updatePassword(newPassword: string): Promise<void> {
+    assertSupabaseProvider('authService.updatePassword');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    throwIfError('authService.updatePassword', error);
+  },
 };

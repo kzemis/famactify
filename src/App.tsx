@@ -13,6 +13,8 @@ import { type ReactNode, lazy, Suspense } from "react";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import { AuthGateProvider } from "@/hooks/use-auth-gate";
+import AuthGate from "@/components/AuthGate";
 import Profile from "./pages/Profile";
 
 import OnboardingInterests from "./pages/OnboardingInterests";
@@ -92,6 +94,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AuthGateProvider>
+          <AuthGate />
           <AppShell>
           <Suspense
             fallback={
@@ -176,6 +180,7 @@ const App = () => (
           </Routes>
           </Suspense>
           </AppShell>
+          </AuthGateProvider>
         </BrowserRouter>
         <Analytics />
       </TooltipProvider>

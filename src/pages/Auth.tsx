@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,16 +28,21 @@ const Auth = () => {
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
-        navigate("/activities");
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next');
+        // Only allow internal paths — prevent open-redirect to external URLs.
+        const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/activities';
+        navigate(safeNext);
       }
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.search]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -344,6 +349,14 @@ const Auth = () => {
             <GoogleIcon />
             Sign in with Google
           </Button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/activities')}
+            className="w-full text-sm text-muted-foreground hover:text-primary mt-2"
+          >
+            Continue browsing without an account
+          </button>
         </CardContent>
       </>
     );

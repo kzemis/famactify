@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { sessionService } from '@/services/sessionService';
 import { ChevronLeft, ChevronRight, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap, Smartphone } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import MapView from '@/components/LazyMapView';
@@ -273,7 +274,17 @@ export default function HuntDetail() {
               </button>
             )}
             <button
-              onClick={() => navigate(`/hunts/${hunt.slug}/play`)}
+              onClick={async () => {
+                // MP-T2: create a solo session and navigate to the new unified play engine.
+                // Old route /hunts/:slug/play is kept intact as fallback (accessible via direct URL).
+                try {
+                  const session = await sessionService.createSession(hunt.id, 'solo');
+                  navigate(`/play/${session.id}/play`);
+                } catch {
+                  // Fallback to legacy HuntPlay if session creation fails (e.g. not logged in)
+                  navigate(`/hunts/${hunt.slug}/play`);
+                }
+              }}
               className={cn(
                 'flex-1 h-12 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform shadow-lg',
                 'bg-primary text-primary-foreground',

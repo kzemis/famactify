@@ -11,6 +11,9 @@
 - [`CITYGAMES-T1.1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1.1-remove-banner-and-add-country-filter.md) — Remove legacy banner + country filter on `/play`. ✅ 2026-05-14
 - [`HUNT-DETAIL-T1`](../../../knowledge/famactify/docs/sprints/HUNT-DETAIL-T1-hero-clamp-and-multiplayer-sheet.md) — Clamp hunt-detail hero to `55svh` + consolidate Duo/Race into a Multiplayer mode sheet. ✅ 2026-05-15
 - [`MP-T1`](../../../knowledge/famactify/docs/sprints/MP-T1-qr-codes-and-player-identity.md) — QR codes on Duo + Race host lobbies + player identity (name · animal-emoji grid · selfie/photo upload). ✅ 2026-05-15
+- [`OD-06`](../../../knowledge/famactify/docs/options_decisions/OD-06-unified-session-engine.md) — **Architectural decision (2026-05-15):** collapse HuntPlay+DuoPlay+RacePlay into one Sessions+Teams engine. ✅ Accepted
+- [`MP-T1.1`](inline patch) — Idempotent join: same-account rejoin updates identity, different-role conflict shows friendly error. ✅ 2026-05-15
+- [`MP-T2`](../../../knowledge/famactify/docs/sprints/MP-T2-unified-play-engine-and-live-artifact-sync.md) — Unified play engine: 4 new tables, `sessionService`, `PlayLobby/PlaySession/PlayResults`, `LiveArtifactStream`, Realtime artifact sync, solo path on new engine. ✅ 2026-05-15. **OPERATOR: Apply `20260515_110000_session_engine.sql` before deploy.**
 
 ---
 
@@ -276,14 +279,25 @@ All in `src/lib/flags.ts`. Vite env vars: `VITE_FF_*`.
 - **CITYGAMES-T1.1** — removed legacy "City Games" banner from `/activities`, added `countryCode` filter to `listCitygames`, wired `country.code` in `Play.tsx` React Query key. ✅ 2026-05-15
 - **HUNT-DETAIL-T1** — hero `max-h-[55svh]` clamp (CTA stack no longer clips on tall phones) + "Multiplayer mode" vaul Drawer replacing flat Duo/Race buttons + Family-squad "coming soon" placeholder. Config-agnostic Duo copy. ✅ 2026-05-15
 - **MP-T1** — QR codes on Duo + Race host lobbies + `<PlayerIdentityCard />` (name · animal-emoji grid · selfie/photo upload) + `<ParticipantAvatar />` in all 5 lobby/play/results locations. Migration `20260515_100000_participant_avatar_url.sql` adds `avatar_url text` to `hunt_race_participants`. `qrcode.react` installed. ✅ 2026-05-15
+- **MP-T1.1** — inline patch: `joinSession` + `joinRace` are now idempotent (same-user-same-role rejoin updates identity in place; different role → friendly toast). Fixes the duplicate-key error when family shares one Supabase account across two phones. ✅ 2026-05-15
+- **OD-06 + SCV-05 rewrite + MP-T2 plan** — strategic redirect after the Rosie playtest revealed Duo had zero interactive widgets. Architecture decision to collapse HuntPlay/DuoPlay/RacePlay into a unified "Sessions + Teams" engine with live artifact sync. SCV-05 fully rewritten around the new model; MP-T2 sprint plan ready for Sonnet to execute next (~9.5h). MP-T1.2 (duo widgets patch) shelved as redundant. ✅ 2026-05-15
 
-**Future (signal-dependent):**
-- **SCV-FAMILY-SQUAD-T1** — real 3+ phones same-team mode. Replaces the disabled "Coming soon" placeholder in the HuntDetail Multiplayer sheet. Needs new lobby UX, role assignment, multi-device sync model. Not planned yet — ship when Duo usage shows signal.
-- **MP-T2** — cartoon avatar from selfie (Replicate / SD stylization, Edge Function, cost model). Future MP-T sprint.
-- **MP-T3** — in-app QR scanner (BarcodeDetector API / zxing fallback). Skip manual code entry.
-- **MP-T4** — edit identity inside play (tap avatar mid-game to change name/picture).
-- **MP-T5** — rename `family_name` / `family_emoji` → `display_name` / `display_avatar` for clarity (schema cleanup).
-- **MP-T6** — anonymous / guest joins (drop auth requirement on `/duo/join` + `/race/join`; needs guest-session token + RLS rework).
+**Active MP arc (OD-06 unified Sessions+Teams engine):**
+- **MP-T2** *(next, ~9.5h)* — schema + sessionService + `/play/*` routes + PlayLobby/PlaySession/PlayResults + Realtime artifact sync. Solo path migrated. 🟡 Planned
+- **MP-T3** *(~3h)* — Migrate Duo → preset. Delete `DuoPlay`/`DuoLobby`. 🔜
+- **MP-T4** *(~3h)* — Migrate Race → preset. Delete `RacePlay`/`RaceLobby`/`RaceResults`. Drop legacy tables. 🔜
+- **MP-T5** *(~3h)* — "Kids vs Parents" preset + team builder UI. 🔜
+- **MP-T6** *(~4h)* — "Family vs Family — full squads" preset. 🔜
+- **MP-T7** *(~3h)* — "Mixed teams across families" preset + cross-team memory card. 🔜
+
+**MP enhancements (post-arc):**
+- **MP-T8** — cartoon avatar from selfie (Replicate/OpenAI image-gen + Edge Function).
+- **MP-T9** — in-app QR scanner (BarcodeDetector API).
+- **MP-T10** — edit identity mid-play (tap avatar → drawer).
+- **MP-T11** — anonymous / guest joins (drop auth on `/play/join`).
+
+**Shelved:**
+- ~~MP-T1.2~~ — Duo interactive widgets + 404 fix. **Superseded by MP-T2** (unified engine makes the widgets fall out for free and gives Duo a proper results page). 🪦 2026-05-15
 
 **Future sprints (not yet planned):**
 - **AUTH-T1** — soft-gate Save/Heart/Add-to-passport; preserve `?next=` through Google OAuth; drop `/home`; onboarding → DB; `authService` consistency

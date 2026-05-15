@@ -74,6 +74,12 @@ const RacePlay          = lazy(() => import("./pages/RacePlay"));
 const RaceResults       = lazy(() => import("./pages/RaceResults"));
 const DuoLobby          = lazy(() => import("./pages/DuoLobby"));
 const DuoPlay           = lazy(() => import("./pages/DuoPlay"));
+// MP-T2: Unified play engine
+const PlayLobbyHost     = lazy(() => import("./pages/play/PlayLobbyHost"));
+const PlayLobbyJoin     = lazy(() => import("./pages/play/PlayLobbyJoin"));
+const PlayLobby         = lazy(() => import("./pages/play/PlayLobby"));
+const PlaySession       = lazy(() => import("./pages/play/PlaySession"));
+const PlayResults       = lazy(() => import("./pages/play/PlayResults"));
 
 const queryClient = new QueryClient();
 
@@ -177,6 +183,12 @@ const App = () => (
           <Route path="/duo/host/:slug" element={<ProtectedRoute><DuoLobby /></ProtectedRoute>} />
           <Route path="/duo/join" element={<ProtectedRoute><DuoLobby /></ProtectedRoute>} />
           <Route path="/duo/:sessionId/play" element={<ProtectedRoute><DuoPlay /></ProtectedRoute>} />
+          {/* MP-T2: Unified play engine */}
+          <Route path="/play/host/:slug" element={<ProtectedRoute><PlayLobbyHost /></ProtectedRoute>} />
+          <Route path="/play/join" element={<ProtectedRoute><PlayLobbyJoin /></ProtectedRoute>} />
+          <Route path="/play/:sessionId/lobby" element={<ProtectedRoute><PlayLobby /></ProtectedRoute>} />
+          <Route path="/play/:sessionId/play" element={<ProtectedRoute><PlaySession /></ProtectedRoute>} />
+          <Route path="/play/:sessionId/results" element={<ProtectedRoute><PlayResults /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

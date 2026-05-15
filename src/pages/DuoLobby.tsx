@@ -1,13 +1,14 @@
 // DuoLobby — entry point for two-phone parent+kid mode.
 // Two flows in one page:
-//   1. Host (parent) at /duo/host/:slug — creates session, shares join code,
+//   1. Host (parent) at /duo/host/:slug — creates session, shows QR + join code,
 //      waits for kid to scan/type the code, then taps "Start playing".
-//   2. Join (kid) at /duo/join — kid types the code and is taken straight
-//      into the synced play screen.
+//   2. Join (kid) at /duo/join — kid types/scans the code and enters identity,
+//      then is taken straight into the synced play screen.
 
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Users, Sparkles, Copy, CheckCircle2, Loader2, Smartphone } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { huntsService } from '@/services/huntsService';
 import { raceService } from '@/services/raceService';
 import { useFamilyMode } from '@/contexts/FamilyModeContext';
@@ -15,11 +16,15 @@ import { supabase } from '@/integrations/supabase/client';
 import type { HuntRace, RaceParticipant, ScavengerHunt } from '@/types/hunt';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { pickRandomAvatar } from '@/lib/avatars';
+import PlayerIdentityCard from '@/components/PlayerIdentityCard';
+import ParticipantAvatar from '@/components/ParticipantAvatar';
 
 type Mode = 'host' | 'join';
 
 export default function DuoLobby() {
   const { slug } = useParams<{ slug?: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentProfile } = useFamilyMode();
 
@@ -29,10 +34,23 @@ export default function DuoLobby() {
   const [hunt, setHunt] = useState<ScavengerHunt | null>(null);
   const [session, setSession] = useState<HuntRace | null>(null);
   const [participants, setParticipants] = useState<RaceParticipant[]>([]);
+  const [myParticipantId, setMyParticipantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [joinCode, setJoinCode] = useState('');
+
+  // ── Host identity state ────────────────────────────────────────────────────
+  const [hostName, setHostName] = useState(currentProfile?.name ?? 'Parent');
+  const [hostAvatarEmoji, setHostAvatarEmoji] = useState(() => pickRandomAvatar());
+  const [hostAvatarUrl, setHostAvatarUrl] = useState<string | null>(null);
+  const identityDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Join identity state ────────────────────────────────────────────────────
+  const joinCodeParam = searchParams.get('code') ?? '';
+  const [joinCode, setJoinCode] = useState(joinCodeParam.toUpperCase());
+  const [joinName, setJoinName] = useState(currentProfile?.name ?? 'Kid');
+  const [joinAvatarEmoji, setJoinAvatarEmoji] = useState(() => pickRandomAvatar());
+  const [joinAvatarUrl, setJoinAvatarUrl] = useState<string | null>(null);
 
   // ── HOST FLOW ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -49,18 +67,23 @@ export default function DuoLobby() {
         if (cancelled) return;
         setHunt(h);
 
-        // Create the session and join as parent_guide
+        // Create the session and auto-join as parent_guide with defaults
         const newSession = await raceService.createDuoSession(h.id);
-        const familyName = currentProfile?.name ?? 'Parent';
-        await raceService.joinSession(
+        const defaultName = currentProfile?.name ?? 'Parent';
+        const defaultEmoji = pickRandomAvatar();
+        const p = await raceService.joinSession(
           newSession.id,
-          familyName,
-          '👨‍👩‍👧',
+          defaultName,
+          defaultEmoji,
           h.stops.length,
           'parent_guide',
         );
         if (cancelled) return;
         setSession(newSession);
+        setMyParticipantId(p.id);
+        // Sync identity state with what was stored
+        setHostName(defaultName);
+        setHostAvatarEmoji(defaultEmoji);
 
         // Initial participants fetch
         const initial = await raceService.getParticipants(newSession.id);
@@ -74,7 +97,27 @@ export default function DuoLobby() {
       }
     })();
     return () => { cancelled = true; };
-  }, [mode, slug, navigate, currentProfile?.name]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, slug]);
+
+  // Push identity changes to DB with 500ms debounce (host flow)
+  useEffect(() => {
+    if (!myParticipantId) return;
+    if (identityDebounce.current) clearTimeout(identityDebounce.current);
+    identityDebounce.current = setTimeout(async () => {
+      try {
+        await raceService.updateParticipantIdentity({
+          participantId: myParticipantId,
+          familyName: hostName,
+          familyEmoji: hostAvatarEmoji,
+          avatarUrl: hostAvatarUrl,
+        });
+      } catch (e: any) {
+        console.warn('[DuoLobby] identity update failed', e?.message);
+      }
+    }, 500);
+    return () => { if (identityDebounce.current) clearTimeout(identityDebounce.current); };
+  }, [myParticipantId, hostName, hostAvatarEmoji, hostAvatarUrl]);
 
   // Realtime subscription on participants — host watches for kid joining
   useEffect(() => {
@@ -103,6 +146,7 @@ export default function DuoLobby() {
   const handleJoin = async () => {
     const code = joinCode.toUpperCase().trim();
     if (code.length < 4) { toast.error('Enter the 6-character code'); return; }
+    if (!joinName.trim()) { toast.error('Enter your name'); return; }
     setWorking(true);
     try {
       const race = await raceService.getRaceByCode(code);
@@ -112,15 +156,15 @@ export default function DuoLobby() {
         navigate('/race/join');
         return;
       }
-      // Need to know hunt's totalStops
       const huntRow = await huntsService.getHuntById(race.huntId).catch(() => null);
       const totalStops = huntRow?.stops.length ?? 0;
       await raceService.joinSession(
         race.id,
-        currentProfile?.name ?? 'Kid',
-        '🧒',
+        joinName.trim() || 'Kid',
+        joinAvatarEmoji,
         totalStops,
         'kid_solver',
+        joinAvatarUrl,
       );
       navigate(`/duo/${race.id}/play`);
     } catch (e: any) {
@@ -147,7 +191,6 @@ export default function DuoLobby() {
     }
   };
 
-  // Find the kid participant (anything that isn't this user / the parent_guide)
   const kidJoined = participants.some(p => p.role === 'kid_solver');
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -173,29 +216,42 @@ export default function DuoLobby() {
           <h1 className="text-base font-black flex-1">Join family city game</h1>
         </div>
 
-        <div className="max-w-md mx-auto px-4 py-8 space-y-6">
+        <div className="max-w-md mx-auto px-4 py-6 space-y-4">
           <div className="text-center space-y-3">
             <div className="w-16 h-16 mx-auto rounded-full bg-primary/15 flex items-center justify-center">
               <Smartphone className="w-7 h-7 text-primary" />
             </div>
-            <h2 className="text-2xl font-black">Type the code</h2>
+            <h2 className="text-2xl font-black">Join the game</h2>
             <p className="text-sm text-muted-foreground leading-snug max-w-sm mx-auto">
-              Ask your parent for the 6-letter code on their phone, then type it here.
+              Enter the code from the other phone, pick your look, then join.
             </p>
           </div>
 
+          {/* Code input */}
           <input
             value={joinCode}
             onChange={e => setJoinCode(e.target.value.toUpperCase())}
             placeholder="ABCD23"
             maxLength={6}
-            autoFocus
+            autoFocus={!joinCodeParam}
             className="w-full h-16 text-center text-3xl font-black tracking-[0.4em] uppercase rounded-2xl border-2 border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+
+          {/* Identity card */}
+          <PlayerIdentityCard
+            name={joinName}
+            onNameChange={setJoinName}
+            avatarEmoji={joinAvatarEmoji}
+            onAvatarEmojiChange={setJoinAvatarEmoji}
+            avatarUrl={joinAvatarUrl}
+            onAvatarUrlChange={setJoinAvatarUrl}
+            nameLabel="Your name"
+            namePlaceholder="e.g. Maya"
           />
 
           <button
             onClick={handleJoin}
-            disabled={working || joinCode.length < 4}
+            disabled={working || joinCode.length < 4 || !joinName.trim()}
             className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold tap-highlight active:scale-[0.99] transition-transform shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {working ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
@@ -207,9 +263,9 @@ export default function DuoLobby() {
   }
 
   // ── Host screen (parent shares code) ──
-  if (!hunt || !session) {
-    return null;
-  }
+  if (!hunt || !session) return null;
+
+  const joinUrl = `${window.location.origin}/duo/join?code=${session.joinCode}`;
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-primary/5 via-background to-background pb-tab-bar">
@@ -237,17 +293,43 @@ export default function DuoLobby() {
           </div>
         </div>
 
-        {/* Big join code */}
-        <div className="rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 border-2 border-primary/30 p-6 text-center space-y-2 shadow-md">
+        {/* Your identity */}
+        <PlayerIdentityCard
+          name={hostName}
+          onNameChange={setHostName}
+          avatarEmoji={hostAvatarEmoji}
+          onAvatarEmojiChange={setHostAvatarEmoji}
+          avatarUrl={hostAvatarUrl}
+          onAvatarUrlChange={setHostAvatarUrl}
+          nameLabel="Your name"
+          namePlaceholder="e.g. Alex"
+        />
+
+        {/* Big join code + QR */}
+        <div className="rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 border-2 border-primary/30 p-6 text-center space-y-3 shadow-md">
           <p className="text-[11px] font-black uppercase tracking-widest text-primary/80">Kid's join code</p>
           <p className="text-5xl font-black tracking-[0.3em] text-primary">{session.joinCode}</p>
           <button
             onClick={handleCopyCode}
-            className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full bg-background border text-xs font-semibold text-primary tap-highlight"
+            className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-full bg-background border text-xs font-semibold text-primary tap-highlight"
           >
             {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? 'Copied!' : 'Copy code'}
           </button>
+
+          {/* QR code */}
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary/70">Or scan to join</p>
+            <div className="bg-white p-3 rounded-2xl inline-block shadow-sm">
+              <QRCodeSVG
+                value={joinUrl}
+                size={160}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#000000"
+              />
+            </div>
+          </div>
         </div>
 
         {/* How it works card */}
@@ -257,8 +339,8 @@ export default function DuoLobby() {
             <div className="flex-1">
               <p className="font-bold text-sm leading-tight">How two-phone mode works</p>
               <ol className="text-[13px] text-muted-foreground leading-snug mt-2 space-y-1.5 list-decimal pl-4">
-                <li>Kid opens FamActify on their phone and goes to <span className="font-semibold text-foreground">Profile → Two-phone city game</span> or types <span className="font-mono">/duo/join</span></li>
-                <li>Kid types the 6-letter code above</li>
+                <li>Kid scans the QR code (or types the code) on their phone</li>
+                <li>Kid enters their name + picks an avatar</li>
                 <li>You read the clue out loud. Kid solves it.</li>
                 <li>You see the answer on your phone — you decide when to advance.</li>
               </ol>
@@ -274,9 +356,7 @@ export default function DuoLobby() {
           ) : (
             participants.map(p => (
               <div key={p.id} className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-base">
-                  {p.role === 'parent_guide' ? '🧑‍🏫' : p.role === 'kid_solver' ? '🧒' : p.familyEmoji}
-                </div>
+                <ParticipantAvatar p={p} size={36} />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm leading-tight">{p.familyName}</p>
                   <p className="text-[11px] text-muted-foreground">
@@ -289,7 +369,7 @@ export default function DuoLobby() {
           )}
           {!kidJoined && (
             <p className="text-[11px] text-muted-foreground italic flex items-center gap-1.5">
-              <Loader2 className="w-3 h-3 animate-spin" /> Waiting for kid to join…
+              <Loader2 className="w-3 h-3 animate-spin" /> Waiting for other player to join…
             </p>
           )}
         </div>
@@ -306,11 +386,11 @@ export default function DuoLobby() {
           )}
         >
           <Sparkles className="w-4 h-4" />
-          {kidJoined ? 'Start playing!' : 'Waiting for kid…'}
+          {kidJoined ? 'Start playing!' : 'Waiting for other player…'}
         </button>
 
         <p className="text-[11px] text-center text-muted-foreground leading-snug">
-          You can also start solo and let the kid join later — just keep this code handy.
+          You can also start solo and let them join later — just keep this code handy.
         </p>
       </div>
     </div>

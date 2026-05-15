@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { HuntRace, RaceParticipant, ScavengerHunt, HuntStop } from '@/types/hunt';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import ParticipantAvatar from '@/components/ParticipantAvatar';
 
 export default function DuoPlay() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -240,8 +241,12 @@ export default function DuoPlay() {
       <div className="flex-1 px-5 py-5 space-y-4">
         {/* Partner status */}
         <div className="rounded-2xl bg-muted/30 border px-3 py-2 flex items-center gap-2 text-xs">
-          <div className="w-7 h-7 rounded-full bg-card flex items-center justify-center text-base shrink-0">
-            {partner?.role === 'parent_guide' ? '🧑‍🏫' : partner?.role === 'kid_solver' ? '🧒' : '👤'}
+          <div className="w-7 h-7 shrink-0">
+            {partner ? (
+              <ParticipantAvatar p={partner} size={28} />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-card flex items-center justify-center text-base">👤</div>
+            )}
           </div>
           <span className="flex-1 min-w-0 truncate">
             {partnerJoined ? (

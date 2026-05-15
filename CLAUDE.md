@@ -1,6 +1,6 @@
 # FamActify — AI Navigation
 
-**Last updated:** 2026-05-14
+**Last updated:** 2026-05-15
 **Owner:** Kaspars Zemitis
 **What is FamActify:** App that helps busy Bay Area families discover, plan, and remember meaningful weekend activities with their kids. Tagline: "Every Saturday is a memory waiting to happen."
 
@@ -9,7 +9,8 @@
 - [`AUTH-T0.5`](../../../knowledge/famactify/docs/sprints/AUTH-T0.5-soft-auth-gate-and-lock-icons.md) — Soft auth gate drawer + `?next=` flow + lock icons. ✅ 2026-05-14
 - [`CITYGAMES-T1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1-hero-rail-and-play-tab.md) — Play tab + citygames curation. ✅ 2026-05-14 (Option A rail removed post-ship)
 - [`CITYGAMES-T1.1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1.1-remove-banner-and-add-country-filter.md) — Remove legacy banner + country filter on `/play`. ✅ 2026-05-14
-- [`HUNT-DETAIL-T1`](../../../knowledge/famactify/docs/sprints/HUNT-DETAIL-T1-hero-clamp-and-multiplayer-sheet.md) — Clamp hunt-detail hero to `55svh` + consolidate Duo/Race into a Multiplayer mode sheet. 🟡 Planned
+- [`HUNT-DETAIL-T1`](../../../knowledge/famactify/docs/sprints/HUNT-DETAIL-T1-hero-clamp-and-multiplayer-sheet.md) — Clamp hunt-detail hero to `55svh` + consolidate Duo/Race into a Multiplayer mode sheet. ✅ 2026-05-15
+- [`MP-T1`](../../../knowledge/famactify/docs/sprints/MP-T1-qr-codes-and-player-identity.md) — QR codes on Duo + Race host lobbies + player identity (name · animal-emoji grid · selfie/photo upload). ✅ 2026-05-15
 
 ---
 
@@ -272,11 +273,17 @@ All in `src/lib/flags.ts`. Vite env vars: `VITE_FF_*`.
 3. **CITYGAMES-T1** — Play tab + citygames curation. ✅ Done (Option A rail removed post-ship)
 
 **Recently finished:**
-- **CITYGAMES-T1.1** — removed legacy "City Games" banner from `/activities`, added `countryCode` filter to `listCitygames`, wired `country.code` in `Play.tsx` React Query key. ✅ 2026-05-14
+- **CITYGAMES-T1.1** — removed legacy "City Games" banner from `/activities`, added `countryCode` filter to `listCitygames`, wired `country.code` in `Play.tsx` React Query key. ✅ 2026-05-15
 - **HUNT-DETAIL-T1** — hero `max-h-[55svh]` clamp (CTA stack no longer clips on tall phones) + "Multiplayer mode" vaul Drawer replacing flat Duo/Race buttons + Family-squad "coming soon" placeholder. Config-agnostic Duo copy. ✅ 2026-05-15
+- **MP-T1** — QR codes on Duo + Race host lobbies + `<PlayerIdentityCard />` (name · animal-emoji grid · selfie/photo upload) + `<ParticipantAvatar />` in all 5 lobby/play/results locations. Migration `20260515_100000_participant_avatar_url.sql` adds `avatar_url text` to `hunt_race_participants`. `qrcode.react` installed. ✅ 2026-05-15
 
 **Future (signal-dependent):**
 - **SCV-FAMILY-SQUAD-T1** — real 3+ phones same-team mode. Replaces the disabled "Coming soon" placeholder in the HuntDetail Multiplayer sheet. Needs new lobby UX, role assignment, multi-device sync model. Not planned yet — ship when Duo usage shows signal.
+- **MP-T2** — cartoon avatar from selfie (Replicate / SD stylization, Edge Function, cost model). Future MP-T sprint.
+- **MP-T3** — in-app QR scanner (BarcodeDetector API / zxing fallback). Skip manual code entry.
+- **MP-T4** — edit identity inside play (tap avatar mid-game to change name/picture).
+- **MP-T5** — rename `family_name` / `family_emoji` → `display_name` / `display_avatar` for clarity (schema cleanup).
+- **MP-T6** — anonymous / guest joins (drop auth requirement on `/duo/join` + `/race/join`; needs guest-session token + RLS rework).
 
 **Future sprints (not yet planned):**
 - **AUTH-T1** — soft-gate Save/Heart/Add-to-passport; preserve `?next=` through Google OAuth; drop `/home`; onboarding → DB; `authService` consistency

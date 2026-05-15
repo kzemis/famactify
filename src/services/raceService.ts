@@ -111,6 +111,32 @@ export const raceService = {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Sign in to join a race');
 
+    // Idempotent join: if this user already has a row in this race, update
+    // their identity and return it. Prevents the (race_id, user_id) unique
+    // constraint from surfacing as an ugly Postgres error on page refresh
+    // or accidental re-tap. See MP-T1.1.
+    const { data: existing } = await supabase
+      .from('hunt_race_participants')
+      .select('*')
+      .eq('race_id', raceId)
+      .eq('user_id', user.user.id)
+      .maybeSingle();
+
+    if (existing) {
+      const { data: updated, error: updErr } = await supabase
+        .from('hunt_race_participants')
+        .update({
+          family_name: familyName,
+          family_emoji: familyEmoji,
+          avatar_url: avatarUrl ?? null,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+      return mapParticipant(updated);
+    }
+
     const { data, error } = await supabase
       .from('hunt_race_participants')
       .insert({
@@ -218,6 +244,42 @@ export const raceService = {
   ): Promise<RaceParticipant> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Sign in to join');
+
+    // Idempotent join + friendly conflict message for shared-account case.
+    // The (race_id, user_id) unique constraint means the same Supabase
+    // account cannot occupy two roles. If the host's account is also signed
+    // in on the kid's phone (common with family Google logins), the second
+    // join hits this branch. See MP-T1.1.
+    const { data: existing } = await supabase
+      .from('hunt_race_participants')
+      .select('*')
+      .eq('race_id', raceId)
+      .eq('user_id', user.user.id)
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.role !== role) {
+        const hostSide = existing.role === 'parent_guide' ? 'Host' :
+                         existing.role === 'kid_solver'   ? 'Solver' :
+                         'a player';
+        throw new Error(
+          `This account is already in the session as ${hostSide}. The other player needs to sign in with a different account to play their role.`
+        );
+      }
+      // Same role rejoin (refresh, accidental re-tap) — update identity in place
+      const { data: updated, error: updErr } = await supabase
+        .from('hunt_race_participants')
+        .update({
+          family_name: familyName,
+          family_emoji: familyEmoji,
+          avatar_url: avatarUrl ?? null,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+      return mapParticipant(updated);
+    }
 
     const { data, error } = await supabase
       .from('hunt_race_participants')

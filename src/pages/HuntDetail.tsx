@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap, Smartphone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Clock, Users, Sparkles, Play, RotateCcw, CheckCircle2, Headphones, Zap, Smartphone } from 'lucide-react';
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import MapView from '@/components/LazyMapView';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import { huntsService, type HuntAttempt } from '@/services/huntsService';
@@ -28,6 +29,7 @@ export default function HuntDetail() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
   const [activeSlide, setActiveSlide] = useState(0);
   const [mapSlideActivated, setMapSlideActivated] = useState(false);
+  const [multiplayerOpen, setMultiplayerOpen] = useState(false);
 
   // Track active slide for indicator dots
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function HuntDetail() {
           <CarouselContent className="ml-0">
             {/* Slide 1: Cover hero */}
             <CarouselItem className="pl-0 basis-full">
-              <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/30 via-pink-200 to-amber-200">
+              <div className="relative w-full aspect-[4/5] max-h-[55svh] sm:aspect-[16/10] sm:max-h-none overflow-hidden bg-gradient-to-br from-primary/30 via-pink-200 to-amber-200">
                 {hunt.coverImage ? (
                   <img
                     src={hunt.coverImage}
@@ -147,7 +149,7 @@ export default function HuntDetail() {
             {/* Slide 2: Map (only if there are coords) */}
             {huntPath.length > 0 && (
               <CarouselItem className="pl-0 basis-full">
-                <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] bg-muted overflow-hidden">
+                <div className="relative w-full aspect-[4/5] max-h-[55svh] sm:aspect-[16/10] sm:max-h-none bg-muted overflow-hidden">
                   {shouldMountMap ? (
                     <MapView places={[]} path={huntPath} className="absolute inset-0" />
                   ) : (
@@ -169,7 +171,7 @@ export default function HuntDetail() {
 
             {/* Slide 3: What you'll do (stops) */}
             <CarouselItem className="pl-0 basis-full">
-              <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] bg-gradient-to-br from-amber-50 via-background to-primary/5 overflow-hidden">
+              <div className="relative w-full aspect-[4/5] max-h-[55svh] sm:aspect-[16/10] sm:max-h-none bg-gradient-to-br from-amber-50 via-background to-primary/5 overflow-hidden">
                 <div className="absolute inset-0 overflow-y-auto px-4 pt-14 pb-10 no-scrollbar">
                   <div className="rounded-2xl border bg-card divide-y shadow-sm">
                     {hunt.stops.map((s, i) => (
@@ -199,7 +201,7 @@ export default function HuntDetail() {
             {/* Slide 4: Sources / Credits (only when present) */}
             {hunt.credits && (
               <CarouselItem className="pl-0 basis-full">
-                <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] bg-gradient-to-br from-slate-50 via-background to-sky-50/40 overflow-hidden">
+                <div className="relative w-full aspect-[4/5] max-h-[55svh] sm:aspect-[16/10] sm:max-h-none bg-gradient-to-br from-slate-50 via-background to-sky-50/40 overflow-hidden">
                   <div className="absolute inset-0 overflow-y-auto px-5 pt-14 pb-10 no-scrollbar flex flex-col gap-3">
                     <div className="rounded-2xl border bg-card p-4 shadow-sm">
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Source facts &amp; credits</p>
@@ -280,24 +282,92 @@ export default function HuntDetail() {
               <Play className="w-4 h-4" /> {ctaLabel}
             </button>
           </div>
-          {flags.scv_duo_mode && (
+          {flags.scv_duo_mode && flags.scv_live_races && (
+            <button
+              onClick={() => setMultiplayerOpen(true)}
+              className="w-full mt-2 h-11 rounded-2xl border-2 border-primary/30 text-primary font-semibold text-sm flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform"
+            >
+              <Users className="w-4 h-4" /> Multiplayer mode
+            </button>
+          )}
+          {flags.scv_duo_mode && !flags.scv_live_races && (
             <button
               onClick={() => navigate(`/duo/host/${hunt.slug}`)}
               className="w-full mt-2 h-11 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-800 font-semibold text-sm flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform"
             >
-              <Smartphone className="w-4 h-4" /> Play with kid on a second phone
+              <Smartphone className="w-4 h-4" /> Duo mode
             </button>
           )}
-          {flags.scv_live_races && (
+          {!flags.scv_duo_mode && flags.scv_live_races && (
             <button
               onClick={() => navigate(`/race/create/${hunt.slug}`)}
               className="w-full mt-2 h-11 rounded-2xl border-2 border-primary/30 text-primary font-semibold text-sm flex items-center justify-center gap-2 tap-highlight active:scale-[0.98] transition-transform"
             >
-              <Zap className="w-4 h-4" /> Race this city game with another family
+              <Zap className="w-4 h-4" /> Race mode
             </button>
           )}
         </div>
       </div>
+
+      {/* Multiplayer mode sheet — only shown when both flags are on */}
+      <Drawer open={multiplayerOpen} onOpenChange={setMultiplayerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-md px-4 pt-2 pb-8">
+            <DrawerHeader className="px-0 pt-2">
+              <DrawerTitle className="text-xl font-bold">Multiplayer mode</DrawerTitle>
+              <DrawerDescription className="text-sm">
+                Or just gather around one phone — that works too.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="space-y-2 mt-2">
+              {/* Duo */}
+              <button
+                onClick={() => { setMultiplayerOpen(false); navigate(`/duo/host/${hunt.slug}`); }}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-amber-200 bg-amber-50 text-left tap-highlight active:scale-[0.99] transition-transform"
+              >
+                <span className="w-10 h-10 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-amber-900">Duo</p>
+                  <p className="text-xs text-amber-800/80 leading-snug">Two phones, split the roles — clue here, answer there</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-700 shrink-0" />
+              </button>
+
+              {/* Race */}
+              <button
+                onClick={() => { setMultiplayerOpen(false); navigate(`/race/create/${hunt.slug}`); }}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-primary/30 bg-primary/5 text-left tap-highlight active:scale-[0.99] transition-transform"
+              >
+                <span className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-foreground">Race</p>
+                  <p className="text-xs text-muted-foreground leading-snug">Compete with another family, live</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              </button>
+
+              {/* Family squad — coming soon placeholder, no nav */}
+              <div
+                aria-disabled="true"
+                className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-muted/30 text-left opacity-60 cursor-not-allowed"
+              >
+                <span className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 text-lg">
+                  👨‍👩‍👧‍👦
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-muted-foreground">Family squad</p>
+                  <p className="text-[11px] text-muted-foreground/80 leading-snug">Coming soon — 3+ phones, same team</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

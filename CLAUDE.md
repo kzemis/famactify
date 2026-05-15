@@ -9,6 +9,7 @@
 - [`AUTH-T0.5`](../../../knowledge/famactify/docs/sprints/AUTH-T0.5-soft-auth-gate-and-lock-icons.md) — Soft auth gate drawer + `?next=` flow + lock icons. ✅ 2026-05-14
 - [`CITYGAMES-T1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1-hero-rail-and-play-tab.md) — Play tab + citygames curation. ✅ 2026-05-14 (Option A rail removed post-ship)
 - [`CITYGAMES-T1.1`](../../../knowledge/famactify/docs/sprints/CITYGAMES-T1.1-remove-banner-and-add-country-filter.md) — Remove legacy banner + country filter on `/play`. ✅ 2026-05-14
+- [`HUNT-DETAIL-T1`](../../../knowledge/famactify/docs/sprints/HUNT-DETAIL-T1-hero-clamp-and-multiplayer-sheet.md) — Clamp hunt-detail hero to `55svh` + consolidate Duo/Race into a Multiplayer mode sheet. 🟡 Planned
 
 ---
 
@@ -272,6 +273,10 @@ All in `src/lib/flags.ts`. Vite env vars: `VITE_FF_*`.
 
 **Recently finished:**
 - **CITYGAMES-T1.1** — removed legacy "City Games" banner from `/activities`, added `countryCode` filter to `listCitygames`, wired `country.code` in `Play.tsx` React Query key. ✅ 2026-05-14
+- **HUNT-DETAIL-T1** — hero `max-h-[55svh]` clamp (CTA stack no longer clips on tall phones) + "Multiplayer mode" vaul Drawer replacing flat Duo/Race buttons + Family-squad "coming soon" placeholder. Config-agnostic Duo copy. ✅ 2026-05-15
+
+**Future (signal-dependent):**
+- **SCV-FAMILY-SQUAD-T1** — real 3+ phones same-team mode. Replaces the disabled "Coming soon" placeholder in the HuntDetail Multiplayer sheet. Needs new lobby UX, role assignment, multi-device sync model. Not planned yet — ship when Duo usage shows signal.
 
 **Future sprints (not yet planned):**
 - **AUTH-T1** — soft-gate Save/Heart/Add-to-passport; preserve `?next=` through Google OAuth; drop `/home`; onboarding → DB; `authService` consistency

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { RaceParticipant } from '@/types/hunt';
+import ParticipantAvatar from '@/components/ParticipantAvatar';
 
 interface Props {
   participants: RaceParticipant[];
@@ -40,7 +41,7 @@ export default function RaceLeaderboard({ participants, myUserId, totalStops }: 
             return (
               <div key={p.id} className={cn('px-3 py-2 flex items-center gap-2', isMe && 'bg-primary/5')}>
                 <span className="text-xs font-bold w-4 text-center text-muted-foreground">{i + 1}</span>
-                <span className="text-sm">{p.familyEmoji}</span>
+                <ParticipantAvatar p={p} size={24} />
                 <div className="flex-1 min-w-0">
                   <p className={cn('text-[11px] font-semibold truncate', isMe && 'text-primary')}>{p.familyName}</p>
                   <div className="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">

@@ -32,6 +32,7 @@ function mapParticipant(p: any): RaceParticipant {
     userId: p.user_id,
     familyName: p.family_name,
     familyEmoji: p.family_emoji,
+    avatarUrl: p.avatar_url ?? null,
     currentStop: p.current_stop,
     score: p.score,
     totalStops: p.total_stops,
@@ -100,7 +101,13 @@ export const raceService = {
     };
   },
 
-  async joinRace(raceId: string, familyName: string, familyEmoji: string, totalStops: number): Promise<RaceParticipant> {
+  async joinRace(
+    raceId: string,
+    familyName: string,
+    familyEmoji: string,
+    totalStops: number,
+    avatarUrl?: string | null,
+  ): Promise<RaceParticipant> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Sign in to join a race');
 
@@ -112,6 +119,7 @@ export const raceService = {
         family_name: familyName,
         family_emoji: familyEmoji,
         total_stops: totalStops,
+        avatar_url: avatarUrl ?? null,
       })
       .select()
       .single();
@@ -206,6 +214,7 @@ export const raceService = {
     familyEmoji: string,
     totalStops: number,
     role: 'player' | 'parent_guide' | 'kid_solver' = 'player',
+    avatarUrl?: string | null,
   ): Promise<RaceParticipant> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Sign in to join');
@@ -219,11 +228,51 @@ export const raceService = {
         family_emoji: familyEmoji,
         total_stops: totalStops,
         role,
+        avatar_url: avatarUrl ?? null,
       })
       .select()
       .single();
     if (error) throw error;
     return mapParticipant(data);
+  },
+
+  /** Update a participant's display identity (name, emoji, avatar photo). */
+  async updateParticipantIdentity(opts: {
+    participantId: string;
+    familyName: string;
+    familyEmoji: string;
+    avatarUrl: string | null;
+  }): Promise<void> {
+    const { error } = await supabase
+      .from('hunt_race_participants')
+      .update({
+        family_name: opts.familyName,
+        family_emoji: opts.familyEmoji,
+        avatar_url: opts.avatarUrl,
+      })
+      .eq('id', opts.participantId);
+    if (error) throw error;
+  },
+
+  /**
+   * Upload an avatar photo to Supabase Storage.
+   * Max 2MB, JPEG/PNG/WebP/HEIC only.
+   * Returns the public URL.
+   */
+  async uploadAvatar(file: File, ownerId: string): Promise<string> {
+    if (file.size > 2 * 1024 * 1024) throw new Error('Photo must be under 2 MB');
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (!allowed.includes(file.type.toLowerCase())) {
+      throw new Error('Photo must be JPEG, PNG, WebP, or HEIC');
+    }
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const path = `avatars/${ownerId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('activity-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false });
+    if (error) throw error;
+    const { data } = supabase.storage.from('activity-images').getPublicUrl(path);
+    return data.publicUrl;
   },
 
   /**

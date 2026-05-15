@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { raceService } from '@/services/raceService';
 import { huntsService } from '@/services/huntsService';
 import type { HuntRace, RaceParticipant, ScavengerHunt } from '@/types/hunt';
+import ParticipantAvatar from '@/components/ParticipantAvatar';
 
 const PODIUM_STYLES = [
   'bg-gradient-to-br from-yellow-400 to-amber-500 text-white', // 1st
@@ -105,8 +106,8 @@ export default function RaceResults() {
             {/* 2nd place */}
             {sorted[1] && (
               <div className="text-center">
-                <div className={cn('w-16 h-20 rounded-xl flex flex-col items-center justify-center', PODIUM_STYLES[1])}>
-                  <span className="text-2xl">{sorted[1].familyEmoji}</span>
+                <div className={cn('w-16 h-20 rounded-xl flex flex-col items-center justify-center gap-1', PODIUM_STYLES[1])}>
+                  <ParticipantAvatar p={sorted[1]} size={32} />
                   <Medal className="w-4 h-4" />
                 </div>
                 <p className="text-xs font-semibold mt-1 truncate max-w-[80px]">{sorted[1].familyName}</p>
@@ -115,8 +116,8 @@ export default function RaceResults() {
             {/* 1st place */}
             <div className="text-center -mt-4">
               <Crown className="w-6 h-6 mx-auto text-yellow-500 mb-1" />
-              <div className={cn('w-20 h-24 rounded-xl flex flex-col items-center justify-center', PODIUM_STYLES[0])}>
-                <span className="text-3xl">{sorted[0].familyEmoji}</span>
+              <div className={cn('w-20 h-24 rounded-xl flex flex-col items-center justify-center gap-1', PODIUM_STYLES[0])}>
+                <ParticipantAvatar p={sorted[0]} size={40} />
                 <Trophy className="w-5 h-5" />
               </div>
               <p className="text-xs font-bold mt-1 truncate max-w-[90px]">{sorted[0].familyName}</p>
@@ -124,8 +125,8 @@ export default function RaceResults() {
             {/* 3rd place */}
             {sorted[2] && (
               <div className="text-center">
-                <div className={cn('w-16 h-16 rounded-xl flex flex-col items-center justify-center', PODIUM_STYLES[2])}>
-                  <span className="text-xl">{sorted[2].familyEmoji}</span>
+                <div className={cn('w-16 h-16 rounded-xl flex flex-col items-center justify-center gap-1', PODIUM_STYLES[2])}>
+                  <ParticipantAvatar p={sorted[2]} size={28} />
                   <Medal className="w-3.5 h-3.5" />
                 </div>
                 <p className="text-xs font-semibold mt-1 truncate max-w-[80px]">{sorted[2].familyName}</p>
@@ -154,7 +155,7 @@ export default function RaceResults() {
                   )}>
                     {i + 1}
                   </span>
-                  <span className="text-xl">{p.familyEmoji}</span>
+                  <ParticipantAvatar p={p} size={32} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{p.familyName}</p>
                     <p className="text-xs text-muted-foreground">

@@ -199,6 +199,8 @@ export interface RaceParticipant {
   userId: string;
   familyName: string;
   familyEmoji: string;
+  /** Photo override. When non-null, render the photo; when null, render familyEmoji. */
+  avatarUrl?: string | null;
   currentStop: number;
   score: number;
   totalStops: number;
